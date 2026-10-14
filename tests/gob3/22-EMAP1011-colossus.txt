@@ -1,0 +1,9 @@
+# gob2native - Goblins Quest 3 walkthrough, world 4: Colossus (EMAP1011), first visit
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The field-glass lies by Colossus' feet; the fishing cane brings it in.
+room EMAP1011
+item FISHING-CANE
+act 14          # fish the field-glass
+drop
+act 50          # back to the clouds

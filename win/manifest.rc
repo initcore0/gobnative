@@ -1,0 +1,5 @@
+// gob2native - the application manifest as a resource (MinGW; MSVC's
+// linker embeds win/gobnative.manifest itself)
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+1 24 "gobnative.manifest"

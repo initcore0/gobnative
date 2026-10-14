@@ -1,0 +1,38 @@
+# gob2native - Gobliiins walkthrough, level 12 (AVT011): the wizard's laboratory
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The hanged skeleton grabs any goblin coming to the left end of the table
+# (energy loss) until the picker hands it the cup and ball to play with.
+# Tickling its foot with the quill makes it laugh and drop a key, which
+# opens the cage in the top right corner: a fly comes out. The wizard turns
+# the quill into a flyswatter; the picker swats the fly while it rests on
+# the shelf, and the wizard turns the stunned fly into a dart. The dart,
+# thrown at the picture, knocks down the magic object onto the table. The
+# exit opens with the elixir in the picker's pocket.
+room AVT011
+goblin 0
+pick 294 87     # the picker takes the cup and ball from the right
+use 78 93       # he walks to the skeleton's hand (the arrival there stops him)...
+use 78 93       # ...and gives it the toy: the skeleton plays and grabs no one
+pick 162 87     # he takes the quill from the inkwell
+use 66 147      # he tickles the skeleton's foot: it laughs and drops a key on the table
+pick 126 153    # he puts the quill down on the floor
+pick 90 101     # he takes the key (clicked below the skeleton's moving hand)
+use 270 27      # he opens the cage with it; a fly will come out after a while
+goblin 2
+act 126 153     # the wizard turns the quill into a flyswatter
+goblin 0
+pick 126 153    # the picker takes the flyswatter
+walk 114 33     # he climbs to the shelf where the fly lands
+untilvar 310 45 50  # the fly has just landed and rests
+use 126 33      # he swats it
+walk 222 33     # he steps aside
+goblin 2
+act 126 33      # the wizard turns the stunned fly into a dart
+walk 186 153    # and goes back down out of the way
+goblin 0
+pick 126 33     # the picker swaps the flyswatter for the dart
+use 102 63      # he throws it at the picture: the magic object falls onto the table
+walk 210 93     # he takes it
+pick 114 93     # he takes the elixir: the exit opens
+exit

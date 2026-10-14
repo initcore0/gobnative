@@ -1,0 +1,157 @@
+# gob2native - Goblins Quest 3 walkthrough, world 2: the fortress (EMAP1006), seen through Korin's knob
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Wynnona (and Ooya, freed from the monk's shape and given back his bag of
+# spells on the condor) blows up Fourbalus's promontory piece by piece. A
+# dynamite stick is a tube in the hollow with powder and a wick, made sticky
+# with birdlime; it is lit on the stone head and thrown while it burns: the
+# small ones for the beam, the brick, and (sticky) the wall and the door,
+# the big bamboo ones for the grate (sticky) and the little window.
+room EMAP1006
+act 14          # wand
+item WAND
+act 15          # the wand on the flint: the monk was Ooya
+drop
+act 16          # flint
+item FLINT
+act 11          # cut the pan flute with the flint
+item WAND
+act 20          # the wand on the conquistador's remains
+drop
+act 22          # helmet
+item FLINT
+act 43          # flint on the sticky bark
+item HELMET
+act 28          # birdlime into the helmet
+drop
+act 18          # powder
+drop
+act 25          # the little beast: a hair for a wick
+drop
+act 17          # a small tube into the hollow
+item FLINT
+act 29          # cut it into a flute
+drop
+act 30          # the flute
+item FLUTE
+zone 13         # flute for the Inca: he plays and the condor comes...
+untilzone 46
+zone 4          # ...Ooya onto the condor
+zone 46
+zone 3
+idle
+drop
+act 17          # a small tube into the hollow
+item POWDER
+act 29          # powder in it
+item WICK
+act 29          # a wick
+item FLINT
+zone 31         # strike the flint on the stone head: the dynamite is lit...
+untilvar 18 482
+zone 26         # ...throw it at the rock: bamboo underneath
+idle
+zone 4          # select Ooya
+wait 0.5
+act 27          # Ooya makes the bamboo grow
+zone 3
+wait 0.5
+drop
+act 40          # a big tube of bamboo
+drop
+act 17          # a small tube into the hollow
+item POWDER
+act 29          # powder in it
+item WICK
+act 29          # a wick
+item FLINT
+zone 31         # strike the flint on the stone head: the dynamite is lit...
+untilvar 18 482
+zone 32         # ...the beam
+idle
+zone 4          # select Ooya
+wait 0.5
+act 24          # Ooya makes hair grow on the skull
+zone 3
+wait 0.5
+drop
+act 23          # a hair for more wicks
+drop
+act 17          # a small tube into the hollow
+item POWDER
+act 29          # powder in it
+item WICK
+act 29          # a wick
+item FLINT
+zone 31         # strike the flint on the stone head: the dynamite is lit...
+untilvar 18 482
+zone 33         # ...the brick
+idle
+drop
+act 17          # a small tube into the hollow
+item POWDER
+act 29          # powder in it
+item WICK
+act 29          # a wick
+item BIRDLIME
+act 29          # birdlime to make it stick
+item FLINT
+zone 31         # strike the flint on the stone head: the dynamite is lit...
+untilvar 18 482
+zone 34         # ...the first sticky one sticks to Wynnona's hand
+idle
+drop
+act 17          # a small tube into the hollow
+item POWDER
+act 29          # powder in it
+item WICK
+act 29          # a wick
+item BIRDLIME
+act 29          # birdlime to make it stick
+item FLINT
+zone 31         # strike the flint on the stone head: the dynamite is lit...
+untilvar 18 482
+zone 34         # ...the wall
+idle
+drop
+act 17          # a small tube into the hollow
+item POWDER
+act 29          # powder in it
+item WICK
+act 29          # a wick
+item BIRDLIME
+act 29          # birdlime to make it stick
+item FLINT
+zone 31         # strike the flint on the stone head: the dynamite is lit...
+untilvar 18 482
+zone 35         # ...the door
+idle
+drop
+item BIG TUBE
+act 19          # the big tube into the hollow
+item POWDER
+act 10          # powder in it
+item WICK
+act 10          # a wick
+item BIRDLIME
+act 10          # birdlime to make it stick
+item FLINT
+zone 31         # strike the flint on the stone head: the dynamite is lit...
+untilvar 18 482
+zone 36         # ...the grate
+idle
+drop
+act 40          # another big tube of bamboo
+item BIG TUBE
+act 19          # the big tube into the hollow
+item POWDER
+act 10          # powder in it
+item WICK
+act 10          # a wick
+item FLINT
+zone 31         # strike the flint on the stone head: the dynamite is lit...
+untilvar 18 482
+zone 37         # ...the little window
+idle
+drop
+zone 38         # Fourbalus gives in

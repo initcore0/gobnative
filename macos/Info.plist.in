@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>gobnative</string>
+	<key>CFBundleDisplayName</key>
+	<string>gobnative</string>
+	<key>CFBundleExecutable</key>
+	<string>gobnative</string>
+	<key>CFBundleIdentifier</key>
+	<string>io.github.gobnative</string>
+	<key>CFBundleIconFile</key>
+	<string>gobnative</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>@GOB_VERSION@</string>
+	<key>CFBundleVersion</key>
+	<string>@GOB_VERSION@</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>11.0</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.adventure-games</string>
+</dict>
+</plist>

@@ -1,0 +1,7 @@
+# gob2native - Goblins Quest 3 walkthrough, world 4: Colossus (EMAP1011), passing through
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The grain of sand now lies on Colossus' face, out of reach; the worm on the
+# fishing cane is bait for the clouds' hole.
+room EMAP1011
+act 50          # to the clouds

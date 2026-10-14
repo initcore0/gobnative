@@ -1,0 +1,5 @@
+// gob2native - the app icon as a resource (Explorer, taskbar; assets/icon,
+// drawn by scripts/make-icon.py). Resource 1: SDL_HINT_WINDOWS_INTRESOURCE_ICON.
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+1 ICON "../assets/icon/gobnative.ico"

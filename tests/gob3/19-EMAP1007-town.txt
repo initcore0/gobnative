@@ -1,0 +1,50 @@
+# gob2native - Goblins Quest 3 walkthrough, world 3: the town (EMAP1007), the feather
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Speedixir, then the decoy on the bell (over Fulbert): Jeff the boucassier
+# watches the female, a blow on his shoulder and a run to the street for
+# the feather as it lands.
+room EMAP1007
+item SPEEDIXIR
+zone 3          # Blount drinks the speedixir: he runs fast now
+idle
+drop
+zone 4          # select Fulbert
+wait 0.5
+at 290 66       # Fulbert up the ladder and over the roofs to the gap by the bell
+idle
+at 290 66
+idle
+zone 3          # select Blount
+wait 0.5
+at 250 66       # Blount there too
+idle
+at 250 66
+idle
+item DECOY
+zone 4          # select Fulbert
+wait 0.5
+at 310 66       # Fulbert stretches across the gap...
+zone 3
+untilvar 19 529
+zone 17         # ...Blount crosses to the bell
+idle
+zone 17         # rings the bell with the decoy: a female boucassier comes...
+untilvar 20 352
+drop
+zone 4          # select Fulbert
+at 310 66       # Fulbert stretches across the gap again
+zone 3
+untilvar 19 529
+zone 18         # Blount crosses back...
+wait 2.5
+zone 18         # ...and hits Jeff on the shoulder while he looks at her: a feather falls
+untilvar 21 1012
+at 190 146      # run down to the street
+untilvar 21 1047
+zone 19         # the feather, as it lands
+idle
+drop
+act 52          # to the alchemist's lab
+wait 2
+click 160 100   # the advice for the lab

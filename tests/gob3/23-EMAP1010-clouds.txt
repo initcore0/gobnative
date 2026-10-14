@@ -1,0 +1,58 @@
+# gob2native - Goblins Quest 3 walkthrough, world 4: the clouds (EMAP1010), Bizoo
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The field-glass shows Bizoo frozen on the glacier island, which only the
+# nacelle reaches. Ooya on the balloon from the tuft island is blown onto the
+# geyser island when the giant sneezes (the cloud pierced while the balloon
+# passes in front of him, frames 546-610: b@5050); the geyser by the nacelle
+# throws her up to it; with Ooya in it, two bags lower the nacelle to the
+# glacier. (The sneeze also sets b@5058, the flag of Ooya's ride to the bottom
+# left corner, which the script tests before the sneeze has taken over: from
+# now on Ooya follows Blount between the rooms.)
+room EMAP1010
+item FIELD-GLASS
+act 30          # the stain: frozen Bizoo
+drop
+zone 15         # a balloon
+untilvar 1215 1
+at 30 74        # Blount next to the rain cloud
+wait 7
+item KNIFE
+zone 4          # select Ooya
+untilvar 20 130 160
+zone 28         # catch the balloon at the tuft island
+untilvar 1215 4
+zone 3          # select Blount
+untilvar 20 550 600
+zone 29         # pierce the cloud while Ooya passes the giant: he sneezes
+idle
+drop
+zone 4          # select Ooya
+wait 0.5
+at 350 102      # onto the geyser by the nacelle
+idle
+zone 3          # select Blount
+wait 0.5
+act 21          # the geyser throws Ooya up to the nacelle
+item KNIFE
+act 18          # cut a ballast: the nacelle rises to her
+drop
+zone 4          # select Ooya
+wait 0.5
+act 17          # Ooya into the nacelle
+zone 3          # select Blount
+wait 0.5
+act 16          # a bag
+item BAG
+act 17          # into the nacelle
+act 16
+item BAG
+act 17          # and another: Ooya steps off onto the glacier
+zone 4          # select Ooya
+wait 0.5
+act 31          # she thaws Bizoo
+zone 3          # select Blount
+wait 0.5
+act 32          # Bizoo joins Blount
+drop
+act 50          # to the Colossus

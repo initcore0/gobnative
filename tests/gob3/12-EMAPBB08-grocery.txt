@@ -1,0 +1,28 @@
+# gob2native - Goblins Quest 3 walkthrough, world 3: the grocery by night (EMAPBB08), first visit
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Were-Blount gets the hammer, the decoy, a spaghetti, the horn of the
+# gidouille trophy and the coin back.
+room EMAPBB08
+act 27          # Were-Blount throws the cupboard down
+act 34          # and jumps onto it from the cornice: it breaks open
+act 28          # a hammer in it
+item HAMMER
+act 29          # smash the travelling box
+drop
+act 30          # a decoy for female boucassiers
+drop
+act 32          # a spaghetti
+drop
+act 23          # the sofa: a spring comes out
+act 24          # up with the spring
+item HAMMER
+act 25          # hit the gidouille trophy: its horn falls
+drop
+act 26          # the horn
+item HAMMER
+act 13          # the hammer for the grocer: the coin back
+drop
+act 14          # coin
+drop
+act 50          # back to town

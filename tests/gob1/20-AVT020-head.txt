@@ -1,0 +1,34 @@
+# gob2native - Gobliiins walkthrough, level 20 (AVT020): the giant head in the wall
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The exit shows once the picker holds the catapult. A creature brings it to
+# the right-hand ledge when bait lies there, and gives it up when the picker
+# pours the giant's tears on it. The tears: the wizard's spell on the
+# giant's ear, then the picker reading the book on the statue's platform,
+# make the giant cry; after the first reading the giant's hand
+# no longer grabs goblins on the floor in front of it; the second fills
+# the bowl put down below the platform. The statue's platform is reached by
+# a ladder the fighter knocks into place after the wizard's spell on the
+# statue.
+room AVT020
+goblin 2
+act 102 135     # the wizard casts a spell on the statue...
+goblin 1
+act 102 135     # ...and the fighter's blow knocks the ladder to its platform into place
+goblin 2
+act 114 93      # the wizard casts a spell on the giant's ear
+goblin 0
+use 114 93      # the picker reads the book on the platform: the giant's hand stops grabbing
+pick 78 111     # he puts the book down on the platform
+pick 78 33      # takes the bait on the top left ledge
+walk 150 153    # crosses the floor in front of the giant
+pick 210 33     # and swaps the bait for the bowl on the right-hand ledge
+pick 126 153    # puts the bowl down below the platform, where the tears fall
+untilvar 405 30 # (the giant is ready to cry again)
+pick 78 111     # takes the book again
+use 114 93      # reads it: the giant cries into the bowl
+pick 126 141    # swaps the book for the bowl full of tears
+untilvar 366 1  # (the creature has come for the bait)
+use 246 27      # pours the tears on the creature, which drops the catapult
+pick 246 27     # the picker takes the catapult
+exit

@@ -1,0 +1,9 @@
+# gob2native - Goblins Quest 3 walkthrough, world 2: the countryside (EMAP1004), second visit
+# SPDX-License-Identifier: GPL-3.0-or-later
+room EMAP1004
+item SPICED MEAT
+act 12          # spiced meat on the fork: the dragon drinks the memorum and is ours
+drop
+act 26          # the coin back from the ear
+drop
+zone 50         # to the inn

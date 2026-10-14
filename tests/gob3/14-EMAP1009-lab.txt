@@ -1,0 +1,72 @@
+# gob2native - Goblins Quest 3 walkthrough, world 3: the alchemist's lab (EMAP1009), first visit
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Two hands: only the right one (Blount) picks things up, only the left one
+# works mechanisms; a right click puts back what the right hand holds.
+# The egg hatches on the hot water bottle: crushed shell, burnt horn and
+# cooked spaghetti make growixir in the three-dose mixer, which brings the
+# baby boa-boa Fulbert to life; a second batch goes into a bottle.
+room EMAP1009
+act 63          # the right hand takes the boa-boa egg
+act 64          # onto the hot water bottle: it hatches
+act 41          # the egg shell
+act 38          # into the mortar
+act 43          # the pestle
+act 40          # crush the shell
+drop            # (an object goes back to its place with a right click)
+act 13          # the saucer with the crushed shell
+drop
+act 11          # the crushed shell
+act 10          # into the mixer
+drop
+act 29          # the horn
+act 31          # into the ashtray
+act 17          # the lighter
+act 32          # burn the horn
+drop
+act 33          # the burnt horn
+act 10          # into the mixer
+drop
+zone 4          # the left hand
+wait 0.5
+act 15          # opens the faucet: water in the bowl
+zone 3          # the right hand
+wait 0.5
+act 16          # the bowl of water
+act 19          # into the kettle
+drop
+act 25          # a spaghetti
+act 21          # into the water
+drop
+act 17          # the lighter
+act 18          # light the heater: the spaghetti cooks
+drop
+act 23          # the cooked spaghetti
+act 10          # into the mixer
+drop
+zone 4          # the left hand
+wait 0.5
+act 9           # starts the mixer: growixir
+zone 3
+wait 0.5
+act 53          # the cup of growixir
+act 65          # for the baby boa-boa: Fulbert
+drop
+act 11          # the crushed shell again
+act 10          # into the mixer
+drop
+act 30          # the burnt horn
+act 10
+drop
+act 26          # the cooked spaghetti
+act 10
+drop
+zone 4          # the left hand
+wait 0.5
+act 9           # starts the mixer: more growixir
+zone 3
+wait 0.5
+act 53          # the cup of growixir
+act 54          # into a bottle, to take along
+drop
+act 50          # to town

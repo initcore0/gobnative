@@ -1,0 +1,16 @@
+# gob2native - Goblins Quest 3 walkthrough, world 3: the grocery (EMAP1008)
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The coin and the captain's letter for the grocer: the boa-boa egg and
+# his key. The key opens the moonstone lamp: full moon, Were-Blount.
+room EMAP1008
+item COIN
+act 13          # the coin for the grocer
+item LETTER
+act 13          # the captain's letter: the captain owes him money
+drop
+act 14          # the boa-boa egg
+drop
+act 15          # a key
+item KEY
+act 23          # open the moonstone lamp: full moon, Blount turns into Were-Blount

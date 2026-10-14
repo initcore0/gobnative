@@ -1,0 +1,24 @@
+# gob2native - Goblins Quest 3 walkthrough, world 7: the mirrors (EMAP1017), the exit
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The grain of folly takes the Old Demon apart and leaves the ugliness
+# extract for the reflection. The ointment makes Blount handsome in the
+# mirror of beauty; while he is (slot 0 frames 1543-1630) the reflection
+# makes itself ugly in the mirror of ugliness: both may leave (world 8).
+room EMAP1017
+item FOLLY GRAIN
+act 21          # on the Old Demon
+drop
+zone 4          # the reflection
+wait 0.5
+act 22          # the ugliness extract
+at 50 42        # by the mirrors
+idle
+zone 3
+wait 0.5
+item OINTMENT
+zone 23         # Blount in the mirror of beauty
+untilvar 18 1544 1600
+zone 4
+wait 0.2
+zone 24         # the reflection in the mirror of ugliness

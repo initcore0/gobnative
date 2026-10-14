@@ -1,0 +1,11 @@
+# gob2native - Goblins Quest 3 walkthrough, world 4: Colossus (EMAP1011), the cage
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Sawing the column (helmet off, Bizoo and Ooya free) drops Blount into a
+# cage; Ooya's magic sets his shadow free (EMAPBB11).
+room EMAP1011
+item SAWFISH
+act 29          # saw the column
+zone 4          # select Ooya
+wait 0.5
+act 30          # Blount in the cage: Ooya frees his shadow

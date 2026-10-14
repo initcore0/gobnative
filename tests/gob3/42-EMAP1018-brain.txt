@@ -1,0 +1,16 @@
+# gob2native - Goblins Quest 3 walkthrough, world 7: the brain (EMAP1018), the grain of folly
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The big dragon flies Blount to the monolith; the fat hen picks out the
+# good grains and leaves the grain of folly. The trigger cell 32,30 takes
+# him back down.
+room EMAP1018
+act 29          # ride the dragon to the monolith
+item FAT HEN
+act 33          # the hen on the grains
+drop
+act 34          # the grain of folly
+drop
+at 325 122      # down again
+wait 6
+act 50          # to the mirrors

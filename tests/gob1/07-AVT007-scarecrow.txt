@@ -1,0 +1,33 @@
+# gob2native - Gobliiins walkthrough, level 7 (AVT007): the scarecrow
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The wizard's spell drops the bag of seeds from the branch (until then
+# whoever climbs onto the branch falls off it). The picker sows the seeds
+# in the field; birds come for them, and the fighter's blow on the
+# scarecrow chases them off. The wizard's spell on the cloud then makes
+# it rain, a plant grows out of the field and the picker takes the magic
+# object from it. A bird lands on the stump on the right and, when the
+# picker stands next to it, carries him off: the level ends by itself
+# (there is no exit sign).
+room AVT007
+goblin 2
+act 22 27       # the wizard knocks the bag of seeds down onto the branch
+goblin 0
+pick 54 33      # the picker climbs up and takes the seeds
+goblin 2
+walk 186 33     # the wizard waits on the branch below the cloud
+goblin 1
+walk 180 129    # the fighter waits beside the scarecrow
+goblin 0
+use 150 141     # the picker sows the seeds in the field
+goblin 1
+untilvar 364 1  # the birds come for the seeds...
+act 222 117     # ...and the fighter's blow on the scarecrow chases them off
+goblin 2
+act 222 21      # the wizard's spell on the cloud makes it rain
+untilvar 358 1  # a plant grows out of the field
+goblin 0
+walk 186 141    # the picker takes the magic object from the plant
+untilvar 361 2  # a bird has landed on the stump
+walk 246 69     # the picker walks up to it and the bird carries him off
+exit

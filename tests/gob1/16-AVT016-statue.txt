@@ -1,0 +1,29 @@
+# gob2native - Gobliiins walkthrough, level 16 (AVT016): the floating statue
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The picker arrives carrying the pendulum, which is not needed here. He
+# carries the stone to the foot of the floating island on the right; the
+# wizard's first spell on it makes it change, the second turns it into a
+# pile of stones that serves as a ladder up to the island. There the
+# wizard's spell and then the fighter's blow on the rock at the island's
+# left edge make a pickaxe drop to the ground. Four strokes of the pickaxe
+# in the ground in front of the island show the exit. Nothing in this
+# level costs energy.
+room AVT016
+goblin 0
+pick 210 159    # the picker puts the pendulum down out of the way
+pick 42 153     # takes the stone
+pick 258 153    # and puts it down under the island's right edge
+goblin 2
+act 258 153     # the wizard's spell on the stone...
+act 258 153     # ...and a second one: the stones pile up into a ladder
+act 66 87       # he climbs up and casts on the rock at the left edge
+goblin 1
+act 66 87       # the fighter follows and hits it: a pickaxe drops
+goblin 0
+pick 54 159     # the picker takes the pickaxe
+use 138 153     # and digs in front of the island, four times
+use 138 153
+use 138 153
+use 138 153
+exit

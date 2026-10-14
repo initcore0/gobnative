@@ -1,0 +1,47 @@
+# gob2native - Goblins Quest 3 walkthrough, world 2: the inn (EMAP1005), second visit
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The leash on the plunger on the pedestal leads up to Othello; his key
+# opens his place, where only the dragon fits: the captain's lost bill. The
+# bill gets the captain's letter for the grocer, the sculpted stone gets
+# Korin's help: her magic knob shows Wynnona at the fortress.
+room EMAP1005
+act 15          # the lump of sugar that fell
+drop
+zone 4          # select Chump
+wait 0.5
+act 35          # Chump onto the customer's hand
+zone 3          # select Blount
+wait 0.5
+item SUGAR
+act 23          # sugar for the customer: Chump unhooks his leash
+drop
+act 24          # leash
+item PLUNGER
+act 25          # plunger onto the pedestal
+item LEASH
+act 26          # leash on the plunger
+drop
+act 18          # up the leash
+item COIN
+act 27          # coin to Othello: his key
+item KEY
+act 20          # open Othello's door
+item DRAGON
+act 22          # the dragon fetches the lost bill from Othello's place
+drop
+act 21          # the key back from the door
+drop
+act 18          # up the leash again
+item KEY
+act 27          # key to Othello: the coin back
+drop
+act 13          # talk to the captain
+item BILL
+act 13          # his lost bill: he drops a letter
+drop
+act 17          # the letter
+item STONE
+act 14          # the sculpted stone for Korin
+drop
+zone 19         # Korin's magic knob

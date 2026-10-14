@@ -1,0 +1,101 @@
+# gob2native - Goblins Quest 3 walkthrough, world 5: Queen Xina's palace (EMAP1013), first visit
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Were-Blount and Fulbert. Talking to Xina makes her bodyguard show for a
+# moment (slot 2, frames 150-177): hit him with the hammer for his gun. A
+# kiss sets the pythia's wand sparkling (frames 3000-3082), long enough to
+# take it once the kiss is over. Fulbert shakes the candle off its holder.
+# The spectacles: Fulbert climbs the colonnade, Blount waits at its top
+# (the trigger cell 1,14, reached through the right door, which leads to the
+# left one) and catches them, and they drop on to the flagstone where
+# Fulbert must stand by then (frames 1773-1951). Fulbert on the bench by the
+# vegetables is thrown onto a chandelier; Blount, clicked on the other one,
+# jumps when it swings by and lands by the fennel. The fountain opens when
+# the wand puts out the candle in the candlesticks in the order of the
+# pythia's sentence (the middle one, the left one, the right one: b@6053 = 8
+# when the third one is reached).
+room EMAP1013
+zone 13         # talk to Xina: the bodyguard steps forward
+untilvar 1215 1
+item HAMMER
+zone 14         # hit him
+wait 4
+drop
+act 15          # his gun
+drop
+at 120 100      # scroll the wand into view
+idle
+zone 13         # kiss Xina: the wand sparkles
+untilvar 1215 2
+untilvar 60 0
+zone 38         # take it while it does
+wait 3
+idle
+drop
+zone 4          # select Fulbert
+wait 0.5
+act 20          # he shakes the candleholder: the candle falls
+zone 3          # select Blount
+wait 0.5
+act 21          # the candle
+drop
+act 26          # the right door leads to the left one
+zone 4
+wait 0.5
+act 26          # Fulbert follows
+zone 3
+wait 0.5
+at 30 58        # Blount at the top of the colonnade
+idle
+zone 4
+wait 0.5
+zone 24         # Fulbert climbs it: the spectacles slip
+untilvar 1215 5
+zone 4
+wait 0.3
+zone 25         # Fulbert back through the left door
+untilvar 1018 22
+untilvar 1018 0
+at 70 114       # onto the flagstone, where the spectacles land
+untilvar 1018 1002
+untilvar 1018 0
+zone 3
+wait 0.5
+act 25          # Blount back through the door
+act 27          # the spectacles
+item SPECTACLES
+act 29          # put them on: the onion
+drop
+zone 4
+wait 0.5
+at 450 122      # Fulbert on the bench by the vegetables
+idle
+zone 3
+wait 0.5
+zone 18         # the vegetable table: Fulbert flies onto a chandelier
+untilvar 1215 3
+zone 19         # Blount on the other one, which carries him up to the fennel
+wait 2
+idle
+act 28          # fennel
+drop
+at 390 34       # the trigger cell 19,8 takes him down
+idle
+item CANDLE
+act 33          # candle into the middle candlestick
+item WAND
+act 36          # put it out
+drop
+act 36          # the candle back
+item CANDLE
+act 32          # the left candlestick
+item WAND
+act 35
+drop
+act 35
+item CANDLE
+act 34          # the right one: the fountain opens
+item WAND
+act 37
+drop
+act 41          # through the fountain (INTER13) to King Bodd

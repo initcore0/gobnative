@@ -1,0 +1,6 @@
+# gob2native - Goblins Quest 3 walkthrough, world 2: the inn (EMAP1005), last visit
+# SPDX-License-Identifier: GPL-3.0-or-later
+room EMAP1005
+idle
+drop
+zone 51         # to town: world 3

@@ -1,0 +1,18 @@
+# gob2native - Gobliiins walkthrough, level 9 (AVT009): the dog at the gate
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The leg of meat lies by the fence behind the tree, and the picker only has
+# to take it and eat it. The dog lying in front of the gate bites (costs
+# energy) any goblin that comes near it (cells 9-13, 14-19), and the direct
+# way through the level's way points passes right by it, so the picker goes
+# the long way round: along the bottom of the scene to the left edge, then
+# up behind the tree. Giving the dog the sugar or the meat, or the wizard's
+# spell on it, also costs energy.
+room AVT009
+goblin 0
+walk 150 141    # the picker walks left along the bottom, well below the dog
+walk 30 141     # on to the left edge of the scene
+walk 30 81      # up behind the tree, away from the dog
+pick 18 63      # he takes the leg of meat by the fence
+use 60 81       # and eats it: the exit shows
+exit

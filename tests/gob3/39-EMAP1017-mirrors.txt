@@ -1,0 +1,44 @@
+# gob2native - Goblins Quest 3 walkthrough, world 7: the mirrors (EMAP1017), the clock
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Blount below, his reflection above; objects go through the passages
+# between them (one puts it in, the other takes it while it shows, slot 0
+# frames 1228-1260 down, slot 1 1548-1580 up). The mirror of time ages
+# (egg, chick, hen), the fattening one (Blount's) fattens, the thinning one
+# (the reflection's) thins. A fat chick in the reflection's passage moves
+# the clock's big hand, a thin one in Blount's the small hand: the clock
+# strikes twelve and wakes the Old Demon.
+room EMAP1017
+act 13          # the egg
+item EGG
+act 14          # the mirror of time: a chick
+item BABY CHICK
+act 17          # the fattening mirror: a fat chick
+drop
+zone 4          # the reflection
+wait 0.5
+act 11          # by the upper passage
+zone 3          # Blount
+wait 0.5
+item FAT B. CHICK
+zone 12         # into the lower passage
+untilvar 18 1229 1250
+zone 4
+wait 0.2
+zone 5          # the reflection takes it
+wait 2
+idle
+act 26          # into the big hand's passage: the big hand moves
+act 18          # the thinning mirror: a chick
+act 18          # again: a thin chick
+zone 11         # back through the upper passage
+untilvar 19 1549 1570
+zone 3
+wait 0.2
+zone 5          # Blount takes it
+wait 2
+idle
+item THIN B. CHICK
+act 25          # into the small hand's passage: twelve o'clock, the Old Demon wakes
+drop
+act 50          # to the brain

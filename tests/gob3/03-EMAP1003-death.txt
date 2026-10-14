@@ -1,0 +1,85 @@
+# gob2native - Goblins Quest 3 walkthrough, world 1: death's domain (EMAP1003)
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The room is dark until a match lights it. Will-o'-the-wisps (red, blue,
+# yellow) in the bowl of light colour the room, and each colour shows other
+# things: blue and yellow (green) the cork and the green hand, yellow alone
+# the button behind which the mirror hides, red alone the vampire, red and
+# blue (purple) the purple ghost. All three wisps in the bowl with the
+# mirror on the hand, the scythe on the vampire and the spectacles on the
+# ghost send the ray back into the bowl.
+room EMAP1003
+act 13          # matches (the step at 18,37 stops Blount on the way)
+item MATCHES
+act 18          # strike one on the rough area by the bowl: light
+drop
+act 21          # scythe
+act 28          # cut the clown's syringe: water runs out
+drop
+act 27          # the clown's spectacles
+drop
+act 26          # open the skull
+item SCYTHE
+act 23          # open the first den: the blue wisp flies into the skull
+item SPECTACLES
+act 26          # spectacles on the skull
+drop
+at 66 39        # the skull (below the spectacles): blue fire
+idle
+drop
+act 12          # the spectacles again, from the skull
+drop
+act 29          # water
+item SCYTHE
+act 24          # open the second den
+item MATCHES
+act 30          # set fire to the pirate's wooden leg: the yellow wisp comes to the fire
+item WATER
+act 11          # water on the fire
+drop
+act 31          # yellow fire
+drop
+act 10          # ladle
+act 42          # blood from the inscription
+act 39          # into the pirate's bottle
+drop
+act 8           # the bottle with the blood
+act 33          # bottle on the pedestal
+item SCYTHE
+act 25          # open the third den: the red wisp goes into the bottle
+item BLUE FIRE
+at 320 10       # blue into the bowl
+idle
+item YELLOW FIRE
+at 320 10       # and yellow: green light
+idle
+drop
+act 36          # the mushroom on the green hand: a cork
+act 7           # cork the bottle
+drop
+act 7           # red fire
+item LADLE
+act 9           # the blue wisp out of the bowl: yellow light
+drop
+act 38          # the yellow button: the mirror shows
+act 43          # mirror
+item BLUE FIRE
+at 320 10       # green light again
+idle
+item MIRROR
+act 37          # mirror on the green hand
+item LADLE
+act 9           # blue out
+act 22          # yellow out
+item RED FIRE
+at 320 10       # red light
+idle
+item SCYTHE
+act 41          # scythe on the red vampire
+item BLUE FIRE
+at 320 10       # purple light
+idle
+item SPECTACLES
+act 44          # spectacles on the purple ghost
+item YELLOW FIRE
+at 320 10       # all three: the ray goes round into the bowl

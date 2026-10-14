@@ -1,0 +1,19 @@
+# gob2native - Goblins Quest 3 walkthrough, world 4: Colossus' face (EMAP1012), the sneeze
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Bizoo jumps off the nose; while the hand comes up to scratch it (v[19]
+# 3007-3064 enables the trigger cell 11,33), back on the nose she is flicked
+# up to the head-band and the pollen. The tooth-pick in the nostril and the
+# pollen in the ear, then the neck: Colossus sneezes the goblins away
+# (INTER12, world 5).
+room EMAP1012
+zone 33         # jump on the nose
+untilvar 19 3008 3060
+at 230 134      # back onto the nose as the hand moves
+idle
+act 28          # the pollen on the head-band
+item TOOTH PICK
+act 30          # tooth-pick in the nostril
+item POLLEN
+act 22          # pollen in the ear
+act 34          # the neck

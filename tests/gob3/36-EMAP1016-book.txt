@@ -1,0 +1,130 @@
+# gob2native - Goblins Quest 3 walkthrough, world 6: the story book (EMAP1016)
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# On the stairs to the top shelf, two trigger cells (21,17 and 21,15) make
+# the spider chase Blount away; while Fulbert moves the web (slot 1 from
+# 1250) they are off. The dust shaken by Fulbert falls on Blount (frames
+# 449-499) and brings out the numbers (and keeps the spider away for good).
+# The nine needs Blount by the spider and Fulbert by the moon; the eight is
+# drawn with the compass. All nine numbers fill the ink bottle; the brush
+# dipped in it draws an ox for the wagon (whose wheel is the coin), a path
+# for the warrior on page two (he comes out of the tower and takes the
+# horse) and the mandolin player by the house on page three. The geometry
+# book's third page holds the arrows for the bowman.
+room EMAP1016
+at 410 74       # Blount at the foot of the stairs
+idle
+zone 4          # select Fulbert
+wait 0.5
+zone 46         # the spider web
+untilvar 19 1251 1400
+zone 3          # select Blount
+wait 0.3
+zone 22         # up past the spider: the drawing book, chalk
+wait 3
+idle
+drop
+act 19          # the horse
+drop
+item AXE
+act 21          # cut the wooden ruler: blocks of wood
+drop
+act 27          # a wooden block
+drop
+act 26          # the sculpture book: a compass (the spider sends Blount down)
+drop
+act 24          # the geometry book
+act 24
+act 24          # third page: arrows
+act 25          # take them
+item ARROWS
+act 15          # for the bowman in the tree: the bowman piece
+drop
+at 410 114      # Blount under the heap of dust
+idle
+zone 4
+wait 0.5
+zone 32         # Fulbert shakes the dust
+untilvar 19 450 495
+zone 3
+wait 0.2
+zone 33         # Blount in the falling dust: the numbers
+wait 2
+idle
+act 35          # one
+drop
+act 36          # two
+drop
+act 37          # three
+drop
+act 38          # four
+drop
+act 39          # five
+drop
+act 40          # six
+drop
+act 41          # seven
+drop
+item COMPASS
+act 44          # draw an eight on the sheet of paper
+drop
+act 42          # the eight
+drop
+at 430 34       # Blount in front of the spider
+idle
+zone 4
+wait 0.5
+act 20          # Fulbert in front of the moon: the nine
+idle
+zone 3
+wait 0.5
+act 43          # the nine
+drop
+act 31          # the ink brush
+drop
+item ONE
+act 47          # every number into the ink bottle
+item TWO
+act 47
+item THREE
+act 47
+item FOUR
+act 47
+item FIVE
+act 47
+item SIX
+act 47
+item SEVEN
+act 47
+item EIGHT
+act 47
+item NINE
+act 47
+item BRUSH
+act 47          # the brush in the ink
+drop
+item COIN
+act 28          # a wheel for the wagon
+item INK
+act 28          # and an ox: blocks of marble, and the coin back
+drop
+act 29          # a marble block
+drop
+act 30          # the coin
+drop
+act 16          # turn to page two
+item INK
+act 23          # a path for the warrior
+drop
+act 14          # the tower: the warrior comes out
+item HORSE
+act 12          # the horse for him: the knight piece
+drop
+act 16          # page three
+item INK
+act 18          # the house
+act 18          # a mandolin player in front of it
+drop
+act 11          # the mandolin
+drop
+act 50          # back to the chessboard

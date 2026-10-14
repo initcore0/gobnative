@@ -1,0 +1,74 @@
+# gob2native - Goblins Quest 3 walkthrough, world 3: the town (EMAP1007), with Fulbert
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Growixir for the baby boucassier, the bud and the young plant. Fulbert
+# climbs the stem (the love letter, then the floriane), pulls the lever
+# that throws Blount onto the roofs from the cannonball, and stretches
+# across the gap to the shoe sole; the chimney leads back down.
+room EMAP1007
+item GROWIXIR
+act 16          # growixir for the baby boucassier: Jeff grows up
+item GROWIXIR
+act 20          # growixir on the bud: a stem of floriane grows
+item GROWIXIR
+act 25          # growixir on the young plant: a big plant
+drop
+zone 4          # select Fulbert
+wait 0.5
+act 21          # Fulbert climbs the stem: a love letter falls
+zone 3
+wait 0.5
+act 22          # the love letter
+item LOVE LETTER
+act 24          # in front of the mirror
+item LOVE LETTER
+act 24          # again: the flyixir recipe
+drop
+at 166 150      # Blount below the stem
+idle
+zone 4          # select Fulbert
+wait 0.5
+zone 21         # Fulbert climbs the stem again and shakes it...
+zone 3
+untilvar 19 1827
+zone 23         # ...Blount catches the floriane
+idle
+drop
+zone 4          # select Fulbert
+wait 0.5
+act 33          # Fulbert pulls the lever: the cannonball rolls out
+zone 3
+wait 0.5
+zone 34         # Blount onto the cannonball...
+zone 4
+untilvar 18 1079
+zone 33         # ...Fulbert pulls the lever: Blount is thrown onto the roofs
+idle
+zone 3          # select Blount, on the roofs
+wait 0.5
+at 250 38       # Blount along the roof to the gap
+idle
+zone 4          # select Fulbert
+wait 0.5
+act 26          # Fulbert climbs the plant
+at 230 34       # and up to the gap in the roofs: he stretches across...
+zone 3
+untilvar 19 629
+zone 27         # ...Blount crosses on him
+idle
+act 27          # the shoe sole
+zone 4          # select Fulbert
+wait 0.5
+at 230 34       # Fulbert stretches across the gap again...
+zone 3
+untilvar 19 629
+at 250 38       # ...Blount crosses back
+idle
+drop
+act 32          # down the chimney into the street
+zone 4          # select Fulbert
+wait 0.5
+act 32          # Fulbert too
+zone 3
+wait 0.5
+act 51          # to the grocery

@@ -1,0 +1,20 @@
+# gob2native - Gobliiins walkthrough, level 1 (AVT003): the gate and the horn
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# A gobrun --script file (tools/runner.cpp). Goblin 0 is the picker, 1 the
+# fighter, 2 the wizard. `walk/act/pick/use X Y` act at screen position X,Y
+# (where the cursor's hot spot lands), `exit` clicks the exit sign once it
+# shows and goes on to the next level. The goblins find paths as the
+# original does (direct lines, or along the level's way points), so some
+# walks go in steps.
+room AVT003
+goblin 1
+act 186 63      # the fighter kicks the gate: the horn falls
+goblin 0
+pick 163 104    # the picker picks up the horn
+use 99 93       # and blows it: a branch falls
+goblin 2
+act 90 129      # the wizard turns the branch into a pickaxe
+goblin 0
+pick 92 130     # the picker swaps the horn for the pickaxe
+exit

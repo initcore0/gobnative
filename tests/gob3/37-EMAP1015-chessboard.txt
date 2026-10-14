@@ -1,0 +1,55 @@
+# gob2native - Goblins Quest 3 walkthrough, world 6: the chessboard (EMAP1015), the pieces
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The chalk outlines the wooden block, the compass the marble one; the left
+# hand holds a chisel, the right one hits it with the hammer while it is
+# raised (wood: v[19] 97-150, marble: 678-730 once outlined), which gives
+# the rough figures of Blount and Were-Blount. Painted and finished with
+# the ink brush they become the Lover and the Killer; with the Bowman and
+# the Knight from the story book the board is ready (EMAPBB15).
+room EMAP1015
+act 32          # chalk
+act 37          # outline the wooden block
+drop
+act 17          # the hammer
+act 13          # the right hand by the wood chisel
+zone 4          # the left hand
+wait 0.5
+zone 13         # holds the wood chisel to the block
+untilvar 19 98 148
+zone 3
+wait 0.2
+zone 14         # hit it: Blount's rough figure
+wait 3
+idle
+drop
+act 16          # the figure
+act 25          # into the paint
+drop
+act 28          # the ink brush
+act 26          # finish the painted figure: the Lover
+drop
+act 40          # onto the board
+act 20          # the compass
+act 38          # outline the marble block
+drop
+act 17          # the hammer
+act 38          # the right hand by the marble
+zone 4
+wait 0.5
+zone 21         # the left hand holds the chisel to it
+untilvar 19 679 728
+zone 3
+wait 0.2
+zone 22         # hit it: Were-Blount's rough figure
+wait 3
+idle
+drop
+act 24          # the figure
+act 25          # into the paint
+drop
+act 28          # the ink brush
+act 27          # the Killer
+drop
+act 39          # onto the board
+act 8           # the chessboard: the game

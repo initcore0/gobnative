@@ -1,0 +1,37 @@
+# gob2native - Goblins Quest 3 walkthrough, world 4: the clouds (EMAP1010), first visit
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Ooya, stranded on the palm island, can't walk anywhere: balloons, geysers
+# and the nacelle move her. Blount's inflator sends a balloon round the sky
+# (v[20] its frame); Ooya catches it as it passes her: from the palm island
+# (frames 65-98) to the tuft island, from there (127-168) to the bottom left
+# corner. Bags weigh the nacelle down a step (b@5057 2 -> 3 -> 4), cutting a
+# ballast lifts it; cut when the nacelle hangs low, the ballast knocks the goat
+# off the geyser island.
+room EMAP1010
+idle
+act 22          # Ooya on the palm island: she joins
+idle
+zone 15         # the inflator: a balloon (no act: idle would wait for the whole flight)
+untilvar 1215 1
+zone 4          # select Ooya
+untilvar 20 66 97
+zone 28         # catch the balloon as it passes the palm island: to the tuft island
+idle
+act 23          # Ooya pulls the tuft: the giant shows
+zone 3          # select Blount
+wait 0.5
+act 19          # knife
+item GOLF CLUB
+act 27          # golf club on the fishing line: a fishing cane
+drop
+item FISHING CANE
+act 25          # hook the corner of a cloud: the rain cloud comes over
+drop
+act 16          # a bag
+item BAG
+act 17          # into the nacelle: it hangs lower
+item KNIFE
+act 18          # cut a ballast: it knocks the goat off
+drop
+act 50          # to the Colossus (Ooya stays on the tuft island)

@@ -1,0 +1,39 @@
+# gob2native - Goblins Quest 3 walkthrough, world 2: the countryside (EMAP1004), first visit
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The dragon has lost its memory. The princess names the knight, the knight
+# gives the memorum; the fork goes in the nostril of the dragon's den, the
+# memorum in the basin and the coin in the den's ear, so the dragon will
+# drink once spiced meat (made at the inn) lures it out.
+room EMAP1004
+act 30          # Blount onto the lever of the dragon-trap
+zone 4          # select Chump
+wait 0.5
+act 16          # Chump onto the trap: Blount is thrown onto the roof
+zone 3          # select Blount
+wait 0.5
+act 22          # the princess: the knight is Brayar
+act 20          # dolmen (Blount jumps down from the roof on the way)
+item DOLMEN
+act 23          # dolmen over the thorns
+act 29          # the knight Brayar: the memorum
+drop
+act 13          # millstone
+item MILLSTONE
+act 14          # into the basin
+item SPONGE
+act 15          # the wet millstone on the fire
+drop
+act 18          # fork
+item FORK
+act 16          # the meat out of the dragon-trap
+item MEMORUM
+act 14          # memorum into the basin
+item FORK
+act 19          # fork in the nostril of the dragon's den
+item COIN
+act 25          # coin in the ear of the den
+drop
+act 21          # the sculpted stone under the dolmen
+drop
+zone 50         # to the inn

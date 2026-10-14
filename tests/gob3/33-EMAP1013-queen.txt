@@ -1,0 +1,54 @@
+# gob2native - Goblins Quest 3 walkthrough, world 5: Queen Xina's palace (EMAP1013), the skull
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The slipper for Xina. With the axe in the cook's pot, Blount hides in the
+# fireplace (slot 0 from 2220); Fulbert shakes the candleholder again, which
+# makes the cup-and-ball throw the skull up (slot 2 from 3150): at frame 2353
+# of the fireplace the skull must be in the air (3153-3229), Fulbert's shake
+# starting some 2 to 8 seconds after Blount's hiding.
+room EMAP1013
+at 370 106      # from the fountain the pathfinding stops at 2,31 at first
+wait 3
+at 370 106
+idle
+item SLIPPER
+act 13          # the slipper for Xina
+drop
+zone 4
+wait 0.5
+at 450 122      # Fulbert on the bench
+idle
+zone 3
+wait 0.5
+zone 18         # the vegetable table
+untilvar 1215 3
+zone 19         # the chandelier
+wait 2
+idle
+item AXE
+act 40          # the axe in the cook's pot
+drop
+at 390 34       # down again
+idle
+zone 4
+wait 0.5
+at 250 82       # Fulbert by the candleholder
+idle
+zone 3
+wait 0.5
+zone 30         # Blount hides in the fireplace
+untilvar 18 2221 2230
+zone 4
+untilvar 18 2262 2275
+zone 20         # Fulbert shakes the candleholder: the skull flies to Blount
+untilvar 18 2350 2360
+idle
+zone 4
+wait 0.5
+at 250 94       # Fulbert off the skull
+idle
+zone 3
+wait 0.5
+act 12          # the skull
+drop
+act 41          # through the fountain to King Bodd

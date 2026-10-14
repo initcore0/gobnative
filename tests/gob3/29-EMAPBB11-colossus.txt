@@ -1,0 +1,20 @@
+# gob2native - Goblins Quest 3 walkthrough, world 4: Colossus (EMAPBB11), Blount's shadow
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The shadow picks up the grain of sand and jams the machine with it; the
+# telescope then shakes the gearing loose, which repairs the talking robot
+# (opened with the knife). The pollen it spits out makes Colossus sneeze.
+room EMAPBB11
+act 19          # the grain of sand
+item SAND
+act 20          # into the machine
+act 26          # the telescope: the gearing falls
+act 25          # take it
+item KNIFE
+act 18          # open the talking robot
+drop
+item GEARING
+act 16          # the gearing into it: it spits a grain of pollen
+act 17          # take the pollen
+item POLLEN
+act 13          # pollen on Colossus' head-band (Bizoo takes over)

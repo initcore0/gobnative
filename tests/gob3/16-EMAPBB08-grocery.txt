@@ -1,0 +1,31 @@
+# gob2native - Goblins Quest 3 walkthrough, world 3: the grocery by night (EMAPBB08), with Fulbert
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Fulbert catches the soap from the night stand and opens the trap with the
+# switch; Were-Blount jumps in with the hammer for the crocomoth's bone.
+room EMAPBB08
+zone 4          # select Fulbert
+wait 0.5
+at 110 128      # Fulbert below the night stand
+idle
+zone 3
+wait 0.5
+zone 16         # Blount opens the night stand: the soap flies out...
+zone 4
+untilvar 18 12
+zone 17         # ...and Fulbert catches it
+idle
+zone 3
+wait 0.5
+act 19          # the soap
+zone 4          # select Fulbert
+wait 0.5
+act 21          # Fulbert pushes the switch: the trap opens
+zone 3
+wait 0.5
+item HAMMER
+act 20          # Were-Blount jumps into the trap with the hammer
+drop
+act 22          # the crocomoth's bone
+drop
+act 50          # back to town

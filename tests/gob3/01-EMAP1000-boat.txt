@@ -1,0 +1,45 @@
+# gob2native - Goblins Quest 3 walkthrough, world 1: the boat (EMAP1000)
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# A gobrun --script file (tools/runner.cpp): `zone N` clicks hotspot N of
+# the room (--print-hotspots ids; a room's zone z is hotspot z + 3, 3 is
+# Blount, 4 the other goblin), `at X Y` clicks at a room position, `item`
+# and `drop` use the inventory. The solution follows the game's joker.
+room EMAP1000
+act 19          # knot: the bottle with Chump in it drops
+act 13          # golf club
+act 20          # Chump's bottle: hit it with the golf club (Blount's line at 10,30 stops him on the way once)
+drop
+act 27          # box: pepper
+drop
+act 27          # box: plunger
+act 21          # plunger on the trap: Chump is free
+item COIN
+act 17          # coin on the screw: the hook falls
+drop
+act 18          # hook
+act 22          # hook on the loop
+at 230 114      # Blount to the foot of the rope ladder
+idle
+zone 4          # select Chump
+wait 0.5
+zone 23         # Chump lifts the weight...
+untilzone 24
+zone 3          # ...and Blount takes the umbrella meanwhile
+act 24
+drop
+act 32          # Blount onto the hand
+zone 4          # select Chump
+wait 0.5
+act 29          # Chump onto the flagstone: Blount is thrown up to the tooth
+zone 3          # select Blount
+wait 0.5
+act 30          # the shark's tooth
+at 430 21       # Blount jumps down from the figurehead
+idle
+drop
+act 15          # into the barrel
+item UMBRELLA
+act 28          # umbrella in the opening
+item TOOTH
+at 17 80        # cut the rope with the tooth (beside Blount): the barrel falls

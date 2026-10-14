@@ -1,0 +1,27 @@
+# gob2native - Gobliiins walkthrough, level 19 (AVT019): the castle gate
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The creature at the stall on the left gives the Witchcraft book for three
+# different gifts from the picker: the banana (which the fighter's kick on
+# the lever by the hanging broom drops to the bottom right), the false nose
+# on the upper ledge and the soap on the middle ledge. The wizard opens the
+# castle gate; the exit shows once the gate is open and the picker holds the
+# book. Traps: the three other books (using any of them costs energy), and
+# the fighter's or the wizard's action on the creature (costs energy). The
+# wizard is moved first because the banana lands at his feet, and a click on
+# a goblin selects it.
+room AVT019
+goblin 1
+walk 252 39     # the fighter climbs to the upper ledge
+act 282 15      # and kicks the lever: a banana drops to the bottom right
+goblin 2
+act 162 51      # the wizard opens the castle gate
+goblin 0
+pick 294 129    # the picker takes the banana
+use 42 63       # and gives it to the creature
+pick 210 33     # the false nose on the upper ledge (he leaves the banana there)
+use 42 63       # second gift
+pick 294 63     # the soap on the middle ledge
+use 42 63       # third gift: the creature puts down the Witchcraft book
+pick 42 87      # the picker takes it: the exit shows
+exit

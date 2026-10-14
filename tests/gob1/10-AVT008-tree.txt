@@ -1,0 +1,39 @@
+# gob2native - Gobliiins walkthrough, level 10 (AVT008): the bird in the tree
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The bird perched on the trunk must end up in the picker's pocket. A hole
+# in the roots (cell 8,25) costs energy until the picker puts the meat into
+# it. The wizard's spell on the broken branch closes the gap in the middle
+# path; a blow of the fighter on the branch at the right then catapults the
+# goblin standing at its end up to the top of the tree (one at a time). Up
+# there the wizard's spell frees the cork in the top left branch, the
+# picker plugs the left hole at the top with it, so that the bird, when the
+# fighter scares it away, flies to the right hole, where the picker catches
+# it with the windsock while it is still in flight. (The short cut on the
+# left branch, cell 8,9, is a fall that costs energy.)
+room AVT008
+goblin 0
+use 102 141     # the picker drops the meat into the hole in the roots: safe to cross now
+pick 42 75      # he takes the windsock from the left branch
+goblin 2
+act 198 75      # the wizard's spell on the broken branch closes the gap in the path
+goblin 0
+walk 282 69     # the picker goes to the end of the right branch
+goblin 1
+act 294 93      # the fighter's blow on the branch catapults him up to the top
+goblin 2
+walk 282 69     # the wizard goes to the end of the branch too
+goblin 1
+act 294 93      # and is catapulted up as well
+goblin 2
+act 6 15        # the wizard's spell frees the cork in the top left branch
+goblin 0
+pick 6 15       # the picker takes the cork (leaving the windsock there)
+use 174 27      # and plugs the left hole at the top with it
+pick 6 15       # he takes the windsock again
+walk 210 33     # and waits beside the right hole
+goblin 1
+act 234 117     # the fighter scares the bird away: it flies up to the right hole
+goblin 0
+use 222 27      # the picker catches it in flight with the windsock: the exit shows
+exit

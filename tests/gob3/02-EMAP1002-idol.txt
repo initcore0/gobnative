@@ -1,0 +1,71 @@
+# gob2native - Goblins Quest 3 walkthrough, world 1: the idol (EMAP1002)
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Bodd's eight guards. Some need a blow while they look away (a window of
+# frames of their animation: untilvar waits for it); Banzai must be
+# approached from behind, which only the flagstone on the skull reaches.
+room EMAP1002
+act 13          # umbrella
+act 32          # umbrella on the hot air: Blount floats up to the ledge
+drop
+act 36          # crevice: Blount falls into the hole and finds Wynonna
+item GOLF CLUB
+act 14          # Hercules: knocked out (Blount jumps down from the ledge on the way)
+act 15          # Gromelon
+item COIN
+zone 16         # coin to Mac...
+untilvar 20 1501
+item GOLF CLUB
+act 16          # ...and a blow while he looks at it
+drop
+act 17          # the coin again
+drop
+act 18          # toasted bread
+act 19          # bread into the helmet
+item GOLF CLUB
+act 19          # crumble it
+drop
+act 19          # crumbs
+drop
+act 41          # the flagstone on the skull: Blount is thrown onto the stairs behind Banzai
+at 250 146      # down to the floor behind Banzai
+idle
+item CRUMBS
+zone 20         # crumbs down Banzai's back...
+untilvar 20 2611
+item GOLF CLUB
+act 20          # ...and a blow while he scratches
+drop
+act 21          # shield
+act 22          # shield on the branch
+act 24          # hand
+zone 23         # hand to Kendo...
+untilvar 20 3051
+item GOLF CLUB
+act 23          # ...and a blow while he looks at it
+drop
+at 150 122      # up the stairs, above Zembla
+idle
+item PEPPER
+act 25          # pepper down Zembla's back (from above, left of him)
+drop
+act 26          # billy club
+drop
+at 90 102       # Blount below Django's tongue
+idle
+zone 4          # select Chump
+wait 0.5
+zone 28         # Chump on Django: his tongue hangs out...
+zone 3
+untilvar 20 4061
+act 27          # ...and Blount pulls it
+item BILLY CLUB
+act 30          # billy club in the broken ladder
+at 10 18        # up the ladder beside the stone
+idle
+zone 4          # select Chump
+wait 0.5
+zone 29         # Chump on Punky...
+zone 3
+untilvar 19 273
+zone 31         # ...and Blount throws the stone at him

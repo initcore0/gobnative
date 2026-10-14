@@ -1,0 +1,49 @@
+# gob2native - Goblins Quest 3 walkthrough, world 4: Colossus' face (EMAP1012), the grain of sand
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Bizoo alone. The tooth-pick in the eye, the grain of sand comes out by the
+# ear. The flea family in the beard shows one by one, each for a few seconds
+# (Buggy Junior at the trigger cell 6,31, then Buggy Senior, Mimi and Lili
+# together, Ma-Bug, Pa-Bug), each poked in turn with the tooth-pick. The hair
+# in the nose brings a tear (frames 1610-1710 of slot 2) that washes the
+# grain down; with the fleas gone, Bizoo rides the next tear down to it.
+room EMAP1012
+act 14          # the tooth: a tooth-pick
+drop
+act 24          # look at the eye (a grain of sand in it)
+item TOOTH PICK
+act 24          # the tooth-pick in the eye
+act 25          # through the ear: the grain is out
+act 13          # the tooth-pick back
+drop
+zone 26         # pull the hair: a tear
+untilvar 20 1611 1700
+zone 29         # the grain of sand in the tear's way: it rolls down
+idle
+at 150 174      # the jungle (its remark only shows once)
+idle
+item TOOTH PICK
+at 130 126      # Buggy Junior shows up
+zone 16         # poke him
+zone 17         # Buggy Senior
+zone 18         # Mimi
+untilvar 60 15
+untilvar 60 0
+zone 19         # Lili, before she hides again
+untilvar 60 16
+untilvar 60 0
+zone 20         # Ma-Bug
+untilvar 60 17
+untilvar 60 0
+zone 21         # Pa-Bug
+untilvar 60 18
+untilvar 60 0
+drop
+zone 26         # the hair again
+untilvar 20 1611 1700
+zone 27         # ride the tear down
+untilvar 60 24
+untilvar 60 0
+idle
+act 35          # the grain of sand, for Blount
+act 50          # back to the catapult

@@ -1,0 +1,129 @@
+# gob2native - Windows build (MSVC) with the unit tests and the package as
+# a workflow artifact; the macOS build with the unit tests; and the web
+# build (Emscripten) as an artifact.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The tests that need game data or GOG installers skip themselves here
+# (none are on GitHub's machines). No releases are made: the package is
+# only an artifact of the run (Actions, the run, "Artifacts").
+
+name: Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    name: Windows (MSVC)
+    runs-on: windows-latest
+    env:
+      SDL2_VERSION: 2.32.10
+    steps:
+      - name: Keep line endings as in the repository
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v5
+
+      - name: SDL2 (the official Visual C++ development package)
+        shell: pwsh
+        run: |
+          $zip = "$env:RUNNER_TEMP\sdl2.zip"
+          Invoke-WebRequest "https://github.com/libsdl-org/SDL/releases/download/release-$env:SDL2_VERSION/SDL2-devel-$env:SDL2_VERSION-VC.zip" -OutFile $zip
+          Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
+          "SDL2_DIR=$env:RUNNER_TEMP\SDL2-$env:SDL2_VERSION\cmake" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Configure
+        run: cmake -S . -B build -A x64 -DSDL2_DIR="$env:SDL2_DIR"
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Unit tests
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Package
+        shell: pwsh
+        run: |
+          cmake --install build --config Release --prefix dist/gobnative-windows-x64
+          git describe --always --dirty | Out-File dist/gobnative-windows-x64/VERSION.txt -Encoding ascii
+          Get-ChildItem dist/gobnative-windows-x64
+
+      - name: Start the packaged programs
+        shell: pwsh
+        run: |
+          # Each one starts (its DLLs and manifest are fine) and prints its usage.
+          Set-Location dist/gobnative-windows-x64
+          foreach ($t in "gobinstall", "gobrun", "gobview", "gobexport", "gobvideo", "gobdis", "stktool", "resdump") {
+            $out = (& ".\$t.exe" 2>&1 | Out-String) # (exits with 1 or 2)
+            if ($out -notmatch "usage") { throw "$t.exe did not start: $out" }
+            Write-Output "$t.exe: ok"
+          }
+          # The GUI program, with a pref root whose name isn't ASCII: the
+          # UTF-8 code page carries it from the command line to the folder.
+          $root = Join-Path $env:RUNNER_TEMP ("prefs-" + [char]0x00FC + [char]0x0416 + [char]0x20AC)
+          $p = Start-Process -FilePath .\gobnative.exe -ArgumentList "--game", "gob2", "--print-pref-dir", "--pref-root", "`"$root`"" `
+            -Wait -NoNewWindow -PassThru -RedirectStandardOutput "$env:RUNNER_TEMP\gobnative.txt"
+          $out = Get-Content "$env:RUNNER_TEMP\gobnative.txt" -Encoding utf8
+          Write-Output "gobnative.exe: exit $($p.ExitCode), $out"
+          if ($p.ExitCode -ne 0) { throw "gobnative.exe failed" }
+          if (-not (Test-Path -LiteralPath (Join-Path $root "Gobliins2") -PathType Container)) { throw "no $root\Gobliins2" }
+          $global:LASTEXITCODE = 0
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gobnative-windows-x64
+          path: dist/gobnative-windows-x64
+          if-no-files-found: error
+          retention-days: 30
+
+  macos:
+    name: macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: SDL2
+        run: brew install sdl2
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Unit tests
+        run: ctest --test-dir build --output-on-failure
+
+  web:
+    name: Web (Emscripten)
+    runs-on: ubuntu-latest
+    env:
+      EMSDK_VERSION: 6.0.12 # as used locally (scripts/build-web.sh)
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Emscripten SDK
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
+          "$RUNNER_TEMP/emsdk/emsdk" install "$EMSDK_VERSION"
+          "$RUNNER_TEMP/emsdk/emsdk" activate "$EMSDK_VERSION"
+          echo "EMSDK=$RUNNER_TEMP/emsdk" >> "$GITHUB_ENV"
+
+      - name: Build
+        run: scripts/build-web.sh
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gobnative-web
+          path: dist/web
+          if-no-files-found: error
+          retention-days: 30

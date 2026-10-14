@@ -1,0 +1,7 @@
+# gob2native - Goblins Quest 3 walkthrough, world 4: the clouds (EMAP1010), fishing
+# SPDX-License-Identifier: GPL-3.0-or-later
+room EMAP1010
+item FISHING CANE
+act 26          # fish in the hole in the clouds: a saw-fish
+drop
+act 50          # to the Colossus

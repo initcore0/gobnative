@@ -1,0 +1,54 @@
+# gob2native - Goblins Quest 3 walkthrough, world 5: King Bodd's palace (EMAP1014), first visit
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The king keeps Blount by the door (the trigger cell that sends him back)
+# until he gets a present: the hand, which brings Fulbert back. The candles
+# want the wand in the same order as in Xina's palace. The buffoon takes the
+# wand, then a dish; with it Tibo accepts the gun. Man drops his axe for a
+# moment when he smells the onion (frames 3350-3391). Fulbert stirs up the
+# cockroaches: the king swats at them with the slipper (slot 2, 2010...), and
+# a dish handed to the buffoon meanwhile knocks the slipper loose (visible
+# until frame 1620 or 1840).
+room EMAP1014
+item HAND
+act 18          # the hand for the king: Fulbert is free
+item WAND
+act 26          # the middle candle
+act 25          # the left one
+act 27          # the right one: the fountain will open
+act 10          # the wand for the buffoon
+act 12          # a dish
+item DISH
+act 10          # for the buffoon too
+item GUN
+act 15          # the gun for Tibo
+item FENNEL
+act 21          # the fennel for Fil: his javelin is free
+item ONION
+zone 22         # the onion under Man's nose
+untilvar 20 3340 3385
+drop
+zone 23         # take the axe while he wipes his eyes
+wait 3
+idle
+drop
+act 12          # another dish
+drop
+at 270 90       # by the buffoon
+idle
+item DISH
+zone 4          # select Fulbert
+wait 0.5
+zone 13         # the cockroach hole: the king swats with the slipper
+untilvar 20 2011 2015
+zone 3          # select Blount
+untilvar 20 2019 2070
+zone 10         # the dish for the buffoon: the slipper falls
+untilvar 60 7
+untilvar 60 0
+zone 8          # take it
+wait 3
+idle
+drop
+item COIN
+act 29          # the coin into the fountain: back to Xina

@@ -1,0 +1,12 @@
+build/
+*.STK
+*.stk
+*.TOT
+*.EXT
+*.mp3
+/data/
+__pycache__/
+.env
+build-*/
+dist/
+scripts/local.env

@@ -1,0 +1,57 @@
+# gob2native - Gobliiins walkthrough, level 13 (AVT012): the graveyard
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# A dark sorcerer at his cauldron catches any goblin crossing the bottom
+# path by the gate (energy loss, and the level starts over); the fighter
+# has to reach the cliff on the right. The wizard opens the tree trunk,
+# where the picker finds a bird call; played up in the tree it brings a
+# big bird to the nest, and after the fighter's blow the bird carries the
+# wizard to the cliff. The picker, invisible with his elixir (the spell on
+# the thing at the bottom right lets him pass unseen; the sorcerer still
+# stops him at every cell, so he crosses with quick clicks), fetches the
+# carrot and lays it on the cliff: a creature comes for it, and the
+# wizard's spell on it makes the sorcerer vanish for a moment, long enough
+# for the fighter to cross.
+room AVT012
+goblin 2
+act 42 123      # the wizard opens the tree trunk: a bird call is inside
+goblin 0
+pick 42 123     # the picker swaps his elixir for the bird call
+walk 90 27      # he climbs onto the branch
+use 102 27      # and plays the bird call: a bird starts circling
+goblin 1
+walk 66 27      # the fighter climbs onto the branch too
+goblin 2
+walk 54 27      # and the wizard
+untilvar 406 445 446  # the bird has settled in the nest
+goblin 1
+act 150 15      # the fighter hits the nest
+goblin 2
+act 150 15      # the bird carries the wizard to the cliff on the right
+act 246 147     # his spell on the thing at the bottom right
+goblin 0
+pick 42 123     # the picker takes his elixir back
+walk 198 159    # he goes down to the bottom path
+use 210 159     # one step before the gate he drinks the elixir...
+untilvar 408 1  # ...and is invisible
+walk 294 147    # the sorcerer stops him at every cell: a click per cell,
+click 294 147   # fast, before the elixir wears off (a click while he
+click 294 147   # fidgets is lost, so there are more clicks than cells)
+click 294 147
+click 294 147
+click 294 147
+click 294 147
+click 294 147
+click 294 147
+click 294 147
+click 294 147
+pick 294 93     # he swaps the elixir for the carrot
+use 270 57      # and lays the carrot on the cliff: a creature comes for it
+walk 294 75     # he steps aside
+goblin 1
+walk 210 159    # the fighter waits one step before the gate
+goblin 2
+act 270 57      # the wizard's spell on the creature: the sorcerer vanishes
+goblin 1
+walk 270 93     # the fighter crosses to the cliff: the exit appears
+exit

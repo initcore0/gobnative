@@ -1,0 +1,131 @@
+# gob2native - Goblins Quest 3 walkthrough, world 7: the brain (EMAP1018), the decoy and the ointment
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Blount and Were-Blount. Only Were-Blount can work the switch, which picks
+# the destination of the vehicle of the nervous impulse (b@31592: 1 below,
+# 2 the memory window, 3 the shore of the lake of vision). The window's
+# Colossus memory holds the grain of sand; in the lake (after Were-Blount
+# has looked into it) it makes a bubble; the vehicle on 3 with a bubble
+# rides into it, and the fish that come out when it bursts (slot 2 frames
+# 1410-1566) carry whoever takes the vehicle on 1 meanwhile to the
+# imprisoned decoy (a pocket left only by the well; the door at 4,21 leads
+# back to 38,26). Round one: Blount rides the bubble, Were-Blount switches
+# and rides the fish and breaks the decoy's glass. Round two: Were-Blount
+# rides the bubble and comes back past the switch (the trigger cell at
+# 39,38) while Blount waits at the vehicle; Blount takes the decoy. The
+# growixir grows the bud, Fulbert on the plant makes a way to the auditory
+# pavilion; the decoy there calls the dragon, the growixir makes it big, and
+# the decoy sends it to burn the fence and to dry the puddle of dreams,
+# under which lies the key to the box of the hidden Beauty: the ointment.
+room EMAP1018
+zone 4          # Were-Blount
+wait 0.5
+act 13          # the switch (1 -> 2)
+act 14          # the vehicle: to the memory window
+zone 3          # Blount
+wait 0.5
+act 14          # follows
+zone 4
+wait 0.5
+act 15          # Were-Blount opens the window
+zone 3
+wait 0.5
+act 16          # Blount's switch: Chump, Ooya,
+act 16
+act 16          # Colossus
+zone 4
+wait 0.5
+act 19          # Were-Blount and the Colossus memory: the grain of sand
+zone 3
+wait 0.5
+act 22          # Blount takes it
+drop
+zone 4
+wait 0.5
+act 13          # the switch (2 -> 3)
+act 14          # to the shore
+act 23          # Were-Blount looks into the lake
+zone 3
+wait 0.5
+act 14          # Blount to the shore
+item SAND GRAIN
+act 23          # into the lake: a bubble
+drop
+zone 4
+wait 0.5
+at 436 80       # Were-Blount down the trigger cell
+idle
+at 436 80       # and up by the switch (still on 3)
+idle
+zone 3
+wait 0.5
+at 395 154      # Blount down the trigger cell (to 36,38)
+wait 8
+zone 14         # the vehicle into the bubble: the fish come
+untilvar 1215 1
+zone 4
+wait 0.3
+zone 13         # Were-Blount: switch to 1
+untilvar 1018 0
+zone 14         # and onto the fish: the decoy's pocket
+wait 3
+idle
+act 24          # Were-Blount breaks the decoy's glass
+act 30          # and leaves by the well
+zone 3
+wait 0.5
+item SAND GRAIN
+act 23          # Blount: another bubble
+drop
+at 395 154      # up to the vehicle
+wait 8
+at 385 10
+idle
+zone 4
+wait 0.5
+act 38          # Were-Blount through the door
+actb 13 31592 3 # the switch on 3
+zone 14         # into the bubble
+untilvar 1215 1
+zone 13         # back to the switch: the trigger cell takes him down first
+untilvar 1018 1002
+untilvar 1018 0
+zone 13         # the switch to 1
+untilvar 1018 10
+zone 3
+wait 0.2
+zone 14         # Blount waits for it, then rides the fish
+wait 2
+idle
+act 25          # the decoy
+drop
+act 30          # down the well
+act 38          # through the door
+item GROWIXIR
+act 26          # the bud grows into a plant
+drop
+item FULBERT
+act 27          # Fulbert on it: a way up
+drop
+item DECOY
+act 28          # the decoy at the auditory pavilion: the dragon comes
+drop
+item GROWIXIR
+act 29          # the dragon grows
+drop
+item DECOY
+act 31          # it burns the fence
+drop
+act 37          # the door to the pocket
+item DECOY
+act 32          # it dries the puddle: a key
+drop
+act 35          # the key
+drop
+act 38          # back through the door
+item BOX KEY
+act 36          # opens the box
+drop
+act 36          # the ointment
+drop
+act 50          # to the mirrors

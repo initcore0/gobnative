@@ -1,0 +1,26 @@
+# gob2native - Goblins Quest 3 walkthrough, world 5: King Bodd's palace (EMAP1014), leaving
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Fulbert's javelin sets a chandelier swinging; Blount, clicked on the other
+# one as it swings near (slot 2 frames 267-274; 259-266 throws him off),
+# swings over to the butterfly, Wynnona. She must be talked to before the
+# king gets his skull. The exit wants both lords satisfied (the skull for
+# Bodd, the slipper for Xina) and that talk (INTER14, world 6).
+room EMAP1014
+at 190 74       # under the chandelier
+idle
+zone 4          # select Fulbert
+wait 0.5
+zone 20         # the javelin: the chandelier swings
+untilvar 20 260 266
+zone 3          # select Blount
+untilvar 20 267 268
+zone 24         # jump
+untilvar 60 21
+untilvar 60 0
+idle
+act 16          # talk to Wynnona
+item SKULL
+act 18          # the skull for the king
+drop
+act 51          # to the maze

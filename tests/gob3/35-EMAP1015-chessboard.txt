@@ -1,0 +1,27 @@
+# gob2native - Goblins Quest 3 walkthrough, world 6: the chessboard (EMAP1015), first visit
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Two hands again: the right one (Blount) picks things up, the left one
+# (Fulbert) works mechanisms; the inventory belongs to EMAP1016, whose
+# objects show up here (EMAP1015 0x322B). Blount juggles; the left hand
+# catches a ball as it flies past the pig (frames 2066-2140) and gives the
+# pig a slot.
+room EMAP1015
+zone 4          # the left hand
+wait 0.5
+at 330 110      # by the balls
+idle
+zone 3          # the right hand
+wait 0.5
+zone 35         # juggle
+untilvar 18 2066 2100
+zone 4
+wait 0.2
+zone 36         # catch a ball: the pig becomes a piggy bank
+untilvar 1018 0
+idle
+zone 3
+wait 0.5
+act 18          # the coin
+act 19          # into the pig: Othello comes out
+act 50          # to the story book

@@ -1,0 +1,31 @@
+# gob2native - Goblins Quest 3 walkthrough: the ending (FINAL)
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# FINAL waits for a key twice (keyFunc 2, polled twice per loop: only a key
+# caught by the second poll counts), then plays the credits to the end of
+# MUS_FIN and loads END.TOT, which the CD doesn't have: the game ends.
+wait 15
+key 7181
+wait 5
+key 7181
+wait 5
+key 7181
+wait 5
+key 7181
+wait 5
+key 7181
+wait 5
+key 7181
+wait 5
+key 7181
+wait 5
+key 7181
+wait 5
+key 7181
+wait 5
+key 7181
+wait 5
+key 7181
+wait 5
+key 7181
+wait 200

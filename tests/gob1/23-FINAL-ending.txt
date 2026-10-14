@@ -1,0 +1,7 @@
+# gob2native - Gobliiins walkthrough: the ending (FINAL)
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The last level leads to FINAL, the ending animation with its CD music,
+# which ends by starting the game again from the intro.
+tot FINAL
+tot INTRO

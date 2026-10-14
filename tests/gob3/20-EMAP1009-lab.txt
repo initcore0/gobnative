@@ -1,0 +1,36 @@
+# gob2native - Goblins Quest 3 walkthrough, world 3: the alchemist's lab (EMAP1009), flyixir
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Feather ash, tears of joy and a soap bubble (the soapy key in front of
+# the fan, started with the coin, while it turns) make flyixir: to world 4.
+room EMAP1009
+act 34          # the feather
+act 31          # into the ashtray
+act 17          # the lighter
+act 35          # burn the feather
+drop
+act 36          # the feather ash
+act 10          # into the mixer
+drop
+act 59          # the tears of joy
+act 10          # into the mixer
+drop
+act 8           # the coin
+zone 55         # starts the fan
+untilvar 20 2213
+drop
+zone 6          # the key
+wait 4
+zone 7          # dip it into the soapy water
+wait 5
+zone 55         # in front of the fan: a soap bubble flies into the mixer
+wait 3
+idle
+drop
+zone 4          # the left hand
+wait 0.5
+act 9           # starts the mixer: flyixir
+zone 3
+wait 0.5
+act 53          # the cup of flyixir
+act 54          # into its bottle

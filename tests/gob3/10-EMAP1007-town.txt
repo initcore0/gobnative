@@ -1,0 +1,17 @@
+# gob2native - Goblins Quest 3 walkthrough, world 3: the town (EMAP1007), first visit
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The alchemist opens his lab to Blount; the umbrella mends the old
+# lady's roof, her hot water bottle hatches the boucassier's egg; the
+# grocery is next door.
+room EMAP1007
+act 13          # ring the alchemist's doorbell
+act 13          # again: the way to his lab opens
+item UMBRELLA
+act 28          # the umbrella over the hole in the roof
+drop
+act 31          # the mommy: her hot water bottle
+item WARM. BOTTLE
+act 15          # the warm bottle on the egg: it hatches
+drop
+act 51          # to the grocery store

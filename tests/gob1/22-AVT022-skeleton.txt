@@ -1,0 +1,40 @@
+# gob2native - Gobliiins walkthrough, level 22 (AVT022): the evil wizard in the bird skeleton
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The evil wizard has to be caught in the bag. Each hit drives him to
+# another place, and each time he grabs one goblin, whom the next hit
+# frees: the picker's catapult shot (he flies to the top left with the
+# picker), the wizard's spell there (he moves above the bird's back with
+# the wizard), the fighter's blow there (he moves to the top right and
+# hangs the fighter below him), a catapult shot at the hanging fighter,
+# and a last spell at his head while the bag lies below him: he falls
+# into it. The picker must take the full bag at once (he gets out after a
+# few seconds) and use it: the ending follows. Hitting him at other
+# places or times costs energy. The fighter waits on the bird's back
+# beforehand, as the wizard's spell closes the way there.
+room AVT022
+goblin 2
+act 126 129     # the wizard completes the ladder up the bird's ribs
+goblin 0
+use 42 123      # the picker shoots the evil wizard, who carries him off to the top left
+goblin 1
+walk 126 135    # the fighter climbs the ladder...
+walk 210 39     # ...and walks up onto the bird's back
+goblin 2
+act 42 21       # the wizard's spell: the picker is free, the evil wizard takes the wizard
+goblin 1
+act 222 51      # the fighter's blow: the wizard is free, the fighter is hung up top right
+goblin 0
+pick 174 129    # the picker swaps the catapult for the bag...
+pick 270 141    # ...puts the bag down below the tail...
+pick 174 129    # ...takes the catapult again...
+use 294 51      # ...and shoots at the hanging fighter, who drops down
+walk 246 141    # the picker waits beside the bag
+goblin 2
+walk 126 135    # the wizard climbs the ladder...
+walk 210 39     # ...up onto the bird's back...
+act 294 21      # ...and casts a spell at the evil wizard's head: he falls into the bag
+goblin 0
+pick 270 141    # the picker takes the full bag at once
+use 210 141     # and uses it: the end
+exit

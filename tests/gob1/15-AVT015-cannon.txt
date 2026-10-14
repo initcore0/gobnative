@@ -1,0 +1,62 @@
+# gob2native - Gobliiins walkthrough, level 15 (AVT015): the cannon room
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The level is solved when the picker holds the pendulum. The fighter's
+# blows knock cannonballs off the pile and turn the cannon (it only loads
+# when aimed upwards, and loading a ball turns it back towards the man).
+# A ball fired upwards brings a carrot down from the ceiling; a carrot
+# fired at the sleeping man wakes him, once the picker's matches have lit
+# the fire under the cauldron. The wizard turns a second carrot into an
+# ear trumpet; the picker gives it to the man for a mallet and knocks the
+# pendulum down from the hanging thing with it. A ball fired at the man, a
+# carrot fired upwards, and the fighter or wizard touching the hanging
+# thing all cost energy.
+room AVT015
+goblin 2
+walk 150 147    # the wizard climbs down out of the way
+goblin 1
+act 270 141     # the fighter knocks a ball off the pile
+act 198 75      # ...and aims the cannon upwards
+goblin 0
+pick 294 27     # the picker takes the matches
+walk 90 33      # back along the beam...
+walk 66 27
+walk 54 75      # ...and down the ladder
+use 42 135      # he lights the fire under the cauldron
+pick 306 135    # he takes the ball (leaving the matches there)
+use 198 75      # and loads it: the cannon turns back
+goblin 1
+act 198 75      # the fighter aims it upwards again
+goblin 0
+pick 306 135    # the picker takes the matches back
+use 198 75      # and fires: the ball brings down a carrot
+goblin 1
+act 270 141     # the fighter knocks off another ball
+goblin 0
+pick 114 159    # the picker takes the carrot (leaving the matches)
+use 198 75      # and loads it into the cannon
+goblin 1
+act 198 75      # the fighter turns the cannon towards the man
+goblin 0
+pick 114 159    # the picker takes the matches
+use 198 75      # and fires the carrot at the man
+untilvar 436 1  # the man has woken up
+goblin 1
+act 198 75      # the fighter aims the cannon upwards
+goblin 0
+pick 306 135    # the picker takes the second ball
+use 198 75      # and loads it (the cannon turns back)
+goblin 1
+act 198 75      # the fighter aims it upwards again
+goblin 0
+pick 306 135    # the picker takes the matches
+use 198 75      # and fires: a second carrot falls
+goblin 2
+act 114 159     # the wizard turns the carrot into an ear trumpet
+goblin 0
+pick 114 159    # the picker takes the ear trumpet
+use 114 105     # and gives it to the man, who hands out a mallet
+pick 90 165     # the picker takes the mallet
+use 102 63      # and hits the hanging thing: the pendulum falls on the beam
+pick 174 33     # he takes the pendulum
+exit

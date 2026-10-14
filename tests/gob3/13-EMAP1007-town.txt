@@ -1,0 +1,6 @@
+# gob2native - Goblins Quest 3 walkthrough, world 3: the town (EMAP1007), on the way to the lab
+# SPDX-License-Identifier: GPL-3.0-or-later
+room EMAP1007
+act 52          # to the alchemist's lab
+wait 2
+click 160 100   # the advice for the lab

@@ -1,0 +1,24 @@
+# gob2native - Gobliiins walkthrough, level 21 (AVT021): the castle wall
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The picker brings the catapult from the last level. Shot from the far
+# left, it knocks down the bundle hanging at the top right, which opens the
+# rest of the top ledge; there the fighter's blow on the lever in the wall
+# opens a way down to the small floor at the bottom left. The level ends
+# by itself (no exit sign) once all three goblins have stood there, the
+# picker still holding the catapult. The last walks click below the floor
+# so as not to click on a goblin already standing there.
+room AVT021
+goblin 0
+use 290 21      # the picker shoots the catapult at the bundle hanging top right
+goblin 1
+act 306 27      # the fighter hits the lever at the end of the top ledge: the gate and the way down open
+goblin 0
+walk 42 147     # the picker goes down to the floor at the bottom left
+goblin 1
+walk 294 141    # the fighter comes down the ladder on the right...
+walk 54 160     # ...onto the floor beside the picker...
+walk 66 162     # ...and steps to its right end
+goblin 2
+walk 54 160     # the wizard joins them: the level ends
+exit

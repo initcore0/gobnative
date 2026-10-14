@@ -1,0 +1,11 @@
+# gob2native - Goblins Quest 3 walkthrough, world 7: the mirrors (EMAP1017), a fat hen
+# SPDX-License-Identifier: GPL-3.0-or-later
+room EMAP1017
+item THIN B. CHICK
+act 17          # the fattening mirror: a chick
+item BABY CHICK
+act 14          # the mirror of time: a hen
+item HEN
+act 17          # a fat hen
+drop
+act 50          # to the brain

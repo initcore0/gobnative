@@ -1,0 +1,20 @@
+# gob2native - Gobliiins walkthrough, level 4 (AVT004): the rope, the goblin
+# catcher and the broken ladder
+# SPDX-License-Identifier: GPL-3.0-or-later
+room AVT004
+goblin 2
+act 108 70      # the wizard makes the rope reach the ground (item 3)
+goblin 0
+pick 28 83      # the picker picks up item 1 (dropping the item he carries)
+walk 6 147      # walks round by the bottom
+walk 66 147
+use 205 95      # and uses it on item 4, which stops catching goblins passing by
+goblin 1
+act 285 80      # the fighter climbs the rope and hits item 5: the ladder on the right is mended
+goblin 0
+pick 26 79      # the picker takes his first item back
+walk 6 147      # walks round to the ladder
+walk 150 147
+walk 290 117
+walk 192 57     # climbs up and uses it on item 6: the exit sign shows
+exit

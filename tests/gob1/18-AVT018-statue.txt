@@ -1,0 +1,26 @@
+# gob2native - Gobliiins walkthrough, level 18 (AVT018): the statue
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The picker brings the magic object up to the statue's right hand. Once he
+# has left the hand, his dagger opens the disc on the statue's chest, and a
+# while later the object in the hand turns into a key. He swaps the dagger
+# for the key and puts the key in the statue's ear; then each goblin in
+# turn steps onto the right hand and is taken away, and the level ends by
+# itself (no exit sign) once all three are gone. Nothing here costs energy.
+room AVT018
+goblin 0
+walk 174 39         # the picker climbs to the right hand and leaves the magic object in it
+untilvar 484 1
+walk 162 87         # back down onto the statue's lap
+use 150 63          # his dagger opens the disc on the chest
+untilvar 485 93 100 # the object in the hand has turned into a key
+pick 174 33         # he takes the key, leaving the dagger in the hand
+use 138 21          # and puts the key in the statue's ear
+walk 186 39         # the picker steps onto the right hand and is taken away
+goblin 1
+walk 162 87         # the fighter climbs onto the lap...
+walk 186 39         # ...and up to the right hand
+goblin 2
+walk 162 87         # the wizard too
+walk 186 39
+exit                # the level ends when the third goblin is gone

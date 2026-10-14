@@ -1,0 +1,68 @@
+# gob2native - Goblins Quest 3 walkthrough, world 6: the chess game (EMAPBB15)
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The right hand takes a piece and puts it on a square (the moves the rules
+# allow; EMAPBB15 0x03C3 and 0x1020). Pieces: the Killer v[7369] (from 30),
+# the Lover v[7368] (34), the Bowman v[7370] (25), the Knight v[7371] (29);
+# a hotspot is the zone + 3 (square 28 = hotspot 31). Played the wrong way
+# round (the right hand on the strings, the left one at the soundhole while
+# it shows, frames 1475-1518) the mandolin stuns Othello, who scares the
+# Chaperon off square 22. The Killer gets rid of the Hangman (square 11),
+# then reaches the King on square 18 while the Knight (13) and the Bowman
+# (31) block his escape. The Bowman's arrow from square 23 unhooks the
+# tower's key; the Lover, serenaded with the small mandolin on square 16,
+# enters the tower (square 15): world 7.
+room EMAPBB15
+zone 4          # the left hand
+wait 0.5
+at 300 100      # near the mandolin's soundhole
+idle
+zone 3          # the right hand
+wait 0.5
+zone 42         # plays the mandolin
+untilvar 18 1476 1510
+zone 4
+wait 0.2
+zone 43         # the left hand at the soundhole: Othello is stunned
+idle
+zone 3
+wait 0.5
+act 6           # the Lover
+act 31          # to 28
+act 5           # the Killer
+act 29          # to 26
+act 5
+act 24          # to 21
+act 5
+act 20          # to 17
+act 5
+act 14          # to 11: the Hangman is gone
+act 5
+act 20          # back to 17
+act 7           # the Bowman
+act 34          # to 31
+act 8           # the Knight
+act 25          # to 22
+act 8
+act 16          # to 13: the Lancer is gone
+act 5
+act 21          # the Killer to 18: the King
+act 7
+act 30          # the Bowman to 27
+act 7
+act 26          # to 23: his arrow unhooks the key
+act 7
+act 30          # to 27
+act 7
+act 36          # to 33
+act 10          # the stunned Othello
+act 25          # on square 22: the Chaperon flees
+act 6
+act 25          # the Lover to 22
+act 6
+act 19          # to 16
+act 11          # the small mandolin
+act 6           # a serenade: the princess invites him
+drop
+act 6
+act 18          # the Lover into the tower (15)

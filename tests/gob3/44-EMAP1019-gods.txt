@@ -1,0 +1,73 @@
+# gob2native - Goblins Quest 3 walkthrough, world 8: the gods (EMAP1019)
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Were-Blount alone. (SOR.IMD, the arrival video, is missing from the CD
+# data; the room goes on without it.) The axe opens the fence by the left
+# bell, the hammer the wall by the right one; the positive pole gives the
+# yarn of time. One bell rung opens a moment for the other (the right one
+# then the left: slot 1 frames 1680-1780); the second lowers the chain and
+# opens the trigger cell 11,34 for a moment (4300-4358): the first time it
+# brings out the sacred score, which goes into the spring of bitterness.
+# Rung the other way round (left then right) the bells show the basin
+# instead (4300-4358), which gives the harp and guitar scores. The angel
+# plays with his score once the coin is in his halo, the demon once the
+# cloud's lightning (the hammer) wakes him; while both play, their notes
+# show (slot 3 3460-3660) and the yarn ties them (b@31617 during
+# 5600-5877). Then the bells again: right (b@31616 2 during 2000-2155),
+# left: the divinity is whole again (FINAL).
+room EMAP1019
+item AXE
+act 28          # the fence
+drop
+item HAMMER
+act 30          # the wall
+drop
+act 25          # the positive pole: the yarn of time comes loose
+act 27          # take it
+drop
+zone 32         # the right bell
+untilvar 1215 16
+untilvar 19 1681 1700
+zone 31         # the left bell: the chain comes down
+untilvar 1215 5
+untilvar 19 4290 4310
+at 230 138      # onto it: the sacred score
+wait 3
+idle
+act 33          # take it
+drop
+item SCORE
+act 34          # into the spring
+drop
+zone 31         # the left bell
+untilvar 1215 10
+untilvar 19 4551 4570
+zone 32         # the right bell: the basin shows
+untilvar 1215 11
+untilvar 19 4300 4340
+zone 35         # empty it: two scores
+wait 3
+idle
+item SCORE#1
+act 14          # the harp score for the angel's desk
+drop
+item SCORE
+act 16          # the guitar score for the demon's
+drop
+item COIN
+zone 15         # a coin in the angel's halo: he plays
+untilvar 60 12
+untilvar 60 0
+item HAMMER
+zone 18         # the cloud's lightning wakes the demon
+untilvar 60 15
+untilvar 60 0
+untilvar 21 3461 3600
+drop
+item YARN
+zone 36         # tie the notes
+untilvar 1039 5
+zone 32         # the right bell
+untilvar 1215 14
+untilvar 20 2001 2020
+zone 31         # the left bell: the end

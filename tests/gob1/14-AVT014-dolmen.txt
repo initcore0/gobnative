@@ -1,0 +1,34 @@
+# gob2native - Gobliiins walkthrough, level 14 (AVT014): the dolmen
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Seven sprouts grow in the field below a dolmen. The wizard's spell on the
+# stone below the dolmen makes steps up to its top, where the picker knocks
+# a watering can loose with the stick he found on the right. Watered, the
+# sprouts grow; the wizard's spell on a grown plant turns it into something
+# else (three of them hurt him). The big plant on the left, once enchanted
+# and hit by the fighter, drops a key; the middle plant, enchanted, becomes
+# a door the key opens: the exit.
+room AVT014
+goblin 2
+act 90 63       # the wizard's spell on the stone: steps appear up the dolmen
+goblin 0
+pick 270 99     # the picker takes the stick on the right
+walk 222 27     # he climbs onto the dolmen
+use 234 27      # he knocks the watering can loose with the stick
+pick 126 9      # he swaps the stick for the watering can
+use 126 129     # he waters the middle sprout: it grows
+use 18 117      # and the sprout on the left
+walk 102 147    # he steps aside
+goblin 2
+act 126 129     # the wizard's spell on the middle plant
+act 18 117      # and on the left one
+walk 162 153    # he steps aside
+goblin 1
+act 18 117      # the fighter hits the left plant: it drops a key
+walk 186 153    # he steps aside
+goblin 0
+pick 42 135     # the picker swaps the watering can for the key
+use 126 129     # he opens the door in the middle plant with it
+pick 186 147    # he puts the key down: with an empty pocket the exit ends the level at once
+walk 210 147
+exit

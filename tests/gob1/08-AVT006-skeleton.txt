@@ -1,0 +1,34 @@
+# gob2native - Gobliiins walkthrough, level 8 (AVT006): the skeletons' cave
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The ladder up to the ledge is broken (whoever climbs it falls and loses
+# energy). The wizard's spell on the skeleton on the table makes it drop
+# a bone, and a second spell turns the bone into a flute. The picker plays
+# it at the basket on the left: a rope rises out of it, and the fighter
+# climbs it and walks round to the top right. From there his blow sends
+# the plank's far end down, throwing whoever stands on its near end (and
+# was the current goblin when he got there) up to the ledge: first the
+# picker, then the wizard. With both up there the exit shows.
+room AVT006
+goblin 2
+act 210 99      # the wizard's spell on the skeleton: it drops a bone
+act 186 105     # a second spell turns the bone into a flute
+goblin 0
+pick 186 105    # the picker takes the flute
+walk 126 147    # climbs down from the table
+use 60 129      # and plays the flute at the basket: a rope rises out of it
+pick 102 147    # he puts the flute down (else the exit click fails)
+goblin 1
+walk 54 141     # the fighter goes to the rope
+walk 66 87      # climbs it
+walk 30 57      # walks up the slope (not by the broken ladder)
+walk 246 51     # and along the top to the right
+goblin 0
+walk 222 117    # the picker stands on the near end of the plank
+goblin 1
+act 270 75      # the fighter's blow throws him up to the ledge
+goblin 2
+walk 222 117    # the wizard stands on the plank
+goblin 1
+act 270 75      # and is thrown up too: the exit shows
+exit

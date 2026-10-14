@@ -1,0 +1,60 @@
+# gob2native - Goblins Quest 3 walkthrough, world 3: the alchemist's lab (EMAP1009), second visit
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Speedixir: boiled shoe sole, crushed bone and floriane extract; then the
+# tears of joy (distilled memorum) and the soapy water are made ready.
+room EMAP1009
+act 16          # a bowl of water (the faucet is still open)
+act 19          # into the kettle
+drop
+act 27          # the shoe sole
+act 21          # into the water
+drop
+act 17          # the lighter
+act 18          # light the heater: the sole boils
+drop
+act 24          # the boiled sole
+act 10          # into the mixer
+drop
+act 42          # the crocomoth's bone
+act 38          # into the mortar
+act 43          # the pestle
+act 39          # crush the bone
+drop
+act 45          # the saucer with the bone powder
+drop
+act 12          # the bone powder
+act 10          # into the mixer
+drop
+act 57          # the floriane
+act 56          # into the still
+act 17          # the lighter
+act 60          # light the burner: floriane extract
+drop
+act 59          # the extract
+act 10          # into the mixer
+drop
+zone 4          # the left hand
+wait 0.5
+act 9           # starts the mixer: speedixir
+zone 3
+wait 0.5
+act 53          # the cup of speedixir
+act 54          # into a bottle, to take along
+drop
+act 58          # the memorum
+act 56          # into the still
+drop
+act 17          # the lighter
+act 60          # light the burner: tears of joy
+drop
+act 16          # a bowl of water
+act 7           # into the basin
+drop
+act 5           # the soap
+act 7           # into the water
+drop
+act 6           # the key
+act 7           # into the soapy water: a soapy key
+drop
+act 50          # to town

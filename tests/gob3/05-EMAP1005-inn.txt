@@ -1,0 +1,32 @@
+# gob2native - Goblins Quest 3 walkthrough, world 2: the inn (EMAP1005), first visit
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# A lump of sugar thrown onto the spoon sends Chump up to the paprika;
+# when he sneezes, the meat held in the cloud becomes spiced meat.
+room EMAP1005
+act 33          # slip through the fissure
+act 28          # a lump of sugar
+drop
+act 32          # back out over the mug
+act 16          # spoon
+item SPOON
+act 29          # spoon on the stone
+zone 4          # select Chump
+wait 0.5
+act 31          # Chump onto the spoon
+zone 3          # select Blount
+wait 0.5
+item SUGAR
+act 31          # sugar onto the spoon: Chump is thrown up to the paprika
+drop
+at 90 54        # Blount below the paprika
+idle
+zone 4          # select Chump
+wait 0.5
+zone 30         # Chump at the paprika: he sneezes...
+zone 3
+item MEAT
+untilvar 19 1067
+act 12          # ...and Blount holds the meat in the cloud
+drop
+zone 52         # back to the countryside
