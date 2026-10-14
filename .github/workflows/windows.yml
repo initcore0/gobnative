@@ -4,14 +4,16 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # The tests that need game data or GOG installers skip themselves here
-# (none are on GitHub's machines). No releases are made: the package is
-# only an artifact of the run (Actions, the run, "Artifacts").
+# (none are on GitHub's machines). Every run keeps the packages as
+# artifacts; a pushed version tag (v1.2.3) also makes a GitHub Release with
+# the Windows, macOS and web zips.
 
 name: Build
 
 on:
   push:
     branches: [main]
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:
@@ -103,6 +105,27 @@ jobs:
       - name: Unit tests
         run: ctest --test-dir build --output-on-failure
 
+      - name: Package Gobnative.app (SDL2 inside, ad-hoc signed)
+        run: |
+          app=build/Gobnative.app
+          mkdir -p "$app/Contents/Frameworks"
+          sdl=$(otool -L "$app/Contents/MacOS/gobnative" | awk '/libSDL2/ {print $1}')
+          cp "$(realpath "$sdl")" "$app/Contents/Frameworks/libSDL2-2.0.0.dylib"
+          chmod u+w "$app/Contents/Frameworks/libSDL2-2.0.0.dylib"
+          install_name_tool -id @rpath/libSDL2-2.0.0.dylib "$app/Contents/Frameworks/libSDL2-2.0.0.dylib"
+          install_name_tool -change "$sdl" @executable_path/../Frameworks/libSDL2-2.0.0.dylib "$app/Contents/MacOS/gobnative"
+          codesign --force --deep --sign - "$app"
+          otool -L "$app/Contents/MacOS/gobnative" | grep -q /opt/homebrew && { echo "still linked to Homebrew"; exit 1; }
+          mkdir -p dist
+          ditto -c -k --keepParent "$app" dist/gobnative-macos-arm64.zip
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gobnative-macos-arm64
+          path: dist/gobnative-macos-arm64.zip
+          if-no-files-found: error
+          retention-days: 30
+
   web:
     name: Web (Emscripten)
     runs-on: ubuntu-latest
@@ -127,3 +150,26 @@ jobs:
           path: dist/web
           if-no-files-found: error
           retention-days: 30
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, macos, web]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          path: artifacts
+
+      - name: Zip and publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd artifacts
+          (cd gobnative-windows-x64 && zip -qr ../gobnative-windows-x64.zip .)
+          (cd gobnative-web && zip -qr ../gobnative-web.zip .)
+          cp gobnative-macos-arm64/gobnative-macos-arm64.zip .
+          gh release create "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" --title "gobnative $GITHUB_REF_NAME" --generate-notes \
+            gobnative-windows-x64.zip gobnative-macos-arm64.zip gobnative-web.zip
