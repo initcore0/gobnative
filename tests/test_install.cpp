@@ -412,6 +412,39 @@ void testZip(const fs::path &scratch) {
 	CHECK(!z3.open(file) && !z3.error().empty());
 }
 
+// writeZip, read back with ZipExtractor: a game folder exported for a phone.
+void testWriteZip(const fs::path &scratch) {
+	const fs::path game = scratch / "game", file = scratch / "game.zip", dest = scratch / "game-again";
+	std::error_code ec;
+	fs::create_directories(game / "sub", ec);
+	std::string big(3 << 20, '\0'); // over the writer's 1 MB buffer
+	for (size_t i = 0; i < big.size(); i++)
+		big[i] = char(i * 7 + (i >> 9));
+	std::ofstream(game / "INTRO.STK", std::ios::binary) << big;
+	std::ofstream(game / "Track1.mp3", std::ios::binary) << "music";
+	std::ofstream(game / "sub" / "x.txt", std::ios::binary) << "";
+	std::ofstream(game / ".hidden", std::ios::binary) << "no";
+	std::string error;
+	CHECK(writeZip(file, game, "Gobliins 2", error));
+	CHECK(error.empty());
+	ZipExtractor z;
+	CHECK(z.open(file));
+	CHECK(z.entries().size() == 3);
+	CHECK(z.topFolder() == "Gobliins 2");
+	CHECK(z.begin(dest));
+	while (z.step(1 << 20)) {
+	}
+	CHECK(z.done() && z.error().empty());
+	CHECK(fileText(dest / "INTRO.STK") == big);
+	CHECK(fileText(dest / "Track1.mp3") == "music");
+	CHECK(fs::exists(dest / "sub" / "x.txt") && fs::file_size(dest / "sub" / "x.txt", ec) == 0);
+	CHECK(!fs::exists(dest / ".hidden"));
+	// Only the files at the top.
+	CHECK(writeZip(file, game, "g", error, [](const fs::path &rel) { return !rel.has_parent_path(); }));
+	ZipExtractor top;
+	CHECK(top.open(file) && top.entries().size() == 2);
+}
+
 int main(int argc, char **argv) {
 	std::string dir = argc > 1 ? argv[1] : "";
 	if (dir.empty())
@@ -426,6 +459,7 @@ int main(int argc, char **argv) {
 	testPaths();
 	testNotAnInstaller(scratch);
 	testZip(scratch);
+	testWriteZip(scratch);
 	if (!dir.empty())
 		testInstallers(dir, scratch);
 	else

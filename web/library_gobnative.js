@@ -38,6 +38,9 @@ addToLibrary({
 		// while it isn't shown), and the hidden text field.
 		keysButton: null,
 		keysField: null,
+		// The storage: bytes used (-1 until known) and whether the browser
+		// keeps it (null until known).
+		storage: { used: -1, kept: null },
 
 		status(text) {
 			if (Module['gobStatus'])
@@ -46,6 +49,26 @@ addToLibrary({
 
 		isLocalhost() {
 			return ['localhost', '127.0.0.1', '[::1]', '::1'].includes(location.hostname);
+		},
+
+		// A phone or tablet: the main pointer is a finger.
+		isTouch() {
+			return matchMedia('(pointer: coarse)').matches;
+		},
+
+		// Started from the home screen (a web app with a screen of its own).
+		isStandalone() {
+			return matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches ||
+				navigator.standalone === true;
+		},
+
+		refreshStorage() {
+			const s = navigator.storage;
+			if (!s || !s.estimate)
+				return;
+			s.estimate().then((e) => { GobWeb.storage.used = e.usage || 0; }).catch(() => {});
+			if (s.persisted)
+				s.persisted().then((p) => { GobWeb.storage.kept = p; }).catch(() => {});
 		},
 
 		preRun() {
@@ -65,6 +88,7 @@ addToLibrary({
 				else
 					console.log(`gobnative: storage loaded in ${Math.round(performance.now() - t0)} ms`);
 				GobWeb.status('');
+				GobWeb.refreshStorage();
 				GobWeb.fetchDevInstaller().finally(() => removeRunDependency('gobnative-storage'));
 			});
 			setInterval(() => {
@@ -271,8 +295,22 @@ addToLibrary({
 			return /\.(exe|dll|ico|zip|dat|bin|lnk|url|info|hashdb|ini)$/i.test(name) || name.startsWith('.');
 		},
 
+		canPickFolders() {
+			return 'webkitdirectory' in HTMLInputElement.prototype && !GobWeb.isTouch();
+		},
+
 		pickStart(accept, multiple, folder, topOnly, dest) {
 			const p = GobWeb.pick;
+			// Phones: no folders (the player chooses the files in it) and
+			// no filter (".exe" has no file type a phone knows, so its
+			// dialog would grey the installers out).
+			const asFiles = folder && !GobWeb.canPickFolders();
+			if (asFiles) {
+				folder = false;
+				multiple = true;
+			}
+			if (GobWeb.isTouch())
+				accept = '';
 			p.state = 1;
 			p.progress = 0;
 			p.current = '';
@@ -295,14 +333,14 @@ addToLibrary({
 				const chosen = Array.from(input.files || []);
 				input.remove();
 				if (p.state === 1) // not given up meanwhile
-					GobWeb.store(chosen, folder, topOnly, dest);
+					GobWeb.store(chosen, folder, topOnly || asFiles, dest);
 			});
 			// Tests (localhost): files given by the page instead of the dialog.
 			if (GobWeb.testFiles) {
 				const files = GobWeb.testFiles;
 				GobWeb.testFiles = null;
 				input.remove();
-				GobWeb.store(files, folder, topOnly, dest);
+				GobWeb.store(files, folder, topOnly || asFiles, dest);
 				return;
 			}
 			input.click();
@@ -316,6 +354,8 @@ addToLibrary({
 			const files = [];
 			for (const f of chosen) {
 				let rel = f.name;
+				if (!folder && topOnly && GobWeb.skipped(f.name))
+					continue;
 				if (folder) {
 					const parts = (f.webkitRelativePath || f.name).split('/');
 					if (topOnly) {
@@ -366,7 +406,7 @@ addToLibrary({
 	gob_web_is_localhost: () => (GobWeb.isLocalhost() ? 1 : 0),
 
 	gob_web_sync__deps: ['$GobWeb'],
-	gob_web_sync: () => GobWeb.sync(),
+	gob_web_sync: () => GobWeb.sync(() => GobWeb.refreshStorage()),
 
 	gob_web_sync_busy__deps: ['$GobWeb'],
 	gob_web_sync_busy: () => (GobWeb.syncing ? 1 : 0),
@@ -447,6 +487,54 @@ addToLibrary({
 		if (!GobWeb.keysButton && GobWeb.keysField && document.activeElement === GobWeb.keysField)
 			GobWeb.keysField.blur(); // the bar is gone (the overlay opened, a mouse)
 	},
+
+	gob_web_playing: (playing) => {
+		document.body.classList.toggle('gob-playing', !!playing);
+	},
+
+	gob_web_is_touch__deps: ['$GobWeb'],
+	gob_web_is_touch: () => (GobWeb.isTouch() ? 1 : 0),
+
+	gob_web_fullscreen__deps: ['$GobWeb'],
+	gob_web_fullscreen: () => {
+		const page = document.documentElement;
+		if (!GobWeb.isTouch() || GobWeb.isStandalone() || document.fullscreenElement || !page.requestFullscreen)
+			return; // (an iPhone has no fullscreen for pages: the home-screen app is)
+		page.requestFullscreen({ navigationUI: 'hide' })
+			.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'))
+			.catch(() => {});
+	},
+
+	gob_web_persist__deps: ['$GobWeb'],
+	gob_web_persist: () => {
+		const s = navigator.storage;
+		if (!s || !s.persist || GobWeb.storage.kept)
+			return;
+		s.persist().then((kept) => {
+			GobWeb.storage.kept = kept;
+			console.log('gobnative: persistent storage ' + (kept ? 'granted' : 'not granted'));
+		}).catch(() => {}).finally(() => GobWeb.refreshStorage());
+	},
+
+	gob_web_storage_info__deps: ['$GobWeb', '$stringToNewUTF8'],
+	gob_web_storage_info: () => {
+		const { used, kept } = GobWeb.storage;
+		let text = '';
+		if (used >= 1 << 20) {
+			text = `Your games and saves use ${Math.round(used / (1 << 20))} MB of this browser's storage. `;
+			if (kept)
+				text += 'The browser keeps it until you remove it.';
+			else if (GobWeb.isTouch() && !GobWeb.isStandalone())
+				text += "The browser may clear it after a while without a visit; add this page to your " +
+					'home screen to keep it.';
+			else
+				text += 'The browser may clear it when space runs low.';
+		}
+		return stringToNewUTF8(text);
+	},
+
+	gob_web_can_pick_folders__deps: ['$GobWeb'],
+	gob_web_can_pick_folders: () => (GobWeb.canPickFolders() ? 1 : 0),
 
 	gob_web_status__deps: ['$GobWeb', '$UTF8ToString'],
 	gob_web_status: (text) => GobWeb.status(UTF8ToString(text)),

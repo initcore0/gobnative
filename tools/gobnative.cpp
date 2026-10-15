@@ -1760,6 +1760,7 @@ int openGame(Startup &st, std::vector<std::string> argStrings, std::unique_ptr<G
 	// A page knows of a touchscreen once a finger touched it (the library's
 	// Play): show the touch bar from the start then.
 	app.overlay.touchMode = SDL_GetNumTouchDevices() > 0;
+	web::setPlaying(true);
 #endif
 	if (prefFolder.migrated || prefFolder.legacy) {
 		std::string shown = prefFolder.dir.string();
@@ -1807,6 +1808,7 @@ WebMain *webMain = nullptr;
 
 void webGameOver(int exitCode, const std::string &error) {
 	emscripten_cancel_main_loop();
+	web::setPlaying(false);
 	if (exitCode == 0) {
 		web::reload(""); // the library
 		return;

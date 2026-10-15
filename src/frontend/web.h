@@ -64,6 +64,24 @@ void openUrl(const std::string &url);
 void reload(const std::string &query);
 // The page's status line under the canvas (empty hides it).
 void status(const std::string &text);
+// The main pointer is a finger (a phone or a tablet).
+bool isTouch();
+// Phones and tablets (fingers, in a browser tab rather than a home-screen
+// app): the page fills the screen, held sideways where the browser allows.
+// Works only right after a tap or a click.
+void enterFullscreen();
+// Asks the browser to keep the storage (the games, saves) instead of
+// clearing it when space runs low or the site isn't visited for a while.
+void requestPersistentStorage();
+// How much the storage holds and whether the browser keeps it ("" until
+// known).
+std::string storageInfo();
+// The file dialog can choose a folder; not on phones, where the player
+// chooses all the files in it instead (pick() does that by itself).
+bool canPickFolders();
+// A game is running (the page shows a phone held upright a hint to turn
+// it).
+void setPlaying(bool playing);
 // Where the touch bar's Keys button is (window points; w 0 when it isn't
 // shown). A phone shows its keyboard only for a text field focused during
 // a tap, so the page catches taps on the button itself and focuses a

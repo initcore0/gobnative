@@ -95,6 +95,29 @@
 	a {
 		color: var(--fg);
 	}
+	/* A phone held upright while a game runs: a hint, fading away. */
+	#rotate {
+		display: none;
+		position: absolute;
+		top: 12px;
+		left: 50%;
+		transform: translateX(-50%);
+		padding: 8px 14px;
+		border-radius: 10px;
+		background: rgba(25, 21, 30, 0.9);
+		color: var(--fg);
+		white-space: nowrap;
+		pointer-events: none;
+		animation: gob-fade 1s ease 6s forwards;
+	}
+	@keyframes gob-fade {
+		to { opacity: 0; }
+	}
+	@media (pointer: coarse) and (orientation: portrait) {
+		body.gob-playing #rotate {
+			display: block;
+		}
+	}
 	body.gob-drag #canvas {
 		outline: 4px dashed #f0c060;
 		outline-offset: -4px;
@@ -102,6 +125,14 @@
 </style>
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- On a phone: "Add to Home Screen" makes it an app with the whole screen
+     (an iPhone has no other fullscreen for pages) that works offline. -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#15161a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="gobnative">
 </head>
 <body>
 <header>
@@ -111,6 +142,7 @@
 </header>
 <main>
 	<canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
+	<div id="rotate">Turn your phone sideways for a bigger picture</div>
 	<div id="loading">
 		<progress></progress>
 		<div id="loading-text">Loading gobnative...</div>
@@ -166,6 +198,10 @@
 			statusLine.textContent = 'gobnative stopped: ' + what;
 		},
 	};
+	// Offline start (the home-screen app); service workers need HTTPS.
+	if ('serviceWorker' in navigator && location.protocol === 'https:')
+		navigator.serviceWorker.register('sw.js').catch((e) => console.warn('gobnative: no service worker:', e));
+
 	// iOS Safari zooms on pinches and double taps despite the viewport.
 	for (const type of ['gesturestart', 'gesturechange', 'dblclick'])
 		document.addEventListener(type, (e) => e.preventDefault(), { passive: false });

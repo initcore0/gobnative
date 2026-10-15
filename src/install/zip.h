@@ -10,12 +10,16 @@
 // __MACOSX/ folders and directory entries are skipped. When every file is
 // in one top folder, that folder is left out (a zipped pack folder
 // extracts into the destination itself).
+//
+// writeZip() makes one: a game folder exported for another device (a
+// phone's browser, which can't choose folders).
 
 #pragma once
 
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -59,5 +63,14 @@ private:
 	bool _done = false;
 	std::string _error;
 };
+
+// Writes the files below `folder` (not hidden ones; those `include`
+// accepts, given their path relative to `folder`, when it is set) into a
+// new zip file `zip`, below a top folder `top` ("Gobliins 2/INTRO.STK").
+// Stored, not compressed (the games' files hardly compress); no zip64, so
+// up to 4 GB.
+bool writeZip(const std::filesystem::path &zip, const std::filesystem::path &folder, const std::string &top,
+              std::string &error,
+              const std::function<bool(const std::filesystem::path &)> &include = nullptr);
 
 } // namespace gob

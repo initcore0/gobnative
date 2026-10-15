@@ -28,6 +28,12 @@ void gob_web_status(const char *text);
 char *gob_web_take_dropped();
 void gob_web_open_url(const char *url);
 void gob_web_keyboard_button(float x, float y, float w, float h);
+int gob_web_is_touch();
+void gob_web_playing(int playing);
+void gob_web_fullscreen();
+void gob_web_persist();
+char *gob_web_storage_info();
+int gob_web_can_pick_folders();
 
 // A key typed in the page's hidden text field (the touch bar's Keys): SDL
 // key code `sym`, shifted, and the character it types (0 for none).
@@ -153,6 +159,30 @@ std::vector<std::string> takeDropped() {
 
 void openUrl(const std::string &url) {
 	gob_web_open_url(url.c_str());
+}
+
+bool isTouch() {
+	return gob_web_is_touch() != 0;
+}
+
+void enterFullscreen() {
+	gob_web_fullscreen();
+}
+
+void requestPersistentStorage() {
+	gob_web_persist();
+}
+
+std::string storageInfo() {
+	return take(gob_web_storage_info());
+}
+
+bool canPickFolders() {
+	return gob_web_can_pick_folders() != 0;
+}
+
+void setPlaying(bool playing) {
+	gob_web_playing(playing ? 1 : 0);
 }
 
 void setKeyboardButton(float x, float y, float w, float h) {

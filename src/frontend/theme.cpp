@@ -121,6 +121,11 @@ void applyUiStyle(ImGuiStyle &style) {
 
 void touchDragScroll() {
 	ImGuiContext &g = *ImGui::GetCurrentContext();
+	// The window under the finger as it went down (while it drags, the
+	// window holding the active id counts as hovered, whichever it is).
+	static ImGuiID pressed = 0;
+	if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+		pressed = g.HoveredWindow ? g.HoveredWindow->ID : 0;
 	if (g.IO.MouseSource != ImGuiMouseSource_TouchScreen || !ImGui::IsMouseDragging(ImGuiMouseButton_Left) ||
 	    g.IO.MouseDelta.y == 0.0f)
 		return;
@@ -128,7 +133,7 @@ void touchDragScroll() {
 	// that can't move stays put); any other active id is a widget's.
 	bool onWidget = g.ActiveId != 0;
 	ImGuiWindow *scroll = nullptr;
-	for (ImGuiWindow *w = g.HoveredWindow; w; w = w->ParentWindow) {
+	for (ImGuiWindow *w = ImGui::FindWindowByID(pressed); w; w = w->ParentWindow) {
 		if (g.ActiveId == w->MoveId)
 			onWidget = false;
 		if (!scroll && w->ScrollMax.y > 0.0f)
