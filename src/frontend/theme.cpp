@@ -4,6 +4,7 @@
 #include "frontend/theme.h"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 
 #include <cstddef>
 #include <cstdio>
@@ -116,6 +117,26 @@ void applyUiStyle(ImGuiStyle &style) {
 	c[ImGuiCol_ScrollbarGrabActive] = vec(IM_COL32(100, 88, 116, 255));
 	c[ImGuiCol_NavCursor] = vec(colour::kAmber);
 	c[ImGuiCol_ModalWindowDimBg] = vec(IM_COL32(10, 8, 12, 170));
+}
+
+void touchDragScroll() {
+	ImGuiContext &g = *ImGui::GetCurrentContext();
+	if (g.IO.MouseSource != ImGuiMouseSource_TouchScreen || !ImGui::IsMouseDragging(ImGuiMouseButton_Left) ||
+	    g.IO.MouseDelta.y == 0.0f)
+		return;
+	// Pressing a window's empty space makes its #MOVE id active (a window
+	// that can't move stays put); any other active id is a widget's.
+	bool onWidget = g.ActiveId != 0;
+	ImGuiWindow *scroll = nullptr;
+	for (ImGuiWindow *w = g.HoveredWindow; w; w = w->ParentWindow) {
+		if (g.ActiveId == w->MoveId)
+			onWidget = false;
+		if (!scroll && w->ScrollMax.y > 0.0f)
+			scroll = w;
+	}
+	if (onWidget || !scroll)
+		return;
+	ImGui::SetScrollY(scroll, scroll->Scroll.y - g.IO.MouseDelta.y);
 }
 
 } // namespace gob

@@ -138,6 +138,13 @@ public:
 	// Dim the game behind the open overlay (off while it keeps running).
 	bool dimGame = true;
 
+	// A finger was the last pointer (frontend/touch.h): the open overlay
+	// closes with a tap beside it, scrolls when dragged and has larger hit
+	// boxes; while it is closed the touch layer (the touch bar) is drawn
+	// over everything.
+	bool touchMode = false;
+	void setTouchLayer(std::function<void(ImDrawList &)> draw) { _touchDraw = std::move(draw); }
+
 	// True while a popup is open, which should get Escape instead of the
 	// overlay closing.
 	bool popupOpen() const;
@@ -173,8 +180,9 @@ private:
 	std::vector<Toast> _toasts;
 	std::string _selectTab, _selectSub;
 	std::function<bool()> _layerActive;
-	std::function<void(ImDrawList &)> _layerDraw;
+	std::function<void(ImDrawList &)> _layerDraw, _touchDraw;
 	bool _open = false, _initialized = false;
+	bool _tapBeside = false; // touchMode: the finger down went down beside the window
 	UiFonts _fonts;
 };
 

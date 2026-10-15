@@ -54,4 +54,9 @@ UiFonts addUiFonts(ImFontAtlas &atlas);
 // is ImGui's, for the callers to change.
 void applyUiStyle(ImGuiStyle &style);
 
+// Touchscreens: a finger dragged over a window (not on a widget) scrolls
+// it, as ImGui only scrolls with a wheel or the scroll bar. Call between
+// NewFrame() and the windows; the windows must not be movable.
+void touchDragScroll();
+
 } // namespace gob

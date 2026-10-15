@@ -97,7 +97,8 @@ void Overlay::drawToasts() {
 
 void Overlay::render() {
 	const bool layer = _layerActive && _layerActive();
-	if (!_initialized || (!_open && _toasts.empty() && !layer))
+	const bool touchLayer = touchMode && _touchDraw;
+	if (!_initialized || (!_open && _toasts.empty() && !layer && !touchLayer))
 		return;
 	// While closed the game hides the system cursor; ImGui must leave it alone.
 	ImGuiIO &io = ImGui::GetIO();
@@ -105,12 +106,15 @@ void Overlay::render() {
 		io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
 	else
 		io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+	ImGui::GetStyle().TouchExtraPadding = touchMode ? ImVec2(6, 6) : ImVec2(0, 0);
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame();
 	ImGui::NewFrame();
 	if (!_open) {
 		if (layer)
 			_layerDraw(*ImGui::GetBackgroundDrawList());
+		if (touchLayer)
+			_touchDraw(*ImGui::GetForegroundDrawList());
 		drawToasts();
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -130,11 +134,29 @@ void Overlay::render() {
 	// scrolls instead), and moved back up when a taller tab runs off it.
 	ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(display.x, std::max(100.0f, display.y - 16.0f)));
 	bool keepOpen = true;
-	if (ImGui::Begin("gobnative", &keepOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
+	if (touchMode) {
+		touchDragScroll();
+		// A tap beside the window closes it, as Escape does (not one that
+		// closes a popup, nor the release of the tap that opened it).
+		const ImGuiIO &io = ImGui::GetIO();
+		if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+			_tapBeside = !ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) && !popupOpen();
+		if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+			if (_tapBeside && io.MouseDragMaxDistanceSqr[0] <= io.MouseDragThreshold * io.MouseDragThreshold)
+				keepOpen = false;
+			_tapBeside = false;
+		}
+	}
+	const ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize |
+	                               (touchMode ? ImGuiWindowFlags_NoMove : 0); // a drag scrolls instead
+	if (ImGui::Begin("gobnative", &keepOpen, flags)) {
 		ImVec2 pos = ImGui::GetWindowPos(), size = ImGui::GetWindowSize();
 		if (pos.y + size.y > display.y - 8.0f && !ImGui::IsMouseDragging(ImGuiMouseButton_Left))
 			ImGui::SetWindowPos(ImVec2(pos.x, std::max(8.0f, display.y - 8.0f - size.y)));
-		if (dimGame)
+		if (touchMode)
+			ImGui::TextDisabled(dimGame ? "Game paused. Tap beside this window to resume."
+			                            : "Game running (see Tools). Tap beside this window to close it.");
+		else if (dimGame)
 			ImGui::TextDisabled("Game paused. Press ` or Escape to resume.");
 		else
 			ImGui::TextDisabled("Game running (see Tools). Press ` or Escape to close.");

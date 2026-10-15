@@ -27,7 +27,9 @@
 // has no control, see Interpreter::canSkip()). Holding Tab runs the game at turbo
 // speed. Cmd+S / Cmd+L (Ctrl on other systems) quick save and quick load.
 // F12 saves a screenshot (PNG, filtered, without the overlay) into the
-// Screenshots folder next to settings.ini. Holding left Option (left Alt on
+// Screenshots folder next to settings.ini. On a touchscreen a tap clicks, a
+// long press or a two-finger tap right-clicks, and a bar of buttons beside
+// the game stands in for the keys (frontend/touch.h). Holding left Option (left Alt on
 // other systems) outlines the room's hotspots. Settings are kept in
 // settings.ini next to the save games; --scale applies to this run only.
 //
@@ -99,6 +101,7 @@
 #include "frontend/presenter.h"
 #include "frontend/settings.h"
 #include "frontend/sharptext.h"
+#include "frontend/touch.h"
 #include "frontend/tracelog.h"
 #include "gfx/hdpack.h"
 #include "gfx/png.h"
@@ -772,6 +775,17 @@ public:
 		gx = std::clamp(int(std::floor((px - vp.x) * W / vp.w)), 0, W - 1);
 		gy = std::clamp(int(std::floor((py - vp.y) * H / vp.h)), 0, H - 1);
 	}
+	// The game picture in window points.
+	void gameRectPoints(float &x, float &y, float &w, float &h) const {
+		int ww, wh, dw, dh;
+		SDL_GetWindowSize(window, &ww, &wh);
+		GlPresenter::Rect vp = viewport(dw, dh);
+		const float sx = float(ww) / std::max(dw, 1), sy = float(wh) / std::max(dh, 1);
+		x = vp.x * sx;
+		y = vp.y * sy;
+		w = vp.w * sx;
+		h = vp.h * sy;
+	}
 	void gameToWindow(int gx, int gy, int &wx, int &wy) const {
 		int ww, wh, dw, dh;
 		SDL_GetWindowSize(window, &ww, &wh);
@@ -1000,6 +1014,17 @@ struct GameRun {
 	uint32_t startTicks = 0;
 	uint32_t escapeDown = 0;
 	bool clickHeld = false, started = false;
+
+	// Touchscreens: the fingers' gestures, the touch bar (laid out each
+	// frame while it shows), the finger holding one of its buttons, the
+	// buttons a tap pressed (released the next frame, as the game samples
+	// the buttons once a frame) and when Load was tapped once.
+	TouchMouse touch;
+	std::vector<TouchBarButton> touchBar;
+	SDL_FingerID barFinger = 0;
+	bool barFingerDown = false;
+	int touchRelease = 0;
+	uint32_t loadArmedAt = 0;
 	int exitCode = 0;
 	std::string error; // why the game stopped (an engine error)
 
@@ -1014,9 +1039,14 @@ struct GameRun {
 	bool frame();
 	// Saves the settings and closes everything; returns the exit code.
 	int finish();
+	// The touch bar, over everything (Overlay::setTouchLayer).
+	void drawTouchBar(ImDrawList &dl);
 
 private:
 	void handleEvents();
+	void handleFinger(const SDL_TouchFingerEvent &f);
+	void applyTouch(const TouchAction &a);
+	void pressTouchButton(TouchButton button);
 	void debugActions();
 	void draw();
 };
@@ -1091,6 +1121,10 @@ bool GameRun::frame() {
 
 void GameRun::handleEvents() {
 	App &app = *this->app;
+	if (touchRelease) {
+		app.host.buttons &= ~touchRelease;
+		touchRelease = 0;
+	}
 	SDL_Event ev;
 	while (SDL_PollEvent(&ev)) {
 		const bool open = app.overlay.isOpen();
@@ -1147,18 +1181,27 @@ void GameRun::handleEvents() {
 			if (open && !std::strchr(ev.text.text, '`'))
 				app.overlay.processEvent(ev);
 			break;
+		case SDL_FINGERDOWN:
+		case SDL_FINGERMOTION:
+		case SDL_FINGERUP:
+			handleFinger(ev.tfinger);
+			break;
 		case SDL_MOUSEMOTION:
 			if (open)
 				app.overlay.processEvent(ev);
-			else
+			else if (ev.motion.which != SDL_TOUCH_MOUSEID) // the fingers' own events say more
 				app.windowToGame(ev.motion.x, ev.motion.y, app.host.mx, app.host.my);
 			break;
 		case SDL_MOUSEBUTTONDOWN:
 		case SDL_MOUSEBUTTONUP: {
+			if (ev.button.which != SDL_TOUCH_MOUSEID && ev.type == SDL_MOUSEBUTTONDOWN)
+				app.overlay.touchMode = false; // a mouse again: no touch bar
 			if (open) {
 				app.overlay.processEvent(ev);
 				break;
 			}
+			if (ev.button.which == SDL_TOUCH_MOUSEID)
+				break;
 			int bit = ev.button.button == SDL_BUTTON_LEFT ? 1 : ev.button.button == SDL_BUTTON_RIGHT ? 2 : 0;
 			if (ev.type == SDL_MOUSEBUTTONDOWN) {
 				app.host.buttons |= bit;
@@ -1172,6 +1215,122 @@ void GameRun::handleEvents() {
 			app.overlay.processEvent(ev); // wheel, focus, window events
 			break;
 		}
+	}
+	if (app.overlay.isOpen()) {
+		touch.cancel();
+		touch.take();
+		return;
+	}
+	touch.update(SDL_GetTicks());
+	for (const TouchAction &a : touch.take())
+		applyTouch(a);
+}
+
+void GameRun::handleFinger(const SDL_TouchFingerEvent &f) {
+	App &app = *this->app;
+	// Touchscreens only: a Mac's trackpad reports its fingers too.
+	if (SDL_GetTouchDeviceType(f.touchId) != SDL_TOUCH_DEVICE_DIRECT)
+		return;
+	int ww, wh;
+	SDL_GetWindowSize(app.window, &ww, &wh);
+	const float x = f.x * ww, y = f.y * wh;
+	const uint32_t now = SDL_GetTicks();
+	if (f.type == SDL_FINGERDOWN)
+		app.overlay.touchMode = true;
+	if (app.overlay.isOpen())
+		return; // ImGui has the mouse events SDL makes of the fingers
+	if (f.type == SDL_FINGERDOWN) {
+		barFingerDown = false;
+		if (const TouchBarButton *b = touchBarHit(touchBar, x, y)) {
+			barFinger = f.fingerId;
+			barFingerDown = true;
+			pressTouchButton(b->id);
+		} else
+			touch.down(f.fingerId, x, y, now);
+	} else if (barFingerDown && f.fingerId == barFinger) {
+		if (f.type == SDL_FINGERUP)
+			barFingerDown = false;
+	} else if (f.type == SDL_FINGERMOTION)
+		touch.motion(f.fingerId, x, y, now);
+	else
+		touch.up(f.fingerId, x, y, now);
+}
+
+void GameRun::applyTouch(const TouchAction &a) {
+	App &app = *this->app;
+	SdlHost &host = app.host;
+	switch (a.kind) {
+	case TouchAction::Point:
+		app.windowToGame(int(a.x), int(a.y), host.mx, host.my);
+		break;
+	case TouchAction::Click: {
+		// Only on the picture: a finger beside it moves the pointer to the
+		// edge (to scroll a wide room) but never clicks there.
+		float gx, gy, gw, gh;
+		app.gameRectPoints(gx, gy, gw, gh);
+		if (a.x < gx || a.y < gy || a.x >= gx + gw || a.y >= gy + gh)
+			break;
+		app.windowToGame(int(a.x), int(a.y), host.mx, host.my);
+		host.buttons |= a.button;
+		host.clicks |= a.button;
+		touchRelease |= a.button;
+		if (host.traceEnabled)
+			host.trace(std::string("touch: ") + (a.button == 2 ? "right" : "left") + " click at " +
+			           std::to_string(host.mx) + "," + std::to_string(host.my));
+		break;
+	}
+	case TouchAction::Lift:
+		// A pointer left at the left or top edge would go on scrolling
+		// Goblins Quest 3's wide rooms (Interpreter::evaluateScroll); a
+		// finger held there scrolls, lifting it stops.
+		host.mx = std::max(host.mx, 1);
+		host.my = std::max(host.my, 1);
+		break;
+	}
+}
+
+void GameRun::pressTouchButton(TouchButton button) {
+	App &app = *this->app;
+	switch (button) {
+	case TouchButton::Menu:
+		app.overlay.setOpen(true);
+		break;
+	case TouchButton::Skip:
+		if (app.canSkip())
+			app.skipCutscene();
+		break;
+	case TouchButton::Right:
+		touch.rightNext = !touch.rightNext;
+		break;
+	case TouchButton::Save:
+		app.quickSave();
+		break;
+	case TouchButton::Load: // twice, as a stray tap would lose the game since the save
+		if (!app.hasQuickSave())
+			app.overlay.toast("No quick save yet");
+		else if (loadArmedAt && SDL_GetTicks() - loadArmedAt < 3000) {
+			loadArmedAt = 0;
+			app.quickLoad();
+		} else {
+			loadArmedAt = SDL_GetTicks();
+			app.overlay.toast("Tap Load again to load the quick save", 3000);
+		}
+		break;
+	case TouchButton::Keyboard:
+		break; // the page shows the phone's keyboard itself (web/library_gobnative.js)
+	}
+}
+
+void GameRun::drawTouchBar(ImDrawList &dl) {
+	ImFont *font = app->overlay.fonts().bold;
+	for (const TouchBarButton &b : touchBar) {
+		const ImVec2 p0(b.x, b.y), p1(b.x + b.w, b.y + b.h);
+		dl.AddRectFilled(p0, p1, b.lit ? withAlpha(colour::kAmber, 235) : withAlpha(colour::kCard, 200), 12.0f);
+		dl.AddRect(p0, p1, withAlpha(b.lit ? colour::kAmberHover : colour::kBorder, 230), 12.0f, 0, 1.5f);
+		const float size = std::min(15.0f, b.w * 0.3f);
+		const ImVec2 ts = font->CalcTextSizeA(size, FLT_MAX, 0.0f, b.label);
+		const ImU32 text = b.lit ? colour::kOnAmber : b.enabled ? colour::kText : colour::kFaint;
+		dl.AddText(font, size, ImVec2(b.x + (b.w - ts.x) / 2, b.y + (b.h - ts.y) / 2), text, b.label);
 	}
 }
 
@@ -1289,6 +1448,27 @@ void GameRun::draw() {
 		benchmarkFilters(app, dw, dh, vp, benchFrames);
 		app.quitPending = true;
 	}
+	if (app.overlay.touchMode && !app.overlay.isOpen()) {
+		int ww, wh;
+		SDL_GetWindowSize(app.window, &ww, &wh);
+		float gx, gy, gw, gh;
+		app.gameRectPoints(gx, gy, gw, gh);
+		TouchBarState state;
+		state.canSkip = app.canSkip();
+		state.rightArmed = touch.rightNext;
+#ifdef __EMSCRIPTEN__
+		state.keyboard = true;
+#endif
+		touchBar = layoutTouchBar(float(ww), float(wh), gx, gy, gw, gh, state);
+	} else
+		touchBar.clear();
+#ifdef __EMSCRIPTEN__
+	const TouchBarButton *keys = nullptr;
+	for (const TouchBarButton &b : touchBar)
+		if (b.id == TouchButton::Keyboard)
+			keys = &b;
+	web::setKeyboardButton(keys ? keys->x : 0, keys ? keys->y : 0, keys ? keys->w : 0, keys ? keys->h : 0);
+#endif
 	app.overlay.render();
 	if (due(screenshotAt)) {
 		if (!app.presenter.screenshot(screenshotFile, dw, dh))
@@ -1575,6 +1755,12 @@ int openGame(Startup &st, std::vector<std::string> argStrings, std::unique_ptr<G
 		std::fprintf(stderr, "overlay: ImGui initialisation failed\n");
 	addSettingsTabs(app.overlay, app);
 	addToolsTab(app.overlay, app);
+	app.overlay.setTouchLayer([&r](ImDrawList &dl) { r.drawTouchBar(dl); });
+#ifdef __EMSCRIPTEN__
+	// A page knows of a touchscreen once a finger touched it (the library's
+	// Play): show the touch bar from the start then.
+	app.overlay.touchMode = SDL_GetNumTouchDevices() > 0;
+#endif
 	if (prefFolder.migrated || prefFolder.legacy) {
 		std::string shown = prefFolder.dir.string();
 		if (const char *home = std::getenv("HOME"); home && *home && shown.rfind(home, 0) == 0)

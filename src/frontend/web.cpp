@@ -5,6 +5,9 @@
 
 #ifdef __EMSCRIPTEN__
 
+#include <SDL.h>
+#include <emscripten.h>
+
 #include <cstdlib>
 #include <sstream>
 
@@ -24,6 +27,43 @@ void gob_web_reload(const char *query);
 void gob_web_status(const char *text);
 char *gob_web_take_dropped();
 void gob_web_open_url(const char *url);
+void gob_web_keyboard_button(float x, float y, float w, float h);
+
+// A key typed in the page's hidden text field (the touch bar's Keys): SDL
+// key code `sym`, shifted, and the character it types (0 for none).
+EMSCRIPTEN_KEEPALIVE void gob_web_key(int sym, int shift, int ch) {
+	SDL_Event ev{};
+	ev.type = SDL_KEYDOWN;
+	ev.key.state = SDL_PRESSED;
+	ev.key.keysym.sym = sym;
+	ev.key.keysym.scancode = SDL_GetScancodeFromKey(sym);
+	ev.key.keysym.mod = shift ? KMOD_LSHIFT : KMOD_NONE;
+	SDL_PushEvent(&ev);
+	if (ch > 0) { // the text, as UTF-8
+		SDL_Event text{};
+		text.type = SDL_TEXTINPUT;
+		char *t = text.text.text;
+		if (ch < 0x80)
+			t[0] = char(ch);
+		else if (ch < 0x800) {
+			t[0] = char(0xC0 | ch >> 6);
+			t[1] = char(0x80 | (ch & 0x3F));
+		} else if (ch < 0x10000) {
+			t[0] = char(0xE0 | ch >> 12);
+			t[1] = char(0x80 | (ch >> 6 & 0x3F));
+			t[2] = char(0x80 | (ch & 0x3F));
+		} else {
+			t[0] = char(0xF0 | ch >> 18);
+			t[1] = char(0x80 | (ch >> 12 & 0x3F));
+			t[2] = char(0x80 | (ch >> 6 & 0x3F));
+			t[3] = char(0x80 | (ch & 0x3F));
+		}
+		SDL_PushEvent(&text);
+	}
+	ev.type = SDL_KEYUP;
+	ev.key.state = SDL_RELEASED;
+	SDL_PushEvent(&ev);
+}
 }
 
 namespace gob::web {
@@ -113,6 +153,10 @@ std::vector<std::string> takeDropped() {
 
 void openUrl(const std::string &url) {
 	gob_web_open_url(url.c_str());
+}
+
+void setKeyboardButton(float x, float y, float w, float h) {
+	gob_web_keyboard_button(x, y, w, h);
 }
 
 } // namespace gob::web

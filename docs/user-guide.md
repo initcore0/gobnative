@@ -120,6 +120,25 @@ the page into the library. The overlay's Video tab imports HD packs
 (a pack folder, or a zip of one) and the Audio tab replacement music
 files into the game's folders in the browser's storage.
 
+**Touchscreens** (phones, tablets; also a touch laptop on the desktop).
+A tap clicks where it lands; a long press (half a second) or a tap with
+two fingers right-clicks (Gobliiins' walk/act/pick cursor, putting
+things back in Goblins Quest 3, cancelling); dragging a finger moves the
+pointer without clicking, to read the names of things. A finger held
+beside the picture puts the pointer at that edge, which scrolls Goblins
+Quest 3's wide rooms; taps there never click. After the first touch a bar
+of buttons shows beside the picture (under it when the screen is
+upright): **Menu** opens the overlay (tap beside it to close it; drag to
+scroll it), **Skip** skips a scene (dimmed when there is none), **Right**
+makes the next tap a right click, **Save** and **Load** quick save and
+quick load (Load asks for a second tap), and **Keys** shows the phone's
+keyboard for typing to the game (Gobliiins' level passwords; tap it
+again to hide it). A mouse click hides the bar again. On a phone the
+page drops its header and footer and doesn't zoom or scroll under the
+fingers. The gestures are in `frontend/touch.h` (tested by
+`test_touch`); synthetic touch events were checked in Chromium's
+mobile emulation, not yet on real phones.
+
 **How it works.** `tools/gobnative.cpp` and `frontend/library.cpp` run
 one frame at a time (`GameRun`, `LibraryScreen`), driven by
 `emscripten_set_main_loop` in the browser (about 60 frames a second);

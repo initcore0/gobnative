@@ -64,6 +64,11 @@ void openUrl(const std::string &url);
 void reload(const std::string &query);
 // The page's status line under the canvas (empty hides it).
 void status(const std::string &text);
+// Where the touch bar's Keys button is (window points; w 0 when it isn't
+// shown). A phone shows its keyboard only for a text field focused during
+// a tap, so the page catches taps on the button itself and focuses a
+// hidden field, whose keys come back as SDL key and text events.
+void setKeyboardButton(float x, float y, float w, float h);
 
 } // namespace gob::web
 

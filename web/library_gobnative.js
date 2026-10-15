@@ -8,12 +8,17 @@
 // player picks are read with <input type=file> into the in-memory file
 // system (asynchronously; the app polls the state once per frame).
 //
+// On a touchscreen the touch bar's Keys button shows the phone's keyboard:
+// a hidden text field is focused during the tap itself (phones show their
+// keyboard for nothing else), and what is typed in it goes to the app as
+// SDL key events (gob_web_key in src/frontend/web.cpp).
+//
 // For tests on this computer only (the page served from localhost),
 // index.html can ask for an installer to be fetched from the same server
 // before the app starts (Module.gobDevInstaller).
 
 addToLibrary({
-	$GobWeb__deps: ['$FS', '$IDBFS', '$addRunDependency', '$removeRunDependency', '$addOnPreRun'],
+	$GobWeb__deps: ['$FS', '$IDBFS', '$addRunDependency', '$removeRunDependency', '$addOnPreRun', 'gob_web_key'],
 	$GobWeb__postset: 'addOnPreRun(() => GobWeb.preRun());',
 	$GobWeb: {
 		root: '/gobnative',
@@ -29,6 +34,10 @@ addToLibrary({
 		// app takes their paths once per frame (gob_web_take_dropped).
 		dropped: [],
 		dropping: 0,
+		// The Keys button, [x, y, w, h] in CSS pixels of the canvas (null
+		// while it isn't shown), and the hidden text field.
+		keysButton: null,
+		keysField: null,
 
 		status(text) {
 			if (Module['gobStatus'])
@@ -67,6 +76,7 @@ addToLibrary({
 					GobWeb.sync();
 			});
 			GobWeb.listenForDrops();
+			GobWeb.listenForKeys();
 			// The keys the app uses that browsers also want (save page,
 			// address bar on macOS's Cmd).
 			window.addEventListener('keydown', (e) => {
@@ -116,6 +126,98 @@ addToLibrary({
 					GobWeb.status('');
 				}
 			});
+		},
+
+		listenForKeys() {
+			const field = document.createElement('input');
+			field.type = 'text';
+			field.autocomplete = 'off';
+			field.autocapitalize = 'none';
+			field.spellcheck = false;
+			field.setAttribute('autocorrect', 'off');
+			field.setAttribute('aria-hidden', 'true');
+			field.tabIndex = -1;
+			// Out of sight but focusable; 16px, as iOS zooms into a field
+			// with smaller text.
+			field.style.cssText = 'position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:0;' +
+				'border:0;padding:0;font-size:16px;pointer-events:none;';
+			document.body.appendChild(field);
+			GobWeb.keysField = field;
+
+			// SDL key codes; text keys are their (lower case) character.
+			const named = { Enter: 13, Backspace: 8, Escape: 27, Tab: 9, Delete: 127 };
+			const key = (sym, shift, ch) => _gob_web_key(sym, shift ? 1 : 0, ch || 0);
+			const type = (text) => {
+				for (const c of text) {
+					if (c === '\n') {
+						key(13, false, 0);
+						continue;
+					}
+					const lower = c.toLowerCase();
+					const code = c.codePointAt(0);
+					key(lower.length === c.length ? lower.codePointAt(0) : code, lower !== c, code);
+				}
+			};
+			// The keys go to the app from here only, not to SDL's listener
+			// on the window too.
+			field.addEventListener('keydown', (e) => {
+				e.stopPropagation();
+				if (e.isComposing)
+					return;
+				if (e.key in named) {
+					e.preventDefault();
+					key(named[e.key], false, 0);
+				} else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+					e.preventDefault();
+					type(e.key);
+				}
+				// else a phone keyboard's "Unidentified" key: the input
+				// event has what it typed
+			});
+			field.addEventListener('keyup', (e) => e.stopPropagation());
+			field.addEventListener('keypress', (e) => e.stopPropagation());
+			// The field keeps one space, so that Backspace has something to
+			// delete (phone keyboards send no key for it in an empty field).
+			const reset = () => {
+				field.value = ' ';
+				field.setSelectionRange(1, 1);
+			};
+			field.addEventListener('input', (e) => {
+				if (e.isComposing)
+					return;
+				if (e.inputType && e.inputType.startsWith('delete'))
+					key(8, false, 0);
+				else if (e.inputType === 'insertLineBreak')
+					key(13, false, 0);
+				else if (e.data)
+					type(e.data);
+				reset();
+			});
+			field.addEventListener('compositionend', (e) => {
+				if (e.data)
+					type(e.data);
+				reset();
+			});
+			field.addEventListener('focus', reset);
+
+			// The tap on the Keys button shows the keyboard, another hides it.
+			const canvas = Module['canvas'];
+			canvas.addEventListener('touchend', (e) => {
+				const r = GobWeb.keysButton;
+				if (!r)
+					return;
+				const b = canvas.getBoundingClientRect();
+				for (const t of e.changedTouches) {
+					const x = t.clientX - b.left, y = t.clientY - b.top;
+					if (x >= r[0] && y >= r[1] && x < r[0] + r[2] && y < r[1] + r[3]) {
+						if (document.activeElement === field)
+							field.blur();
+						else
+							field.focus({ preventScroll: true });
+						return;
+					}
+				}
+			}, { capture: true });
 		},
 
 		// localhost only: Module.gobDevInstaller (a URL on the same server)
@@ -337,6 +439,13 @@ addToLibrary({
 	gob_web_open_url__deps: ['$UTF8ToString'],
 	gob_web_open_url: (url) => {
 		window.open(UTF8ToString(url), '_blank', 'noopener');
+	},
+
+	gob_web_keyboard_button__deps: ['$GobWeb'],
+	gob_web_keyboard_button: (x, y, w, h) => {
+		GobWeb.keysButton = w > 0 ? [x, y, w, h] : null;
+		if (!GobWeb.keysButton && GobWeb.keysField && document.activeElement === GobWeb.keysField)
+			GobWeb.keysField.blur(); // the bar is gone (the overlay opened, a mouse)
 	},
 
 	gob_web_status__deps: ['$GobWeb', '$UTF8ToString'],

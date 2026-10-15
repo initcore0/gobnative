@@ -172,6 +172,9 @@ add_test(NAME install COMMAND test_install)
 add_executable(test_prefs tests/test_prefs.cpp src/frontend/prefs.cpp src/frontend/ini.cpp)
 target_include_directories(test_prefs PRIVATE src)
 add_test(NAME prefs COMMAND test_prefs)
+add_executable(test_touch tests/test_touch.cpp src/frontend/touch.cpp)
+target_include_directories(test_touch PRIVATE src)
+add_test(NAME touch COMMAND test_touch)
 
 add_executable(gobinstall tools/gobinstall.cpp)
 target_link_libraries(gobinstall PRIVATE gobcore)
@@ -244,6 +247,7 @@ add_executable(gobnative
 	src/frontend/sharptext.cpp
 	src/frontend/theme.cpp
 	src/frontend/tools_tab.cpp
+	src/frontend/touch.cpp
 )
 target_link_libraries(gobnative PRIVATE gobcore imgui SDL2::SDL2)
 if(EMSCRIPTEN)

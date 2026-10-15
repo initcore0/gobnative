@@ -976,9 +976,12 @@ bool LibraryScreen::State::frame() {
 		} else
 			++it;
 
+	ImGui::GetStyle().TouchExtraPadding =
+		io.MouseSource == ImGuiMouseSource_TouchScreen ? ImVec2(6, 6) : ImVec2(0, 0); // fingers miss by more
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame();
 	ImGui::NewFrame();
+	touchDragScroll();
 	draw();
 	ImGui::Render();
 
