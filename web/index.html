@@ -4,7 +4,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>gobnative</title>
 <style>
 	:root {
@@ -17,6 +17,9 @@
 	html, body {
 		margin: 0;
 		height: 100%;
+		height: 100dvh; /* phones: the visible height, without the address bar */
+		overflow: hidden;
+		overscroll-behavior: none;
 		background: var(--bg);
 		color: var(--fg);
 		font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -55,6 +58,19 @@
 		display: block;
 		outline: none;
 		background: #000;
+		/* The game has the fingers: no scrolling, zooming, text selection
+		   or long-press menu over it. */
+		touch-action: none;
+		user-select: none;
+		-webkit-user-select: none;
+		-webkit-touch-callout: none;
+		-webkit-tap-highlight-color: transparent;
+	}
+	/* Phones (small screens with fingers): the game gets the whole page. */
+	@media (pointer: coarse) and (max-height: 600px), (pointer: coarse) and (max-width: 600px) {
+		header, footer {
+			display: none;
+		}
 	}
 	#loading {
 		position: absolute;
@@ -79,6 +95,29 @@
 	a {
 		color: var(--fg);
 	}
+	/* A phone held upright while a game runs: a hint, fading away. */
+	#rotate {
+		display: none;
+		position: absolute;
+		top: 12px;
+		left: 50%;
+		transform: translateX(-50%);
+		padding: 8px 14px;
+		border-radius: 10px;
+		background: rgba(25, 21, 30, 0.9);
+		color: var(--fg);
+		white-space: nowrap;
+		pointer-events: none;
+		animation: gob-fade 1s ease 6s forwards;
+	}
+	@keyframes gob-fade {
+		to { opacity: 0; }
+	}
+	@media (pointer: coarse) and (orientation: portrait) {
+		body.gob-playing #rotate {
+			display: block;
+		}
+	}
 	body.gob-drag #canvas {
 		outline: 4px dashed #f0c060;
 		outline-offset: -4px;
@@ -86,6 +125,14 @@
 </style>
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- On a phone: "Add to Home Screen" makes it an app with the whole screen
+     (an iPhone has no other fullscreen for pages) that works offline. -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#15161a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="gobnative">
 </head>
 <body>
 <header>
@@ -95,6 +142,7 @@
 </header>
 <main>
 	<canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
+	<div id="rotate">Turn your phone sideways for a bigger picture</div>
 	<div id="loading">
 		<progress></progress>
 		<div id="loading-text">Loading gobnative...</div>
@@ -102,7 +150,8 @@
 </main>
 <footer>
 	Bring your own GOG copy; files stay in your browser.
-	<span>Backquote (`) opens the overlay; hold Escape for the library.</span>
+	<span>Backquote (`) opens the overlay; hold Escape for the library. On a touchscreen: tap to click,
+	long press or two-finger tap to right-click; the buttons beside the game do the rest.</span>
 </footer>
 <script>
 	const statusLine = document.getElementById('status');
@@ -149,6 +198,14 @@
 			statusLine.textContent = 'gobnative stopped: ' + what;
 		},
 	};
+	// Offline start (the home-screen app); service workers need HTTPS.
+	if ('serviceWorker' in navigator && location.protocol === 'https:')
+		navigator.serviceWorker.register('sw.js').catch((e) => console.warn('gobnative: no service worker:', e));
+
+	// iOS Safari zooms on pinches and double taps despite the viewport.
+	for (const type of ['gesturestart', 'gesturechange', 'dblclick'])
+		document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
+
 	if (!document.createElement('canvas').getContext('webgl2')) {
 		loadingText.textContent = 'This browser has no WebGL 2, which gobnative needs.';
 		loading.querySelector('progress').remove();

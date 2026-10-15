@@ -100,9 +100,11 @@ first time):
     source /path/to/emsdk/emsdk_env.sh    # or set EMSDK; ../tools/emsdk is found by itself
     scripts/build-web.sh                  # writes dist/web/
     scripts/build-web.sh --serve 8080     # ... and serves it on http://localhost:8080/
+    scripts/build-web.sh --serve 8080 --lan   # ... also to a phone on the same network
 
 `dist/web/` holds `index.html`, `gobnative.js`, `gobnative.wasm` (about
-2 MB) and the licences; any static web server can serve it (no special
+2 MB), the home-screen app's `manifest.webmanifest`, `sw.js` and icons,
+and the licences; any static web server can serve it (no special
 headers: the build uses no threads, so no cross-origin isolation). The
 GitHub workflow builds it too (artifact `gobnative-web`).
 
@@ -120,6 +122,52 @@ the page into the library. The overlay's Video tab imports HD packs
 (a pack folder, or a zip of one) and the Audio tab replacement music
 files into the game's folders in the browser's storage.
 
+**Touchscreens** (phones, tablets; also a touch laptop on the desktop).
+A tap clicks where it lands; a long press (half a second) or a tap with
+two fingers right-clicks (Gobliiins' walk/act/pick cursor, putting
+things back in Goblins Quest 3, cancelling); dragging a finger moves the
+pointer without clicking, to read the names of things. A finger held
+beside the picture puts the pointer at that edge, which scrolls Goblins
+Quest 3's wide rooms; taps there never click. After the first touch a bar
+of buttons shows beside the picture (under it when the screen is
+upright): **Menu** opens the overlay (tap beside it to close it; drag to
+scroll it), **Skip** skips a scene (dimmed when there is none), **Right**
+makes the next tap a right click, **Save** and **Load** quick save and
+quick load (Load asks for a second tap), and **Keys** shows the phone's
+keyboard for typing to the game (Gobliiins' level passwords; tap it
+again to hide it). A mouse click hides the bar again. On a phone the
+page drops its header and footer and doesn't zoom or scroll under the
+fingers. The gestures are in `frontend/touch.h` (tested by
+`test_touch`); synthetic touch events were checked in Chromium's
+mobile emulation, not yet on real phones.
+
+**On a phone.** Getting a game onto the phone, any of:
+- Download the game's offline installer from GOG in the phone's browser,
+  then tap Install... on the game and choose the file (in Downloads or
+  the Files app; the page doesn't filter the dialog on a phone, which
+  would grey the installers out).
+- On a computer, "Export zip" on an installed game in gobnative's
+  library writes the game's files into one zip (`Gobliins 2.zip`, the
+  files at the top of the game's folder, without programs and archives;
+  stored, not compressed). Send it to the phone (AirDrop, a cloud drive, a
+  cable), then in the page choose More options, "Add a zip...".
+- More options, "Add a game's files...": phones can't choose folders, so
+  choose all the files in the game's folder instead.
+
+Tapping a game's Play puts the page into fullscreen, held sideways,
+where the browser allows it (Android); in portrait a hint suggests turning the
+phone. An iPhone has no fullscreen for web pages: "Add to Home Screen"
+(Safari's share menu) makes the page an app with the whole screen, which
+also starts without a network once opened (`sw.js`, a network-first
+cache of the page's own files; only over HTTPS). After an import the page
+asks the browser to keep its storage, and the library says how much it
+uses and whether it is kept. Safari clears a site's storage after seven
+days without a visit unless it is a home-screen app, so on an iPhone add
+it to the home screen. To try the page on a phone without hosting it,
+`scripts/build-web.sh --serve 8080 --lan` serves it to the local network
+(plain HTTP: no service worker, no persistent storage, no developer
+options).
+
 **How it works.** `tools/gobnative.cpp` and `frontend/library.cpp` run
 one frame at a time (`GameRun`, `LibraryScreen`), driven by
 `emscripten_set_main_loop` in the browser (about 60 frames a second);
@@ -134,7 +182,8 @@ is hidden (`web/library_gobnative.js`, `frontend/web.h`).
 Everything in the browser's storage is loaded into memory when the page
 opens (the three games are about 255 MB; large HD packs add to that).
 Browsers may clear the storage of sites you haven't visited for a long
-time unless they grant persistent storage (the page asks). A tile's
+time unless they grant persistent storage (the page asks after an
+import). A tile's
 "Remove" deletes an imported game's files (its saves and settings stay).
 The pointer can't scroll Goblins Quest 3's wide rooms
 by leaving the page; HD pictures are decoded when first drawn (no

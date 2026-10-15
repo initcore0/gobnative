@@ -193,4 +193,146 @@ double ZipExtractor::fraction() const {
 	return _bytesTotal ? double(_bytesDone) / double(_bytesTotal) : (_done ? 1.0 : 0.0);
 }
 
+namespace {
+
+void put16(std::string &b, uint32_t v) {
+	b += char(v & 0xFF);
+	b += char(v >> 8 & 0xFF);
+}
+
+void put32(std::string &b, uint32_t v) {
+	put16(b, v & 0xFFFF);
+	put16(b, v >> 16);
+}
+
+} // namespace
+
+bool writeZip(const fs::path &zip, const fs::path &folder, const std::string &top, std::string &error,
+              const std::function<bool(const fs::path &)> &include) {
+	struct Item {
+		fs::path path;
+		std::string name;
+		uint32_t offset = 0, size = 0, crc = 0;
+	};
+	std::vector<Item> items;
+	std::error_code ec;
+	for (auto it = fs::recursive_directory_iterator(folder, ec); !ec && it != fs::recursive_directory_iterator();
+	     it.increment(ec)) {
+		const std::string base = it->path().filename().string();
+		if (!base.empty() && base[0] == '.') {
+			if (it->is_directory(ec))
+				it.disable_recursion_pending();
+			continue;
+		}
+		if (!it->is_regular_file(ec))
+			continue;
+		const fs::path relPath = it->path().lexically_relative(folder);
+		if (include && !include(relPath))
+			continue;
+		const std::string rel = relPath.generic_string();
+		items.push_back({it->path(), top.empty() ? rel : top + "/" + rel});
+	}
+	if (ec) {
+		error = ec.message();
+		return false;
+	}
+	std::sort(items.begin(), items.end(), [](const Item &a, const Item &b) { return a.name < b.name; });
+
+	std::ofstream out(zip, std::ios::binary | std::ios::trunc);
+	if (!out) {
+		error = "cannot write " + zip.string();
+		return false;
+	}
+	std::vector<uint8_t> buf(1 << 20);
+	uint64_t pos = 0;
+	for (Item &item : items) {
+		std::ifstream in(item.path, std::ios::binary);
+		if (!in) {
+			error = "cannot read " + item.path.string();
+			return false;
+		}
+		// The header first, its CRC and sizes filled in after the data.
+		item.offset = uint32_t(pos);
+		std::string h;
+		put32(h, 0x04034B50);
+		put16(h, 20);        // version needed
+		put16(h, 0x0800);    // UTF-8 names
+		put16(h, 0);         // stored
+		put32(h, 0x00210000); // 1980-01-01 00:00
+		put32(h, 0);
+		put32(h, 0);
+		put32(h, 0);
+		put16(h, uint32_t(item.name.size()));
+		put16(h, 0);
+		h += item.name;
+		out.write(h.data(), std::streamsize(h.size()));
+		uint64_t size = 0;
+		uint32_t crc = 0;
+		while (in) {
+			in.read(reinterpret_cast<char *>(buf.data()), std::streamsize(buf.size()));
+			const size_t n = size_t(in.gcount());
+			if (!n)
+				break;
+			crc = crc32(buf.data(), n, crc);
+			out.write(reinterpret_cast<const char *>(buf.data()), std::streamsize(n));
+			size += n;
+		}
+		pos += h.size() + size;
+		if (pos > 0xFFFFFFFFull) {
+			error = "too large for a zip file (over 4 GB)";
+			return false;
+		}
+		item.size = uint32_t(size);
+		item.crc = crc;
+		std::string fix;
+		put32(fix, crc);
+		put32(fix, item.size);
+		put32(fix, item.size);
+		out.seekp(std::streamoff(item.offset + 14));
+		out.write(fix.data(), std::streamsize(fix.size()));
+		out.seekp(0, std::ios::end);
+	}
+	std::string dir;
+	for (const Item &item : items) {
+		put32(dir, 0x02014B50);
+		put16(dir, 20); // made by
+		put16(dir, 20);
+		put16(dir, 0x0800);
+		put16(dir, 0);
+		put32(dir, 0x00210000);
+		put32(dir, item.crc);
+		put32(dir, item.size);
+		put32(dir, item.size);
+		put16(dir, uint32_t(item.name.size()));
+		put16(dir, 0); // extra
+		put16(dir, 0); // comment
+		put16(dir, 0); // disk
+		put16(dir, 0); // internal attributes
+		put32(dir, 0); // external attributes
+		put32(dir, item.offset);
+		dir += item.name;
+	}
+	if (pos + dir.size() > 0xFFFFFFFFull) {
+		error = "too large for a zip file (over 4 GB)";
+		return false;
+	}
+	std::string end;
+	put32(end, 0x06054B50);
+	put16(end, 0);
+	put16(end, 0);
+	put16(end, uint32_t(items.size()));
+	put16(end, uint32_t(items.size()));
+	put32(end, uint32_t(dir.size()));
+	put32(end, uint32_t(pos));
+	put16(end, 0);
+	out.write(dir.data(), std::streamsize(dir.size()));
+	out.write(end.data(), std::streamsize(end.size()));
+	out.close();
+	if (!out) {
+		error = "cannot write " + zip.string();
+		return false;
+	}
+	return true;
+}
+
 } // namespace gob

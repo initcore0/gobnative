@@ -6,7 +6,8 @@
 #
 # Writes icon-1024.png (the tile filling the square), gobnative.icns (macOS
 # layout: the tile inset with a soft shadow; made with iconutil, so on macOS
-# only), gobnative.ico (16-256 px), favicon-32.png, apple-touch-icon.png and
+# only), gobnative.ico (16-256 px), favicon-32.png, apple-touch-icon.png,
+# icon-192.png and icon-512.png (the web page's home-screen app) and
 # window-icon.png (the window's icon at runtime). The lettering is Nunito
 # Bold (third_party/fonts/nunito, SIL OFL). Needs Pillow.
 
@@ -70,6 +71,8 @@ def main():
 	master.resize((256, 256), Image.LANCZOS).save(out / "window-icon.png")
 	master.resize((32, 32), Image.LANCZOS).save(out / "favicon-32.png")
 	master.resize((180, 180), Image.LANCZOS).save(out / "apple-touch-icon.png")
+	master.resize((192, 192), Image.LANCZOS).save(out / "icon-192.png")
+	master.resize((512, 512), Image.LANCZOS).save(out / "icon-512.png")
 	sizes = [16, 24, 32, 48, 64, 128, 256]
 	icos = [tile(s * 4).resize((s, s), Image.LANCZOS) if s < 64 else tile(s) for s in sizes]
 	icos[-1].save(out / "gobnative.ico", sizes=[(s, s) for s in sizes], append_images=icos[:-1])

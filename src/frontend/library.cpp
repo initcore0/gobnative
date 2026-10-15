@@ -18,6 +18,7 @@
 #include "gfx/image.h"
 #include "gfx/png.h"
 #include "install/gameinstall.h"
+#include "install/zip.h"
 
 #include <SDL.h>
 #include <imgui.h>
@@ -474,9 +475,13 @@ struct LibraryScreen::State {
 
 #ifdef __EMSCRIPTEN__
 	// A file dialog of the browser is open, or its files are being read.
-	enum class Picking { None, Installer, Folder } picking = Picking::None;
+	enum class Picking { None, Installer, Folder, Zip } picking = Picking::None;
 	const GameInfo *pickFor = nullptr; // the tile whose installer is picked
 	bool savePending = false;          // an import is being written to the browser's storage
+	// A zip of a game's folder being unpacked into the incoming folder, a
+	// little each frame (and the zip, read into memory).
+	std::unique_ptr<ZipExtractor> unzip;
+	fs::path unzipFile;
 #endif
 
 	// Which folder each game is in: the most recent folder that holds it,
@@ -572,9 +577,12 @@ struct LibraryScreen::State {
 	}
 	void play(const std::string &folder) {
 		std::string why;
-		if (selectGame(folder, ctx.gameKey, why))
+		if (selectGame(folder, ctx.gameKey, why)) {
 			chosen = folder;
-		else
+#ifdef __EMSCRIPTEN__
+			web::enterFullscreen(); // phones (this frame follows the tap)
+#endif
+		} else
 			say("That folder doesn't hold a Goblins game.", true, folder + ": " + why);
 	}
 	// A folder of the player's own: checked, then put into the recent list.
@@ -692,6 +700,9 @@ struct LibraryScreen::State {
 			refresh();
 			say(std::string(import->game->title) + " is installed. Press Play to start!", false,
 			    import->dest.string() + (import->note.empty() ? "" : " (" + import->note + ")"));
+#ifdef __EMSCRIPTEN__
+			web::requestPersistentStorage(); // something worth keeping now
+#endif
 		} else if (import->cancel)
 			say("Installation cancelled. Nothing was installed.", false);
 		else
@@ -703,6 +714,35 @@ struct LibraryScreen::State {
 		savePending = true;
 #endif
 	}
+#ifndef __EMSCRIPTEN__
+	// A game's files in one zip, for the web version on a phone (which can
+	// choose files, not folders): those at the top of its folder, without
+	// programs, archives and the like (what the web version's folder copy
+	// leaves out too).
+	void exportZip(const Tile &t) {
+		const std::string folder = browseFolder(window);
+		if (folder.empty())
+			return;
+		const fs::path zip = fs::path(folder) / (std::string(t.game->title) + ".zip");
+		auto include = [](const fs::path &rel) {
+			static const char *const skipped[] = {".exe", ".dll", ".ico", ".zip", ".dat", ".bin",
+			                                      ".lnk", ".url", ".info", ".hashdb", ".ini"};
+			std::string ext = rel.extension().string();
+			std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return char(std::tolower(c)); });
+			return !rel.has_parent_path() && std::find(std::begin(skipped), std::end(skipped), ext) == std::end(skipped);
+		};
+		std::string error;
+		std::error_code ec;
+		if (writeZip(zip, t.folder, t.game->title, error, include))
+			say(zip.filename().string() + " is ready (" + std::to_string(fs::file_size(zip, ec) >> 20) +
+			        " MB). Copy it to your phone; in gobnative's web page, choose More options, Add a zip...",
+			    false, zip.string());
+		else {
+			fs::remove(zip, ec);
+			say("Couldn't write the zip file.", true, error);
+		}
+	}
+#endif
 	void openPath(const std::string &input) {
 		const std::string p = expand(input);
 		std::error_code ec;
@@ -795,6 +835,48 @@ struct LibraryScreen::State {
 		say(std::string(g->title) + " was added. Press Play to start!", false, note);
 		web::sync();
 		savePending = true;
+		web::requestPersistentStorage();
+	}
+	// A zip of a game's folder (on a phone, which can't choose folders; for
+	// example made by gobnative's "Export zip" on a computer).
+	void pickZip() {
+		if (picking != Picking::None || import || unzip)
+			return;
+		web::PickOptions o;
+		o.accept = ".zip";
+		o.destDir = web::kTemp;
+		web::pick(o);
+		picking = Picking::Zip;
+		message.clear();
+	}
+	void startUnzip(const fs::path &zip) {
+		std::error_code ec;
+		fs::remove_all(incomingFolder(), ec);
+		auto z = std::make_unique<ZipExtractor>();
+		if (!z->open(zip) || !z->begin(incomingFolder())) {
+			say("Couldn't open that zip file.", true, z->error());
+			fs::remove(zip, ec);
+			return;
+		}
+		web::setAutoSync(false); // not the partial folder
+		unzip = std::move(z);
+		unzipFile = zip;
+	}
+	void stepUnzip() {
+		if (!unzip || unzip->step(16 << 20))
+			return;
+		const bool ok = unzip->done();
+		const std::string error = unzip->error();
+		unzip.reset();
+		std::error_code ec;
+		fs::remove(unzipFile, ec);
+		web::setAutoSync(true);
+		if (ok)
+			takeFolder();
+		else {
+			say("Couldn't unpack that zip file.", true, error);
+			fs::remove_all(incomingFolder(), ec);
+		}
 	}
 	void pollPicker() {
 		if (picking == Picking::None)
@@ -816,6 +898,8 @@ struct LibraryScreen::State {
 		}
 		if (what == Picking::Installer)
 			startImport(files.front(), pickFor, true);
+		else if (what == Picking::Zip)
+			startUnzip(files.front());
 		else
 			takeFolder();
 	}
@@ -954,7 +1038,8 @@ bool LibraryScreen::State::frame() {
 	debugActions(now);
 #ifdef __EMSCRIPTEN__
 	pollPicker();
-	if (!import)
+	stepUnzip();
+	if (!import && !unzip)
 		for (const std::string &dropped : web::takeDropped())
 			openPath(dropped);
 #endif
@@ -976,9 +1061,12 @@ bool LibraryScreen::State::frame() {
 		} else
 			++it;
 
+	ImGui::GetStyle().TouchExtraPadding =
+		io.MouseSource == ImGuiMouseSource_TouchScreen ? ImVec2(6, 6) : ImVec2(0, 0); // fingers miss by more
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame();
 	ImGui::NewFrame();
+	touchDragScroll();
 	draw();
 	ImGui::Render();
 
@@ -1032,7 +1120,7 @@ void LibraryScreen::State::draw() {
 	if (indent > 0)
 		ImGui::Indent(indent);
 #ifdef __EMSCRIPTEN__
-	const bool busy = import != nullptr || picking != Picking::None;
+	const bool busy = import != nullptr || picking != Picking::None || unzip;
 #else
 	const bool busy = import != nullptr;
 #endif
@@ -1047,6 +1135,15 @@ void LibraryScreen::State::draw() {
 			ImGui::PopFont();
 		} else
 			savePending = false;
+	}
+	if (const std::string info = web::storageInfo(); !info.empty() && !busy) {
+		ImGui::PushFont(nullptr, 14.5f);
+		ImGui::PushStyleColor(ImGuiCol_Text, vec(colour::kFaint));
+		ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + width);
+		ImGui::TextWrapped("%s", info.c_str());
+		ImGui::PopTextWrapPos();
+		ImGui::PopStyleColor();
+		ImGui::PopFont();
 	}
 #endif
 	bool missing = false;
@@ -1339,6 +1436,14 @@ void LibraryScreen::State::drawTile(Tile &t, int index, const TileBox &box, bool
 		}
 		ImGui::PopStyleVar();
 #else
+		if (kHaveDialogs) {
+			if (!first)
+				ImGui::SameLine(0, 2);
+			if (quietButton("Export zip"))
+				exportZip(t);
+			ImGui::SetItemTooltip("Puts the game's files into one zip file, for gobnative in a phone's browser");
+			first = false;
+		}
 		if (!first)
 			ImGui::SameLine(0, 2);
 		ImGui::PushStyleColor(ImGuiCol_Text, vec(colour::kFaint));
@@ -1435,8 +1540,13 @@ void LibraryScreen::State::drawSteps() {
 			step(2, "Download the installer",
 			     "In the game's \"offline backup game installers\", get the setup_...exe file.");
 			ImGui::EndGroup();
-			step(3, kWeb ? "Drop it onto this page" : "Drop it onto this window",
-			     "Or click Install... on the game and choose the file.");
+#ifdef __EMSCRIPTEN__
+			if (web::isTouch())
+				step(3, "Tap Install... on the game", "and choose the file you downloaded (in Downloads or Files).");
+			else
+#endif
+				step(3, kWeb ? "Drop it onto this page" : "Drop it onto this window",
+				     "Or click Install... on the game and choose the file.");
 			ImGui::EndGroup();
 			ImGui::PopStyleVar();
 			ImGui::EndTable();
@@ -1486,15 +1596,22 @@ void LibraryScreen::State::drawProgress() {
 				import->cancel = true;
 		}
 #ifdef __EMSCRIPTEN__
-		else if (web::pickState() == web::PickState::Reading) {
-			heading(picking == Picking::Installer ? "Reading the installer" : "Copying the game's files",
-			        "Your browser is reading the file. Nothing leaves this computer.");
+		else if (unzip) {
+			heading("Unpacking the game", "Copying the game's files from the zip into this browser's storage.");
+			progressBar(fonts.bold, float(unzip->fraction()), w);
+			ImGui::SetItemTooltip("%s", unzip->current().c_str());
+		} else if (web::pickState() == web::PickState::Reading) {
+			heading(picking == Picking::Installer ? "Reading the installer"
+			        : picking == Picking::Zip     ? "Reading the zip file"
+			                                      : "Copying the game's files",
+			        "Your browser is reading the file. Nothing leaves this device.");
 			progressBar(fonts.bold, web::pickProgress(), w);
 			ImGui::SetItemTooltip("%s", web::pickCurrent().c_str());
 		} else {
-			heading("Choose the file", picking == Picking::Installer
-			                               ? "Pick the game's GOG installer (setup_...exe) in your browser's window."
-			                               : "Pick the game's folder in your browser's window.");
+			heading("Choose the file", picking == Picking::Installer ? "Pick the game's GOG installer (setup_...exe)."
+			                           : picking == Picking::Zip     ? "Pick the zip file of the game's folder."
+			                           : web::canPickFolders()       ? "Pick the game's folder in your browser's window."
+			                                                         : "Pick all the files in the game's folder.");
 			ImGui::Spacing();
 			if (ImGui::Button("Cancel", ImVec2(110, 0))) { // (browsers without the dialog's cancel event)
 				std::string ignored;
@@ -1537,7 +1654,7 @@ void LibraryScreen::State::drawMore() {
 		return;
 
 #ifdef __EMSCRIPTEN__
-	const bool busy = import != nullptr || picking != Picking::None;
+	const bool busy = import != nullptr || picking != Picking::None || unzip;
 #else
 	const bool busy = import != nullptr;
 #endif
@@ -1545,19 +1662,37 @@ void LibraryScreen::State::drawMore() {
 	ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + width - 24);
 	ImGui::BeginDisabled(busy);
 	ImGui::PushStyleColor(ImGuiCol_Text, vec(colour::kMuted));
-	ImGui::TextWrapped(kWeb ? "Already have a game's files (for example the folder GOG's own installer makes)? Add the "
-	                          "folder: it is copied into this browser's storage."
-	                        : "Already have a game on this computer (for example installed with GOG's own installer)? "
-	                          "Add its folder.");
-	ImGui::PopStyleColor();
 #ifdef __EMSCRIPTEN__
-	if (ImGui::Button("Add a game folder..."))
+	const bool folders = web::canPickFolders();
+	ImGui::TextWrapped(folders ? "Already have a game's files (for example the folder GOG's own installer makes)? "
+	                             "Add the folder, or a zip of it: it is copied into this browser's storage."
+	                           : "Already have a game's files? Choose all the files in its folder, or a zip of the "
+	                             "folder (gobnative on a computer makes one: \"Export zip\" on the game). They are "
+	                             "copied into this browser's storage.");
+	ImGui::PopStyleColor();
+	// Beside the last button when it fits (a phone held upright is narrow).
+	auto sameLineFor = [&](const char *label) {
+		const float w = ImGui::CalcTextSize(label).x + style.FramePadding.x * 2;
+		if (ImGui::GetItemRectMax().x + style.ItemSpacing.x + w <= ImGui::GetWindowPos().x + ImGui::GetWindowWidth() -
+		                                                              style.WindowPadding.x)
+			ImGui::SameLine();
+	};
+	if (ImGui::Button(folders ? "Add a game folder..." : "Add a game's files..."))
 		pickFolder();
-	ImGui::SameLine();
+	if (!folders)
+		ImGui::SetItemTooltip("All the files in the game's folder (INTRO.STK and the others)");
+	sameLineFor("Add a zip...");
+	if (ImGui::Button("Add a zip..."))
+		pickZip();
+	ImGui::SetItemTooltip("A zip of a game's folder, for example from \"Export zip\" in gobnative on a computer");
+	sameLineFor("Install from an installer...");
 	if (ImGui::Button("Install from an installer..."))
 		pickInstaller(nullptr);
 	ImGui::SetItemTooltip("A GOG installer (setup_...exe) of any of the three games");
 #else
+	ImGui::TextWrapped("Already have a game on this computer (for example installed with GOG's own installer)? "
+	                   "Add its folder.");
+	ImGui::PopStyleColor();
 	if (kHaveDialogs) {
 		if (ImGui::Button("Add a game folder...")) {
 			const std::string folder = browseFolder(window);

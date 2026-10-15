@@ -2,7 +2,7 @@
 # gob2native - builds the web version (WebAssembly) with Emscripten
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Usage: scripts/build-web.sh [--serve [PORT]]
+# Usage: scripts/build-web.sh [--serve [PORT] [--lan]]
 #
 # Needs the Emscripten SDK: emcc on the PATH (source emsdk_env.sh), or
 # $EMSDK, or ../tools/emsdk next to the repository. Emscripten fetches its
@@ -12,7 +12,10 @@
 # gobnative.js, gobnative.wasm and the licences. No game data is part of
 # it: the page imports the player's own GOG installers into the browser's
 # storage. --serve then serves dist/web on http://localhost:PORT/ (8080)
-# with Python's static server, for testing on this computer.
+# with Python's static server, for testing on this computer; with --lan
+# also for other devices on the network (a phone: open the address it
+# prints). Over plain HTTP from another device the page has no service
+# worker or persistent storage and no developer options, but plays.
 
 set -eu
 
@@ -40,7 +43,9 @@ cmake --build "$build" --target gobnative --parallel
 rm -rf "$dist"
 mkdir -p "$dist/licences"
 cp "$build/gobnative.js" "$build/gobnative.wasm" "$repo/web/index.html" "$dist/"
-cp "$repo/assets/icon/favicon-32.png" "$repo/assets/icon/apple-touch-icon.png" "$dist/"
+cp "$repo/web/manifest.webmanifest" "$repo/web/sw.js" "$dist/"
+cp "$repo/assets/icon/favicon-32.png" "$repo/assets/icon/apple-touch-icon.png" "$repo/assets/icon/icon-192.png" \
+	"$repo/assets/icon/icon-512.png" "$dist/"
 cp "$repo/LICENSE" "$dist/LICENSE.txt"
 cp "$repo/third_party/imgui/LICENSE.txt" "$dist/licences/imgui.txt"
 cp "$repo/third_party/fonts/nunito/OFL.txt" "$dist/licences/Nunito-OFL.txt"
@@ -52,7 +57,14 @@ echo "dist/web:"
 ls -l "$dist" | sed 1d
 
 if [ "${1:-}" = "--serve" ]; then
-	p=${2:-8080}
+	shift
+	p=8080
+	case "${1:-}" in [0-9]*) p=$1; shift ;; esac
+	if [ "${1:-}" = "--lan" ]; then
+		ip=$(ipconfig getifaddr en0 2>/dev/null || hostname -I 2>/dev/null | cut -d' ' -f1 || true)
+		echo "serving dist/web on http://localhost:$p/ and http://${ip:-<this computer>}:$p/ (Ctrl+C stops)"
+		exec python3 -m http.server --bind 0.0.0.0 --directory "$dist" "$p"
+	fi
 	echo "serving dist/web on http://localhost:$p/ (Ctrl+C stops)"
 	exec python3 -m http.server --bind 127.0.0.1 --directory "$dist" "$p"
 fi
