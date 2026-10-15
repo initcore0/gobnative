@@ -8,6 +8,19 @@
 // player picks are read with <input type=file> into the in-memory file
 // system (asynchronously; the app polls the state once per frame).
 //
+// Memory: the in-memory file system holds only what the page needs (a
+// phone's tab has a few hundred megabytes). The games' big files (all but
+// the .STK archives the library reads for detection and covers) and the
+// HD packs, music and screenshots stay in IndexedDB: the page has an empty
+// file in their place, marked as stored (node.gobStored, its path in the
+// storage). Pressing Play fills in the game's folder and its settings
+// folder (gob_web_load) before the game opens. The page writes back with
+// its own sync instead of IDBFS's, which would delete what it didn't load:
+// a stored file stays as it is, or is copied within IndexedDB when it was
+// moved; after a write, what was written and isn't needed is emptied
+// again (an import, in the library). A picked installer is held in pieces
+// that are dropped as the import reads past them (gob_web_free_as_read).
+//
 // On a touchscreen the touch bar's Keys button shows the phone's keyboard:
 // a hidden text field is focused during the tap itself (phones show their
 // keyboard for nothing else), and what is typed in it goes to the app as
@@ -18,11 +31,16 @@
 // before the app starts (Module.gobDevInstaller).
 
 addToLibrary({
-	$GobWeb__deps: ['$FS', '$IDBFS', '$addRunDependency', '$removeRunDependency', '$addOnPreRun', 'gob_web_key'],
+	$GobWeb__deps: ['$FS', '$MEMFS', '$IDBFS', '$addRunDependency', '$removeRunDependency', '$addOnPreRun', 'gob_web_key'],
 	$GobWeb__postset: 'addOnPreRun(() => GobWeb.preRun());',
 	$GobWeb: {
 		root: '/gobnative',
 		temp: '/tmp/gobnative-import',
+		mount: null,   // the IDBFS mount of root
+		loaded: false, // the storage was read (until then nothing is written back)
+		kept: [],      // folders whose files are all in memory (the game being played)
+		loading: 0,    // gob_web_load()s running
+		piece: 4 << 20, // a picked file is held in pieces of this size
 		syncing: false,
 		syncAgain: false,
 		afterSync: [],
@@ -73,7 +91,7 @@ addToLibrary({
 
 		preRun() {
 			FS.mkdirTree(GobWeb.root);
-			FS.mount(IDBFS, { autoPersist: false }, GobWeb.root);
+			GobWeb.mount = FS.mount(IDBFS, { autoPersist: false }, GobWeb.root).mount;
 			FS.mkdirTree(GobWeb.temp);
 			addRunDependency('gobnative-storage');
 			GobWeb.status("Loading your games from the browser's storage...");
@@ -81,12 +99,20 @@ addToLibrary({
 				Module['gobWeb'] = GobWeb;
 				Module['gobFS'] = FS;
 			}
+			// A game folder given as an argument (?arg=, localhost) starts
+			// that game without the library: its files are needed now.
+			for (const a of Module['arguments'] || []) {
+				const m = a.startsWith(GobWeb.root + '/Games/') && /^Games\/([^/]+)/.exec(a.slice(GobWeb.root.length + 1));
+				if (m)
+					GobWeb.kept.push(GobWeb.root + '/Games/' + m[1], GobWeb.root + '/' + m[1]);
+			}
 			const t0 = performance.now();
-			FS.syncfs(true, (err) => {
+			GobWeb.load((err, stats) => {
 				if (err)
 					console.error('gobnative: cannot read the browser storage:', err);
 				else
-					console.log(`gobnative: storage loaded in ${Math.round(performance.now() - t0)} ms`);
+					console.log(`gobnative: storage loaded in ${Math.round(performance.now() - t0)} ms: ` +
+						`${stats.loaded} entries read (${GobWeb.mb(stats.bytes)} MB), ${stats.stored} files left in the storage`);
 				GobWeb.status('');
 				GobWeb.refreshStorage();
 				GobWeb.fetchDevInstaller().finally(() => removeRunDependency('gobnative-storage'));
@@ -138,10 +164,7 @@ addToLibrary({
 				try {
 					for (const f of files) {
 						GobWeb.status('Reading ' + f.name + '...');
-						const data = new Uint8Array(await f.arrayBuffer());
-						const path = GobWeb.temp + '/' + f.name;
-						FS.writeFile(path, data, { canOwn: true });
-						GobWeb.dropped.push(path);
+						GobWeb.dropped.push(await GobWeb.writePieces(GobWeb.temp + '/' + f.name, f));
 					}
 				} catch (err) {
 					console.error('gobnative: cannot read the dropped files', err);
@@ -255,15 +278,326 @@ addToLibrary({
 				const res = await fetch(url);
 				if (!res.ok)
 					throw new Error(res.status + ' ' + res.statusText);
-				const data = new Uint8Array(await res.arrayBuffer());
+				const data = await res.blob();
 				const name = decodeURIComponent(url.split('/').pop());
-				FS.writeFile(GobWeb.temp + '/' + name, data, { canOwn: true });
-				console.log(`gobnative: fetched ${url} (${data.length} bytes)`);
+				await GobWeb.writePieces(GobWeb.temp + '/' + name, data);
+				console.log(`gobnative: fetched ${url} (${data.size} bytes)`);
 				GobWeb.status('');
 			} catch (e) {
 				console.error('gobnative: cannot fetch the installer', url, e);
 				GobWeb.status('Cannot fetch ' + url + ': ' + e.message);
 			}
+		},
+
+		mb(bytes) {
+			return (bytes / (1 << 20)).toFixed(1);
+		},
+
+		// --- The storage (see the top of this file)
+
+		// A file the page may leave in the storage: in a game's folder all
+		// but the .STK archives at its top (the library detects the games
+		// and draws their covers from those), and HD packs, music and
+		// screenshots.
+		mayLeave(path) {
+			const rel = path.slice(GobWeb.root.length + 1);
+			const game = /^Games\/[^/]+\/(.+)$/.exec(rel);
+			if (game)
+				return game[1].includes('/') || !/\.stk$/i.test(game[1]);
+			return /^[^/]+\/(HDPacks|Music|Screenshots)\/./.test(rel);
+		},
+		// ... and leaves there: not in a kept folder, and a name with an
+		// extension (the storage's list of paths doesn't tell an empty
+		// folder from a file; a folder seldom has an extension).
+		leaves(path) {
+			return GobWeb.mayLeave(path) && /\.[^./]{1,5}$/.test(path) &&
+				!GobWeb.kept.some((f) => path === f || path.startsWith(f + '/'));
+		},
+
+		node(path) {
+			try {
+				return FS.lookupPath(path, { follow: false }).node;
+			} catch (e) {
+				return null;
+			}
+		},
+
+		// The file's contents now live only in the storage, under `path`.
+		markStored(node, path) {
+			node.contents = new Uint8Array(0);
+			node.usedBytes = 0;
+			node.gobStored = path;
+			node.gobStoredTime = +node.mtime;
+		},
+
+		// Reads entries from IndexedDB into the file system, `paths` as
+		// [where in the storage, where in the file system]; done(err,
+		// bytes) when all are in.
+		fetch(db, paths, done) {
+			if (!paths.length)
+				return done(null, 0);
+			let bytes = 0, failed = null;
+			const tx = db.transaction([IDBFS.DB_STORE_NAME], 'readonly');
+			const store = tx.objectStore(IDBFS.DB_STORE_NAME);
+			tx.oncomplete = () => done(failed, bytes);
+			tx.onerror = tx.onabort = (e) => {
+				e.preventDefault();
+				done(failed || e.target.error, bytes);
+			};
+			for (const [from, path] of paths)
+				store.get(from).onsuccess = (e) => {
+					const entry = e.target.result;
+					if (!entry || failed)
+						return;
+					try {
+						const old = GobWeb.node(path);
+						if (old && FS.isFile(old.mode) && !FS.isFile(entry.mode))
+							FS.unlink(path); // a folder with a file's name, left at the start
+						IDBFS.storeLocalEntry(path, entry, (err) => { if (err) throw err; });
+						const node = GobWeb.node(path);
+						if (node)
+							delete node.gobStored;
+						bytes += entry.contents ? entry.contents.length : 0;
+					} catch (err) {
+						failed = err;
+					}
+				};
+		},
+
+		// Reads the storage at the start: folders, the files the page needs,
+		// and an empty file marked as stored for each of the others.
+		load(done) {
+			IDBFS.getRemoteSet(GobWeb.mount, (err, remote) => {
+				if (err)
+					return done(err);
+				const paths = Object.keys(remote.entries).sort();
+				const dirs = new Set(); // the paths with something in them
+				for (const p of paths)
+					for (let i = p.lastIndexOf('/'); i > GobWeb.root.length; i = p.lastIndexOf('/', i - 1)) {
+						const d = p.slice(0, i);
+						if (dirs.has(d))
+							break; // and its parents
+						dirs.add(d);
+					}
+				const fetch = [];
+				let stored = 0;
+				try {
+					for (const d of [...dirs].sort())
+						FS.mkdirTree(d);
+					for (const p of paths) {
+						const time = remote.entries[p].timestamp;
+						if (dirs.has(p))
+							continue;
+						if (GobWeb.leaves(p)) {
+							FS.writeFile(p, new Uint8Array(0));
+							FS.utime(p, time, time);
+							GobWeb.markStored(GobWeb.node(p), p);
+							stored++;
+						} else
+							fetch.push([p, p]);
+					}
+				} catch (e) {
+					return done(e);
+				}
+				GobWeb.fetch(remote.db, fetch, (err, bytes) => {
+					if (err)
+						return done(err);
+					// The folders' times as stored (adding files changed them),
+					// so that the next write leaves them.
+					for (const d of [...dirs].sort().reverse())
+						if (remote.entries[d])
+							FS.utime(d, remote.entries[d].timestamp, remote.entries[d].timestamp);
+					GobWeb.loaded = true;
+					done(null, { loaded: fetch.length, bytes, stored });
+				});
+			});
+		},
+
+		// Fills in the stored files under `folders` (a game's, before it
+		// starts), which are kept in memory from now on.
+		fill(folders, done) {
+			GobWeb.kept.push(...folders);
+			const paths = [];
+			const walk = (dir) => {
+				let names = [];
+				try {
+					names = FS.readdir(dir);
+				} catch (e) {
+					return;
+				}
+				for (const name of names) {
+					if (name === '.' || name === '..')
+						continue;
+					const p = dir + '/' + name;
+					const node = GobWeb.node(p);
+					if (!node)
+						continue;
+					if (FS.isDir(node.mode))
+						walk(p);
+					else if (node.gobStored !== undefined)
+						paths.push([node.gobStored, p]);
+				}
+			};
+			folders.forEach(walk);
+			IDBFS.getDB(GobWeb.root, (err, db) => {
+				if (err)
+					return done(err);
+				GobWeb.fetch(db, paths, done);
+			});
+		},
+
+		// Writes what changed to IndexedDB, like IDBFS's sync but keeping
+		// the stored files; done(err, written) with the files written
+		// (path -> [node, time]).
+		save(done) {
+			if (!GobWeb.loaded) // still reading it (or that failed: then nothing is written over it)
+				return done(null, new Map());
+			const local = new Map(); // path -> node
+			const walk = (dir) => {
+				for (const name of FS.readdir(dir)) {
+					if (name === '.' || name === '..')
+						continue;
+					const p = dir + '/' + name;
+					const node = GobWeb.node(p);
+					local.set(p, node);
+					if (FS.isDir(node.mode))
+						walk(p);
+				}
+			};
+			try {
+				walk(GobWeb.root);
+			} catch (e) {
+				return done(e);
+			}
+			IDBFS.getRemoteSet(GobWeb.mount, (err, remote) => {
+				if (err)
+					return done(err);
+				const copy = [], write = [], remove = [];
+				for (const [p, node] of local) {
+					if (node.gobStored !== undefined) {
+						if (+node.mtime === node.gobStoredTime) { // as it was loaded
+							if (node.gobStored !== p)
+								copy.push([node.gobStored, p, node]); // moved (or its folder)
+							continue;
+						}
+						delete node.gobStored; // written since: what it holds now
+					}
+					const r = remote.entries[p];
+					if (!r || +r.timestamp !== +node.mtime)
+						write.push(p);
+				}
+				for (const p of Object.keys(remote.entries))
+					if (!local.has(p))
+						remove.push(p);
+				if (!copy.length && !write.length && !remove.length)
+					return done(null, new Map());
+				const written = new Map();
+				let failed = null;
+				const tx = remote.db.transaction([IDBFS.DB_STORE_NAME], 'readwrite');
+				const store = tx.objectStore(IDBFS.DB_STORE_NAME);
+				tx.oncomplete = () => {
+					for (const [, to, node] of copy)
+						node.gobStored = to;
+					done(failed, written);
+				};
+				tx.onerror = tx.onabort = (e) => {
+					e.preventDefault();
+					done(failed || e.target.error || new Error('the write was aborted'), written);
+				};
+				// In this order: the requests of a transaction run in the
+				// order they are made, so the copies read before anything
+				// is replaced or removed.
+				for (const [from, to] of copy)
+					store.get(from).onsuccess = (e) => {
+						if (e.target.result)
+							store.put(e.target.result, to);
+					};
+				for (const p of write.sort()) {
+					const node = local.get(p);
+					IDBFS.loadLocalEntry(p, (err, entry) => {
+						if (err) {
+							failed = failed || err;
+							return;
+						}
+						store.put(entry, p);
+						if (FS.isFile(node.mode))
+							written.set(p, [node, +node.mtime]);
+					});
+				}
+				for (const p of remove.sort().reverse())
+					store.delete(p);
+			});
+		},
+
+		// After a write: the files written that the page may leave in the
+		// storage are emptied (unless changed since, or open).
+		release(written) {
+			const open = new Set(FS.streams.filter(Boolean).map((s) => s.node));
+			let bytes = 0;
+			for (const [p, [node, time]] of written) {
+				if (!GobWeb.leaves(p) || +node.mtime !== time || open.has(node) || GobWeb.node(p) !== node)
+					continue;
+				bytes += node.usedBytes;
+				GobWeb.markStored(node, p);
+			}
+			if (bytes)
+				console.log(`gobnative: ${GobWeb.mb(bytes)} MB written to the storage and released from memory`);
+		},
+
+		// The contents of a file, from memory or from the storage.
+		async readFile(path) {
+			const node = GobWeb.node(path);
+			if (!node || node.gobStored === undefined)
+				return FS.readFile(path);
+			const db = await new Promise((resolve, reject) =>
+				IDBFS.getDB(GobWeb.root, (err, db) => (err ? reject(err) : resolve(db))));
+			return new Promise((resolve, reject) => {
+				const req = db.transaction([IDBFS.DB_STORE_NAME], 'readonly')
+					.objectStore(IDBFS.DB_STORE_NAME).get(node.gobStored);
+				req.onsuccess = () => resolve(req.result ? req.result.contents : new Uint8Array(0));
+				req.onerror = () => reject(req.error);
+			});
+		},
+
+		// A picked file (a Blob) into the temporary folder, as pieces: an
+		// installer is read once from start to end, and the pieces behind
+		// are dropped (freeAsRead).
+		async writePieces(path, blob) {
+			const pieces = [];
+			for (let at = 0; at < blob.size; at += GobWeb.piece)
+				pieces.push(new Uint8Array(await blob.slice(at, at + GobWeb.piece).arrayBuffer()));
+			FS.writeFile(path, new Uint8Array(0));
+			const node = GobWeb.node(path);
+			node.gobPieces = pieces;
+			node.gobFreed = 0;  // pieces dropped (from the first)
+			node.gobFree = false;
+			node.usedBytes = blob.size;
+			node.stream_ops = GobWeb.piecesOps ||= {
+				...node.stream_ops,
+				read: GobWeb.piecesRead,
+				write: () => { throw new FS.ErrnoError({{{ cDefs.EPERM }}}); },
+			};
+			return path;
+		},
+		piecesOps: null,
+
+		piecesRead(stream, buffer, offset, length, position) {
+			const node = stream.node, size = GobWeb.piece;
+			if (position >= node.usedBytes)
+				return 0;
+			length = Math.min(node.usedBytes - position, length);
+			for (let done = 0; done < length;) {
+				const at = position + done, i = Math.floor(at / size), piece = node.gobPieces[i];
+				if (!piece)
+					throw new FS.ErrnoError({{{ cDefs.EIO }}}); // read again after it was dropped
+				const n = Math.min(piece.length - (at - i * size), length - done);
+				buffer.set(piece.subarray(at - i * size, at - i * size + n), offset + done);
+				done += n;
+			}
+			if (node.gobFree) // the pieces before the one before this read
+				for (const end = Math.floor(position / size) - 1; node.gobFreed < end; node.gobFreed++)
+					node.gobPieces[node.gobFreed] = null;
+			return length;
 		},
 
 		// Writes /gobnative to IndexedDB; one write at a time. `done` is
@@ -278,9 +612,11 @@ addToLibrary({
 			GobWeb.syncing = true;
 			const callbacks = GobWeb.afterSync;
 			GobWeb.afterSync = [];
-			FS.syncfs(false, (err) => {
+			GobWeb.save((err, written) => {
 				if (err)
 					console.error('gobnative: cannot write the browser storage:', err);
+				else
+					GobWeb.release(written);
 				GobWeb.syncing = false;
 				callbacks.forEach((f) => f(err));
 				if (GobWeb.syncAgain || GobWeb.afterSync.length) {
@@ -379,10 +715,12 @@ addToLibrary({
 				const written = [];
 				for (const { file, rel } of files) {
 					p.current = rel;
-					const data = new Uint8Array(await file.arrayBuffer());
 					const path = dest + '/' + rel;
 					FS.mkdirTree(path.substring(0, path.lastIndexOf('/')));
-					FS.writeFile(path, data, { canOwn: true }); // no copy
+					if (dest === GobWeb.temp) // an installer or a zip, read once
+						await GobWeb.writePieces(path, file);
+					else
+						FS.writeFile(path, new Uint8Array(await file.arrayBuffer()), { canOwn: true }); // no copy
 					written.push(path);
 					done += file.size;
 					p.progress = total ? done / total : 1;
@@ -396,9 +734,8 @@ addToLibrary({
 			}
 		},
 
-		blobUrl(path, mime) {
-			const data = FS.readFile(path);
-			return URL.createObjectURL(new Blob([data], { type: mime }));
+		async blobUrl(path, mime) {
+			return URL.createObjectURL(new Blob([await GobWeb.readFile(path)], { type: mime }));
 		},
 	},
 
@@ -407,6 +744,31 @@ addToLibrary({
 
 	gob_web_sync__deps: ['$GobWeb'],
 	gob_web_sync: () => GobWeb.sync(() => GobWeb.refreshStorage()),
+
+	gob_web_load__deps: ['$GobWeb', '$UTF8ToString'],
+	gob_web_load: (folders) => {
+		const list = UTF8ToString(folders).split('\n').filter(Boolean);
+		GobWeb.loading++;
+		const t0 = performance.now();
+		GobWeb.fill(list, (err, bytes) => {
+			if (err)
+				console.error('gobnative: cannot read the game from the browser storage:', err);
+			else
+				console.log(`gobnative: ${GobWeb.mb(bytes)} MB loaded for ${list.join(', ')} ` +
+					`in ${Math.round(performance.now() - t0)} ms`);
+			GobWeb.loading--;
+		});
+	},
+
+	gob_web_loading__deps: ['$GobWeb'],
+	gob_web_loading: () => (GobWeb.loading ? 1 : 0),
+
+	gob_web_free_as_read__deps: ['$GobWeb', '$UTF8ToString'],
+	gob_web_free_as_read: (path) => {
+		const node = GobWeb.node(UTF8ToString(path));
+		if (node && node.gobPieces)
+			node.gobFree = true;
+	},
 
 	gob_web_sync_busy__deps: ['$GobWeb'],
 	gob_web_sync_busy: () => (GobWeb.syncing ? 1 : 0),
@@ -443,21 +805,26 @@ addToLibrary({
 
 	gob_web_download__deps: ['$GobWeb', '$UTF8ToString'],
 	gob_web_download: (path, name, mime) => {
-		const url = GobWeb.blobUrl(UTF8ToString(path), UTF8ToString(mime));
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = UTF8ToString(name);
-		document.body.appendChild(a);
-		a.click();
-		a.remove();
-		setTimeout(() => URL.revokeObjectURL(url), 60000);
+		name = UTF8ToString(name);
+		GobWeb.blobUrl(UTF8ToString(path), UTF8ToString(mime)).then((url) => {
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = name;
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+			setTimeout(() => URL.revokeObjectURL(url), 60000);
+		}).catch((e) => console.error('gobnative: cannot read the file', e));
 	},
 
 	gob_web_open_file__deps: ['$GobWeb', '$UTF8ToString'],
+	// (A file left in the storage takes a moment to read: the tab still
+	// opens, within the few seconds a click lets a page open one.)
 	gob_web_open_file: (path, mime) => {
-		const url = GobWeb.blobUrl(UTF8ToString(path), UTF8ToString(mime));
-		window.open(url, '_blank');
-		setTimeout(() => URL.revokeObjectURL(url), 600000);
+		GobWeb.blobUrl(UTF8ToString(path), UTF8ToString(mime)).then((url) => {
+			window.open(url, '_blank');
+			setTimeout(() => URL.revokeObjectURL(url), 600000);
+		}).catch((e) => console.error('gobnative: cannot read the file', e));
 	},
 
 	// The page again, without the developer options (a fresh start of the

@@ -5,7 +5,9 @@
 // is web/library_gobnative.js. The app's folder (the pref root, kRoot) is
 // kept in the browser's IndexedDB: loaded into memory before main() runs
 // and written back after changes (sync(); also every few seconds and when
-// the page is hidden). Files the player picks (<input type=file>) are read
+// the page is hidden). To spare memory, the games' big files, HD packs,
+// music and screenshots stay in IndexedDB (empty files in their place)
+// until a game starts (load()). Files the player picks (<input type=file>) are read
 // asynchronously into the in-memory file system; the app polls for them
 // once per frame. Nothing leaves the browser.
 
@@ -32,6 +34,16 @@ bool syncBusy();
 // The periodic write (every few seconds); off while an import writes a
 // partial folder.
 void setAutoSync(bool on);
+
+// Reads the files under `folders` that were left in the browser's storage
+// (a game's folder and its settings folder, before the game opens); they
+// stay in memory from then on. loading() is true until they are in.
+void load(const std::vector<std::string> &folders);
+bool loading();
+// File `path` in kTemp (a picked installer) is read once from start to
+// end from now on: what was read is dropped from memory as the reading
+// goes on (reading it again fails).
+void freeAsRead(const std::string &path);
 
 enum class PickState { Idle, Choosing, Reading, Done, Cancelled, Failed };
 struct PickOptions {

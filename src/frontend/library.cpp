@@ -628,6 +628,9 @@ struct LibraryScreen::State {
 		const std::string setup = expand(input);
 		if (import)
 			return;
+#ifdef __EMSCRIPTEN__
+		temporary |= setup.rfind(std::string(web::kTemp) + "/", 0) == 0; // dropped too
+#endif
 		// A picked installer (web) is a copy in memory: gone once used.
 		struct Discard {
 			std::string file;
@@ -678,6 +681,10 @@ struct LibraryScreen::State {
 			say("Couldn't start installing.", true, im->installer.error());
 			return;
 		}
+#ifdef __EMSCRIPTEN__
+		if (temporary)
+			web::freeAsRead(setup); // read once from here on: memory is freed as it goes
+#endif
 		im->game = g;
 		im->setup = setup;
 		im->dest = dest;

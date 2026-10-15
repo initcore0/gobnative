@@ -1798,6 +1798,7 @@ struct WebMain {
 	LibraryContext library;
 	std::unique_ptr<LibraryScreen> screen;
 	std::unique_ptr<GameRun> run;
+	std::string chosen; // the game folder chosen, while its files are read from the storage
 	double nextFrame = 0;
 	bool frameTimer = false; // --frame-timer: frames without the display (tests)
 	double statStart = 0, statMs = 0;
@@ -1829,14 +1830,30 @@ void webFrame() {
 	if (w.screen) {
 		if (w.screen->frame())
 			return;
-		const std::string chosen = w.screen->close();
+		w.chosen = w.screen->close();
 		w.screen.reset();
-		if (chosen.empty()) {
+		if (w.chosen.empty()) {
 			webGameOver(0, {});
 			return;
 		}
+		// The library left the games' big files in the browser's storage:
+		// this game's folder and its settings folder are read first.
+		std::vector<std::string> folders{w.chosen};
+		const GameInfo *game = w.st.gameKey.empty() ? nullptr : gameByKey(w.st.gameKey);
+		if (const Detection d = detectGame(w.chosen); !game && d.game)
+			game = &gameInfo(*d.game);
+		if (game && !w.st.root.empty())
+			folders.push_back((w.st.root / game->prefFolder).string());
+		web::load(folders);
+		web::status(std::string("Loading ") + (game ? game->title : "the game") + "...");
+		return;
+	}
+	if (!w.chosen.empty()) {
+		if (web::loading())
+			return;
+		web::status("");
 		std::vector<std::string> args = w.args;
-		args.insert(args.begin() + 1, chosen);
+		args.insert(args.begin() + 1, std::exchange(w.chosen, {}));
 		const int code = openGame(w.st, args, w.run);
 		if (!w.run)
 			webGameOver(code ? code : 1, "it could not be started");
