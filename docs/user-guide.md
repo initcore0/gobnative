@@ -179,8 +179,20 @@ after imports and settings changes, every few seconds and when the page
 is hidden (`web/library_gobnative.js`, `frontend/web.h`).
 
 **Limits.** Needs WebGL 2 (current Chrome, Edge, Firefox, Safari).
-Everything in the browser's storage is loaded into memory when the page
-opens (the three games are about 255 MB; large HD packs add to that).
+The page keeps in memory only what it needs, so that a phone's tab
+doesn't run out: the library reads each game's small archives (about
+15 MB for the three games: detection and the cover pictures), and Play
+reads that game's folder and its settings, saves and HD packs (Goblins
+Quest 3, the largest, about 145 MB) before it starts, which takes a
+moment. Everything else (music, speech, videos, manuals, the other
+games' HD packs) stays in the browser's storage. Measured in Chromium
+with the three games installed: the library uses 20 MB of JavaScript
+memory and 32 MB of WebAssembly memory (before: 257 MB and 128 MB),
+Goblins Quest 3 running 162 MB and 134 MB (before: 258 MB and 154 MB).
+An installer is read into memory in pieces that are let go as the
+import goes on, and what was imported leaves memory once it's saved:
+importing Goblins Quest 3 holds at most 165 MB of files (before: 372 MB,
+and the 118 MB installer stayed until the page was closed).
 Browsers may clear the storage of sites you haven't visited for a long
 time unless they grant persistent storage (the page asks after an
 import). A tile's

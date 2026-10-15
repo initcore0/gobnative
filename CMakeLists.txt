@@ -254,11 +254,13 @@ if(EMSCRIPTEN)
 	# gobnative.js + gobnative.wasm, loaded by web/index.html. The app's
 	# folder is an IndexedDB file system (IDBFS); no threads (no
 	# cross-origin isolation needed); 4 MB of stack as the desktop's
-	# 8 MB main threads have more than they need.
+	# 8 MB main threads have more than they need; 32 MB of memory to
+	# start with (the library needs little; a game grows it, phones are
+	# short of memory).
 	target_sources(gobnative PRIVATE src/frontend/web.cpp)
 	set_target_properties(gobnative PROPERTIES SUFFIX ".js")
 	target_link_options(gobnative PRIVATE
-		-sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=128MB -sMAXIMUM_MEMORY=4GB -sSTACK_SIZE=4MB
+		-sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=32MB -sMAXIMUM_MEMORY=4GB -sSTACK_SIZE=4MB
 		-sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sGL_ENABLE_GET_PROC_ADDRESS=1
 		-sFORCE_FILESYSTEM=1 -lidbfs.js -sENVIRONMENT=web
 		--js-library ${CMAKE_SOURCE_DIR}/web/library_gobnative.js)

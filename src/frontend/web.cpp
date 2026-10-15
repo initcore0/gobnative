@@ -16,6 +16,9 @@ int gob_web_is_localhost();
 void gob_web_sync();
 int gob_web_sync_busy();
 void gob_web_autosync(int on);
+void gob_web_load(const char *folders);
+int gob_web_loading();
+void gob_web_free_as_read(const char *path);
 void gob_web_pick(const char *accept, int multiple, int folder, int topOnly, const char *destDir);
 int gob_web_pick_state();
 float gob_web_pick_progress();
@@ -98,6 +101,21 @@ bool syncBusy() {
 
 void setAutoSync(bool on) {
 	gob_web_autosync(on ? 1 : 0);
+}
+
+void load(const std::vector<std::string> &folders) {
+	std::string list;
+	for (const std::string &f : folders)
+		list += f + "\n";
+	gob_web_load(list.c_str());
+}
+
+bool loading() {
+	return gob_web_loading() != 0;
+}
+
+void freeAsRead(const std::string &path) {
+	gob_web_free_as_read(path.c_str());
 }
 
 void pick(const PickOptions &o) {

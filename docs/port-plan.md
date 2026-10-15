@@ -1884,10 +1884,29 @@ data is never bundled or hosted; local build and test only.
     library's title textures use RGB8; ES 3.0 contexts from SDL. Desktop
     GL untouched.
   - **Storage:** `/gobnative` (the pref root) is IDBFS, loaded in a
-    preRun (all three games, ~255 MB, load in 0.1-0.2 s in Chrome) and
-    written back after imports, settings, screenshots, every 5 s and when
-    the page is hidden (`web/library_gobnative.js`). The browser is asked
-    for persistent storage.
+    preRun and written back after imports, settings, screenshots, every
+    5 s and when the page is hidden (`web/library_gobnative.js`). The
+    browser is asked for persistent storage.
+  - **Memory (phones):** the page loads only what it needs, with its own
+    load and sync on IDBFS's database (no migration; IDBFS's own sync
+    would delete what wasn't loaded). Big files (in `Games/<game>` all but
+    the top-level `.STK`s, and HD packs, music, screenshots) get an empty
+    file marked as stored; Play fills in the game's folder and its
+    settings folder (`web::load`, ~0.15 s for Goblins Quest 3) before
+    `openGame()`. The sync leaves stored files alone, copies them within
+    IndexedDB when moved (moved aside, renamed from `.incoming`) and
+    empties written files the page doesn't need (after an import). Files
+    in `/tmp` (installers, zips) are held in 4 MB pieces; after
+    `GameInstaller::begin()` the pieces behind the read position are
+    dropped (`web::freeAsRead`). Dropped installers are now removed after
+    the import too. `INITIAL_MEMORY` 32 MB (was 128). Chromium, three
+    games installed: library 20 MB JS heap + 32 MB wasm (was 257 + 128),
+    Goblins Quest 3 running 162 + 134 MB (was 258 + 154), its import at
+    most 165 MB of files held (was 372, and the installer stayed). Tested
+    again in the pane: library and covers, `?installer=` import, zip
+    import, Remove, moved stored files, persistence across reloads, Play
+    of each game, quick save, reload and quick load (Gob2), Back to
+    library, the Manual read from the storage.
   - **Files:** `<input type=file>` (installer `.exe`, game folder with
     `webkitdirectory`, pack folder, pack `.zip`, music files) read with
     `File.arrayBuffer()` and written into MEMFS without a copy
@@ -1917,8 +1936,7 @@ data is never bundled or hosted; local build and test only.
   - **Not verified / limits:** fullscreen and F12's screenshot download
     (both need a real user gesture or start downloads); Safari and
     Firefox (only Chromium was used); real mouse play over a long
-    session; IndexedDB eviction. Everything in the storage is held in
-    memory (MEMFS) while the page is open. The test pane was hidden, so
+    session; IndexedDB eviction. The test pane was hidden, so
     the browser throttled its frames: `--frame-timer` (posted messages
     instead of animation frames) kept tests at full speed.
 
