@@ -1,7 +1,7 @@
 # gobnative
 
-**Play Coktel Vision's Goblins trilogy natively on macOS, Windows and in the
-browser, with optional AI-remastered HD art.**
+**Play Coktel Vision's Goblins trilogy natively on macOS, Windows, LG webOS
+TVs and in the browser, with optional AI-remastered HD art.**
 
 gobnative is a from-scratch reimplementation of the Gob engine that ran
 **Gobliiins** (1991), **Gobliins 2: The Prince Buffoon** (1992) and
@@ -46,11 +46,11 @@ well; gobnative is a separate project that adds things on top.
 
 ## Status
 
-| | macOS | Windows | Web (WebAssembly) |
-|---|---|---|---|
-| Gobliiins | ✅ | ✅ built and tested in CI | ✅ |
-| Gobliins 2 | ✅ played through by hand | ✅ built and tested in CI | ✅ |
-| Goblins Quest 3 (speech, video) | ✅ | ✅ built and tested in CI | ✅ |
+| | macOS | Windows | Web (WebAssembly) | LG TV (webOS) |
+|---|---|---|---|---|
+| Gobliiins | ✅ | ✅ built and tested in CI | ✅ | ✅ on an LG C1 |
+| Gobliins 2 | ✅ played through by hand | ✅ built and tested in CI | ✅ | ✅ on an LG C1 |
+| Goblins Quest 3 (speech, video) | ✅ | ✅ built and tested in CI | ✅ | ✅ on an LG C1 |
 
 **How it's tested:**
 - All three games are played from the intro to the ending by automated
@@ -60,6 +60,10 @@ well; gobnative is a separate project that adds things on top.
 - The Windows build is compiled and unit-tested on Windows in CI, but hasn't
   had much hands-on desktop testing yet.
 - The web build has been tested in Chromium.
+- The LG TV build is built in CI and was tested by hand on an LG OLED C1
+  (webOS 6.5.3, rooted, with the Homebrew Channel). Each game was started and
+  played with the Magic Remote, and the unit tests and headless runs pass on
+  the TV.
 
 ## Quick start
 
@@ -92,6 +96,23 @@ scripts/build-web.sh --serve 8080
 
 Then open http://localhost:8080/. The installers are unpacked inside the
 page and kept in the browser's storage; nothing is uploaded.
+
+**LG webOS TV** (a rooted TV with the Homebrew Channel; Developer Mode
+should work the same way, but hasn't been tried):
+
+1. Download `io.github.initcore0.gobnative_….ipk` from the latest release
+   (or the `gobnative-webos` artifact of the latest CI run) and install it,
+   for example with the webOS CLI's `ares-install`. The user guide shows
+   other ways.
+2. Copy the GOG installers onto a USB stick (any folder) and plug it into
+   the TV. Start gobnative: each game shows **Install from USB**.
+3. Play with the Magic Remote's pointer:
+   - **Back** is the right click;
+   - the colour keys skip (red), open the menu (green), show or hide their
+     tips (yellow) and switch fast forward (blue);
+   - holding Back asks whether to leave.
+
+See "LG webOS TV" in the user guide for the details and building.
 
 ## Make your own HD remaster
 

@@ -18,6 +18,9 @@
 # command-line tools and gobnative for the TV's 32-bit ARM, and writes
 #   dist/webos/                       the package's files
 #   dist/<app id>_<version>_arm.ipk   the package
+#   dist/<app id>.manifest.json       its Homebrew Channel manifest
+# The version is $GOB_VERSION, else the latest vX.Y.Z tag's X.Y.Z (webOS
+# packages take only numbers), else appinfo.json's.
 # --test copies the tests and tools to /tmp/gobnative-test on a rooted TV
 # over SSH and runs the unit tests there (nothing outside that folder is
 # touched; /tmp is cleared when the TV restarts). --install installs the
@@ -86,11 +89,41 @@ rm -rf "$pkg"
 cmake --install "$build" --prefix "$pkg" >/dev/null
 "$sdk/bin/arm-webos-linux-gnueabi-strip" "$pkg/gobnative"
 (cd "$repo" && git describe --always --dirty 2>/dev/null || echo unknown) > "$pkg/VERSION.txt"
-id=$(sed -n 's/.*"id": *"\([^"]*\)".*/\1/p' "$pkg/appinfo.json")
-rm -f "$repo/dist/${id}_"*.ipk
+field() { sed -n "s/.*\"$1\": *\"\([^\"]*\)\".*/\1/p" "$pkg/appinfo.json"; }
+id=$(field id)
+version=${GOB_VERSION:-$(cd "$repo" && git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null | sed 's/^v//')}
+if printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+	sed -i.bak "s/\"version\": *\"[^\"]*\"/\"version\": \"$version\"/" "$pkg/appinfo.json"
+	rm -f "$pkg/appinfo.json.bak"
+fi
+version=$(field version)
+rm -f "$repo/dist/${id}_"*.ipk "$repo/dist/$id.manifest.json"
 ares-package --no-minify --outdir "$repo/dist" "$pkg" >/dev/null
 ipk=$(ls "$repo/dist/${id}_"*.ipk)
 echo "$ipk"
+
+# The Homebrew Channel's manifest (webosbrew's format): the package next to
+# it in a GitHub release (ipkUrl is relative), its hash and size.
+source_url=${GOB_SOURCE_URL:-https://github.com/initcore0/gobnative}
+icon_url=$(printf '%s' "$source_url" | sed 's|//github.com/|//raw.githubusercontent.com/|')/main/webos/icon130.png
+sha=$( (command -v sha256sum >/dev/null && sha256sum "$ipk" || shasum -a 256 "$ipk") | cut -d' ' -f1)
+size=$(wc -c < "$ipk" | tr -d ' ')
+cat > "$repo/dist/$id.manifest.json" <<EOF
+{
+  "id": "$id",
+  "version": "$version",
+  "type": "$(field type)",
+  "title": "$(field title)",
+  "appDescription": "$(field appDescription)",
+  "iconUri": "$icon_url",
+  "sourceUrl": "$source_url",
+  "rootRequired": false,
+  "ipkUrl": "$(basename "$ipk")",
+  "ipkHash": { "sha256": "$sha" },
+  "ipkSize": $size
+}
+EOF
+echo "$repo/dist/$id.manifest.json"
 
 if [ -n "$test_tv" ]; then
 	dir=/tmp/gobnative-test

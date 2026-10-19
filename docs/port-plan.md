@@ -106,8 +106,10 @@ References:
 - [x] Web. WebAssembly build with Emscripten: the library, imports into
   the browser's storage, all three games (commits "Web build: ..." and
   "CI: build the web version ..."; notes in 6.7)
-- [ ] TV. LG webOS build for the Homebrew Channel, target an OLED C1
-  (milestones T0-T5 in 6.8)
+- [x] TV. LG webOS build for the Homebrew Channel, target an OLED C1:
+  the TV library for the remote, games installed from a USB stick, the
+  colour keys and Back, filters sped up for the TV, the `.ipk` built in
+  CI with its Homebrew Channel manifest (milestones T0-T5 in 6.8)
 
 Baselines for the current build (Gob2 engine), measured headlessly with
 `gobrun --press-every 5`:
@@ -2065,8 +2067,7 @@ on it; nothing on the TV is changed outside the app's own folder):
   - **Build note:** the macOS-hosted GCC 12 crashed once (internal
     compiler error, segfault, in `overlay_tabs.cpp`) in a parallel build
     and built it on a rerun.
-- [ ] **T2. Games onto the TV.** Mostly done; waiting on a person at
-  the TV (the remote, plugging a stick in while the app runs). Results:
+- [x] **T2. Games onto the TV.** Done. Results:
   - **USB in the jail:** the TV mounts sticks at
     `/tmp/usb/<disk>/<partition>` (`tfat`, `gid=5000`, `rw`), and the
     app's jail sees them under its own `/tmp/usb`.
@@ -2155,7 +2156,8 @@ on it; nothing on the TV is changed outside the app's own folder):
     GOG's installers are the way in; a folder on a stick would be
     played from the stick, so it would need a copy step (later, if
     wanted).
-- [ ] **T3. Remote control.** Magic Remote: pointer = mouse, wheel,
+- [x] **T3. Remote control.** Done (the plan, kept for the record: what
+  was built is below). Magic Remote: pointer = mouse, wheel,
   cursor show/hide keys. Remote keys: Back (claimed with
   `SDL_WEBOS_ACCESS_POLICY_KEYS_BACK`: close the overlay, else back to
   the library, else leave the app; never swallowed), a colour key for the
@@ -2232,9 +2234,10 @@ on it; nothing on the TV is changed outside the app's own folder):
   - **Overlay from a sofa:** on webOS everything is 1.7 times larger
     (`style.ScaleAllSizes`, `style.FontScaleMain`, the window's width).
     Checked by a screen capture of the Video tab.
-  - **Still to do in T3:** arrow keys and OK inside the overlay (it's
-    ImGui; its keyboard navigation is on but nothing draws the focus on
-    a TV yet), gamepad.
+  - **User test:** Back as the right click, the long-Back dialogs, and
+    all three games played with the remote.
+  - **Left for later** (open issues, section 7): arrow keys and OK
+    inside the overlay; a gamepad.
 - [x] **T4. Speed and memory on the TV.** Done. Results (LG C1, 1920x1080
   window, the picture 1280x960 with integer scaling; `--bench-at 8 120`,
   ms per frame with `glFinish` after each):
@@ -2283,12 +2286,53 @@ on it; nothing on the TV is changed outside the app's own folder):
   - **Defaults:** unchanged (Sharp, 2.7 ms). Integer scaling leaves wide
     borders on a TV (1280x960 of 1920x1080); the full height without it
     (1440x1080) is the player's choice in the Video tab.
-- [ ] **T5. Packaging and release.** CI job with the SDK making the
-  `.ipk` as an artifact (and in releases); a Homebrew Channel repository
-  manifest pointing at the release `.ipk` (publishing it is the user's
-  call); a short "LG TV" section in the README and user guide.
+- [x] **T5. Packaging and release.** Done. Results:
+  - **Version:** `scripts/build-webos.sh` writes it into the package's
+    `appinfo.json`: `GOB_VERSION` (CI sets it from a `vX.Y.Z` tag), else
+    the latest `vX.Y.Z` tag's numbers (webOS takes x.y.z only; 0.2.0
+    now), else `webos/appinfo.json`'s.
+  - **Manifest:** the script also writes
+    `dist/io.github.initcore0.gobnative.manifest.json`, in the Homebrew
+    Channel's format (as its own release has it): id, version, type,
+    title, appDescription, iconUri (`webos/icon130.png` on main),
+    sourceUrl, `rootRequired: false`, `ipkUrl` (the package's name: it
+    sits next to the manifest in a release), `ipkHash.sha256` and
+    `ipkSize`.
+  - **CI:** the "LG webOS TV" job (`.github/workflows/windows.yml`) runs
+    on Ubuntu. It downloads buildroot-nc4's SDK for Linux hosts
+    (2026.08, GCC 14; the same layout as the Mac SDK, so
+    `cmake/webos.cmake` takes either), SDL-webOS 2.30.12-webos.5 and
+    `@webos-tools/cli` 3.2.6, runs `scripts/build-webos.sh`, and keeps
+    the `.ipk` and the manifest as the `gobnative-webos` artifact. A
+    version tag's release gets both, so
+    `releases/latest/download/io.github.initcore0.gobnative.manifest.json`
+    always names the latest package. (The script is plain `sh`, which is
+    dash on Ubuntu.)
+  - **Listing:** `webos/io.github.initcore0.gobnative.yml` is the package
+    file for webosbrew's apps repository (category game, pool main, the
+    manifest URL above, a description saying the games come from the
+    player's own GOG installers). Submitting it is a pull request to
+    their repository and the user's call. Their rules ask for an
+    AI-use disclosure and a test on a real TV (named: LG OLED C1, webOS
+    6.5.3).
+  - **Docs:** README (LG TV in the status table, how it's tested, a
+    quick start) and the user guide's "LG webOS TV" section (installing,
+    USB, the remote's keys, the data folder, building, the listing).
+  - **Checked:** the local build writes 0.2.0 and the manifest above.
+    Installing it over 0.1.0 on the C1 kept the three games, the Gobliins
+    2 saves and the HD pack. The CI job runs only on GitHub (Linux host,
+    GCC 14).
 
 ## 7. Open issues
+
+- **webOS: the overlay without the pointer.** The library and the TV
+  dialogs move a focus ring with the arrow keys, but the in-game overlay
+  (ImGui) has no visible focus on a TV yet: it needs the pointer.
+- **webOS: gamepads** aren't handled (SDL game controllers would map to
+  the mouse and the keys).
+- **webOS: back from Home.** The game pauses when another app or the home
+  screen comes to the front; resuming hasn't been checked (an app started
+  over SSH can't be brought back to the front by the launcher).
 
 - **Gob1 copy protection:** resolved in G1.1: the GOG INTRO.TOT has no
   `callSub(3905)`, so nothing needs skipping.

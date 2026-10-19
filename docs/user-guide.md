@@ -3,7 +3,7 @@
 The full manual: building, every feature, the tools and the remaster
 scripts. The project overview is in [README.md](../README.md).
 
-A native macOS, Windows and web (WebAssembly) reimplementation of the
+A native macOS, Windows, LG webOS TV and web (WebAssembly) reimplementation of the
 Coktel Vision Gob engine that plays **Gobliiins** (Goblins 1), **Gobliins 2:
 The Prince Buffoon** and **Goblins Quest 3** (CD versions) in one app.
 No ScummVM or DOSBox at runtime. Built with C++20 + SDL2.
@@ -213,6 +213,109 @@ desktop, for example
 `--frame-timer` keeps the frames going in a page the browser doesn't
 show.
 
+## LG webOS TV
+
+gobnative runs on LG TVs with webOS as a native app (an `.ipk` package).
+It was made on and for an LG OLED C1 (2021, webOS 6.5.3), the only TV it
+has been tried on. Other webOS TVs should work if their GPU does OpenGL ES
+3.0.
+
+**What you need:** a TV that installs packages from outside LG's store.
+That means a rooted TV with the [Homebrew Channel](https://www.webosbrew.org/),
+or Developer Mode. Only a rooted TV has been tried.
+
+**Installing the package.** Every release has
+`io.github.initcore0.gobnative_<version>_arm.ipk` and its Homebrew Channel
+manifest. Every CI run keeps them as the `gobnative-webos` artifact. Any
+of these installs or updates it; an update keeps your games and saves:
+
+- the webOS CLI (`npm install -g @webos-tools/cli`), with the TV set up by
+  `ares-setup-device`:
+
+      ares-install io.github.initcore0.gobnative_0.2.0_arm.ipk
+
+- the webosbrew Device Manager app, which installs a package file;
+- from a checkout, on a rooted TV reachable over SSH as root:
+
+      scripts/build-webos.sh --install root@192.168.1.50
+
+  This builds, copies the package to the TV's `/tmp`, installs it as the
+  Homebrew Channel does, and starts it.
+
+**Putting the games on the TV.** On a computer, download each game's
+offline backup installer from your GOG library (`setup_….exe`). Copy them
+onto a USB stick (any folder, up to three folders deep) and plug it into
+the TV. The library finds the stick by itself, checks each installer, and
+shows **Install from USB** on its game's tile, with the size it takes.
+Installing Gobliiins takes about 6 seconds on a C1. **Browse the USB
+stick** opens a list of the stick's folders and installers, for files with
+other names. A tile's **Remove** deletes an installed game; your saves and
+settings stay.
+
+**The remote:**
+
+| | In the library | In a game |
+|---|---|---|
+| Pointer and OK | everything | the mouse (left click) |
+| Back | close a dialog, leave the app | right click (puts a held item away); closes the menu |
+| Hold Back | asks "Quit gobnative?" | asks "Leave the game?" (keep playing, back to library, quit) |
+| Red | Gobliiins: Play or Install from USB | Escape: skip a cutscene, leave a game menu (held: leave the game) |
+| Green | Gobliins 2: Play or Install | the menu (overlay) |
+| Yellow | Goblins Quest 3: Play or Install | show or hide the key tips under the picture |
+| Blue | browse the USB stick | fast forward on and off |
+| Arrows and OK | move a white ring over the buttons, and press | the game's arrow keys and Enter |
+
+When the game asks for a name to type (Gobliins 2's save names), the TV's
+on-screen keyboard comes up. Quick save and quick load are in the menu's
+Levels tab. The game pauses while another app or the home screen is in
+front.
+
+**On the TV, the picture and the menu** fill the screen. The menu is 1.7
+times larger, to be read from a sofa. Every display filter but CRT keeps 60
+frames a second on a C1. CRT is heavier (about 40), and the Video tab says
+so. HD packs work as on the desktop: put them in the game's `HDPacks`
+folder inside the data folder below.
+
+**Where things are.** The app runs in webOS's jail as a restricted user.
+Everything it writes is in `data/` inside its own folder,
+`/media/developer/apps/usr/palm/applications/io.github.initcore0.gobnative/data/`:
+
+- `Games/` (the installed games);
+- each game's settings, saves and HD packs;
+- `gobnative.log`, the output of the last run.
+
+**Building it.** You need three things, next to the repository or where
+the variables say:
+
+1. webosbrew's native SDK (`arm-webos-linux-gnueabi_sdk-buildroot`),
+   unpacked, with its `relocate-sdk.sh` run once (`WEBOS_SDK`, else
+   `../tools/arm-webos-linux-gnueabi_sdk-buildroot`):
+   - Linux hosts: [buildroot-nc4](https://github.com/openlgtv/buildroot-nc4/releases);
+   - macOS: webosbrew's [native-toolchain](https://github.com/webosbrew/native-toolchain/releases).
+2. SDL2 for webOS, from [SDL-webOS](https://github.com/webosbrew/SDL-webOS/releases).
+   Take a release's `SDL2-x.y.z-webos.tar.gz`, not the `-abi` one, and
+   unpack it (`SDL2_WEBOS`, else the newest `../tools/sdl2-webos/SDL2-*`).
+   The package bundles it, as the TVs' own SDL2 is too old.
+3. `ares-package` from the webOS CLI (`npm install @webos-tools/cli`), on
+   the PATH or in `../tools/webos-cli`.
+
+Then:
+
+    scripts/build-webos.sh                          # dist/*.ipk and its manifest
+    scripts/build-webos.sh --test root@192.168.1.50 # also runs the unit tests on the TV
+    scripts/build-webos.sh --install root@192.168.1.50
+
+The package's version is the latest `vX.Y.Z` tag's (or `GOB_VERSION`).
+CI builds the package on every push to main; a version tag puts it and its
+manifest in the release. Notes from the port, including a GCC 12
+coroutine bug that the engine works around, are in `port-plan.md`
+(section 6.8).
+
+**Homebrew Channel listing.** `webos/io.github.initcore0.gobnative.yml` is
+ready for webosbrew's [apps repository](https://github.com/webosbrew/apps-repo).
+Its `manifestUrl` points at the latest release's manifest, so new releases
+need no new pull request.
+
 ## Tools
 
     build/stktool list    /path/to/INTRO.STK
@@ -252,9 +355,11 @@ own Inno Setup reader with LZMA/LZMA2 decoders, `gobinstall`) and the game
 library that replaced the picker (tiles with the games' title pictures,
 import with a progress bar, back to the library from the overlay); see
 "Installing from GOG" and `install.md`. The Windows build (see "Windows"; it
-still needs a test on a real Windows PC) and the web build
+still needs a test on a real Windows PC), the web build
 (WebAssembly: the library, imports from GOG installers into the
-browser's storage, all three games; see "Web").
+browser's storage, all three games; see "Web") and the LG webOS TV build
+(a library for the remote, games installed from a USB stick, the colour
+keys, Back as the right click; see "LG webOS TV").
 
 Open:
 
