@@ -219,9 +219,11 @@ gobnative runs on LG TVs with webOS as a native app (an `.ipk` package).
 It was made on and for an LG OLED C1 (2021, webOS 6.5.3), the only TV it
 has been tried on. Other webOS TVs should work if their GPU does OpenGL ES
 3.0: webosbrew's compatibility check (in the GitHub build) finds what it
-needs on every firmware it knows from webOS 4.10 on, and the Homebrew
-Channel listing asks for that. On a TV without it the app can't open its
-window and goes back to the home screen.
+needs on every firmware it knows from webOS 4.10 on. The Homebrew Channel
+listing asks for webOS 6 or later, the oldest release it was tried on; on
+an older TV, install the `.ipk` from the release by hand. On a TV without
+OpenGL ES 3.0 the app can't open its window and goes back to the home
+screen.
 
 **What you need:** a TV that installs packages from outside LG's store.
 That means a rooted TV with the [Homebrew Channel](https://www.webosbrew.org/),
