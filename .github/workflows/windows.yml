@@ -1,12 +1,13 @@
 # gob2native - Windows build (MSVC) with the unit tests and the package as
-# a workflow artifact; the macOS build with the unit tests; and the web
-# build (Emscripten) as an artifact.
+# a workflow artifact; the macOS build with the unit tests; the web build
+# (Emscripten) and the LG webOS TV package (.ipk and its Homebrew Channel
+# manifest) as artifacts.
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # The tests that need game data or GOG installers skip themselves here
 # (none are on GitHub's machines). Every run keeps the packages as
 # artifacts; a pushed version tag (v1.2.3) also makes a GitHub Release with
-# the Windows, macOS and web zips.
+# the Windows, macOS and web zips and the webOS package.
 
 name: Build
 
@@ -151,10 +152,52 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  webos:
+    name: LG webOS TV
+    runs-on: ubuntu-latest
+    env:
+      # The SDK for Linux hosts (GCC 14; the macOS one used locally is GCC 12),
+      # webosbrew's SDL2 for webOS (bundled in the package), and the webOS CLI
+      # for ares-package (scripts/build-webos.sh, docs/port-plan.md 6.8).
+      WEBOS_SDK_URL: https://github.com/openlgtv/buildroot-nc4/releases/download/2026.08-webos/arm-webos-linux-gnueabi_sdk-buildroot-x86_64.tar.gz
+      SDL2_WEBOS_URL: https://github.com/webosbrew/SDL-webOS/releases/download/release-2.30.12-webos.5/SDL2-2.30.12-webos.tar.gz
+      WEBOS_CLI_VERSION: 3.2.6
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # the tags: the package's version
+
+      - name: webOS SDK, SDL-webOS and the webOS CLI
+        run: |
+          curl -fsSL "$WEBOS_SDK_URL" | tar -xz -C "$RUNNER_TEMP"
+          "$RUNNER_TEMP/arm-webos-linux-gnueabi_sdk-buildroot/relocate-sdk.sh"
+          mkdir -p "$RUNNER_TEMP/sdl2-webos"
+          curl -fsSL "$SDL2_WEBOS_URL" | tar -xz -C "$RUNNER_TEMP/sdl2-webos"
+          npm install --prefix "$RUNNER_TEMP/webos-cli" --no-fund --no-audit "@webos-tools/cli@$WEBOS_CLI_VERSION"
+          echo "WEBOS_SDK=$RUNNER_TEMP/arm-webos-linux-gnueabi_sdk-buildroot" >> "$GITHUB_ENV"
+          echo "SDL2_WEBOS=$RUNNER_TEMP/sdl2-webos" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/webos-cli/node_modules/.bin" >> "$GITHUB_PATH"
+
+      - name: Build the package
+        run: |
+          case "$GITHUB_REF" in
+          refs/tags/v*) export GOB_VERSION="${GITHUB_REF_NAME#v}" ;;
+          esac
+          scripts/build-webos.sh
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gobnative-webos
+          path: |
+            dist/*.ipk
+            dist/*.manifest.json
+          if-no-files-found: error
+          retention-days: 30
+
   release:
     name: Release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [windows, macos, web]
+    needs: [windows, macos, web, webos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -171,5 +214,8 @@ jobs:
           (cd gobnative-windows-x64 && zip -qr ../gobnative-windows-x64.zip .)
           (cd gobnative-web && zip -qr ../gobnative-web.zip .)
           cp gobnative-macos-arm64/gobnative-macos-arm64.zip .
+          # The TV package and its Homebrew Channel manifest as they are: the
+          # manifest names the package next to it (releases/latest/download/).
+          cp gobnative-webos/*.ipk gobnative-webos/*.manifest.json .
           gh release create "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" --title "gobnative $GITHUB_REF_NAME" --generate-notes \
-            gobnative-windows-x64.zip gobnative-macos-arm64.zip gobnative-web.zip
+            gobnative-windows-x64.zip gobnative-macos-arm64.zip gobnative-web.zip *.ipk *.manifest.json

@@ -1,0 +1,25 @@
+title: gobnative
+iconUri: https://raw.githubusercontent.com/initcore0/gobnative/main/webos/icon130.png
+manifestUrl: https://github.com/initcore0/gobnative/releases/latest/download/io.github.initcore0.gobnative.manifest.json
+category: game
+pool: main
+shortDescription: Coktel Vision's Goblins trilogy, from your own GOG copies
+description: |
+  **Play Gobliiins, Gobliins 2 and Goblins Quest 3 natively on your TV.**
+
+  gobnative is a reimplementation of Coktel Vision's Gob engine (C++20, GPL-3.0).
+  It is not an emulator: the original game scripts run on a new engine.
+
+  **Bring your own games.** No game data is included or downloaded. Copy the
+  games' offline installers from your GOG library (`setup_...exe`) onto a USB
+  stick and plug it into the TV: the app finds them and installs the games.
+
+  On the TV:
+
+  - play with the Magic Remote's pointer; Back is the right click
+  - the colour keys skip, open the menu, show the key tips and switch fast forward
+  - quick save and load, level select, display filters, HD packs
+  - hold Back to leave
+
+  Tested on an LG OLED C1 (webOS 6.5.3). Source and documentation:
+  [github.com/initcore0/gobnative](https://github.com/initcore0/gobnative)
