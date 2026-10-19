@@ -1438,38 +1438,15 @@ void GameRun::drawTvBar(ImDrawList &dl) {
 	const float barTop = gy + gh, barH = float(wh) - barTop;
 	if (!app.config.keyTips || barH < 8)
 		return;
-	struct Tip {
-		ImU32 key;
-		const char *label;
-		bool enabled, lit;
+	using webos::KeyTip;
+	using webos::RemoteKey;
+	const std::vector<KeyTip> tips = {
+		{RemoteKey::Red, "Skip", app.canSkip()},
+		{RemoteKey::Green, "Menu"},
+		{RemoteKey::Yellow, "Hide tips"},
+		{RemoteKey::Blue, app.fastOn ? "Fast: on" : "Fast", true, app.fastOn},
 	};
-	const Tip tips[] = {
-		{IM_COL32(214, 48, 49, 255), "Skip", app.canSkip(), false},
-		{IM_COL32(39, 174, 96, 255), "Menu", true, false},
-		{IM_COL32(241, 196, 15, 255), "Hide tips", true, false},
-		{IM_COL32(41, 128, 185, 255), app.fastOn ? "Fast: on" : "Fast", true, app.fastOn},
-	};
-	ImFont *font = app.overlay.fonts().bold;
-	const float size = std::round(barH * 0.42f), keyW = size * 1.6f, keyH = size * 0.9f, gap = size * 0.5f,
-	            spacing = size * 1.8f;
-	float total = 0;
-	for (const Tip &t : tips)
-		total += keyW + gap + font->CalcTextSizeA(size, FLT_MAX, 0.0f, t.label).x + spacing;
-	total -= spacing;
-	float x = std::round((float(ww) - total) / 2);
-	const float cy = barTop + barH / 2;
-	for (const Tip &t : tips) {
-		const int alpha = t.enabled ? 255 : 90;
-		dl.AddRectFilled(ImVec2(x, cy - keyH / 2), ImVec2(x + keyW, cy + keyH / 2), withAlpha(t.key, alpha), keyH / 2);
-		if (t.lit)
-			dl.AddRect(ImVec2(x - 3, cy - keyH / 2 - 3), ImVec2(x + keyW + 3, cy + keyH / 2 + 3), colour::kText,
-			           keyH / 2 + 3, 0, 2.0f);
-		x += keyW + gap;
-		const ImVec2 ts = font->CalcTextSizeA(size, FLT_MAX, 0.0f, t.label);
-		dl.AddText(font, size, ImVec2(x, cy - ts.y / 2),
-		           t.lit ? colour::kText : withAlpha(t.enabled ? colour::kText : colour::kFaint, alpha), t.label);
-		x += ts.x + spacing;
-	}
+	webos::drawKeyTips(dl, app.overlay.fonts().bold, tips, 0, float(ww), barTop, barH);
 }
 #endif
 

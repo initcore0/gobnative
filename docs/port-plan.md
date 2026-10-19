@@ -2065,12 +2065,96 @@ on it; nothing on the TV is changed outside the app's own folder):
   - **Build note:** the macOS-hosted GCC 12 crashed once (internal
     compiler error, segfault, in `overlay_tabs.cpp`) in a parallel build
     and built it on a rerun.
-- [ ] **T2. Games onto the TV.** The library lists GOG installers and
-  game folders found on USB storage (`/tmp/usb/*/*`), instead of the
-  file dialog or drag-and-drop, and imports them as on desktop;
-  "Add existing game folder" from USB too. Done when: all three games
-  import from a USB stick and start; saves and settings survive an app
-  restart and a TV power cycle.
+- [ ] **T2. Games onto the TV.** Mostly done; waiting on a person at
+  the TV (the remote, plugging a stick in while the app runs). Results:
+  - **USB in the jail:** the TV mounts sticks at
+    `/tmp/usb/<disk>/<partition>` (`tfat`, `gid=5000`, `rw`), and the
+    app's jail sees them under its own `/tmp/usb`.
+    `webos::usbDrives()` lists them; the library polls every 3 s.
+  - **Finding installers:** when the drives change, a worker thread
+    (`std::jthread`) walks each drive three folders deep. It skips
+    hidden folders, "System Volume Information" and "LG Smart TV", and
+    opens every `setup_*.exe` with `GameInstaller::open` to learn its
+    game and the size it installs. On the C1 the three GOG installers in
+    the stick's top folder were found.
+  - **The TV library (user's request: larger text, no small folding
+    parts, bigger pictures, install status and size, a USB explorer,
+    colour keys):** `LibraryScreen::State::drawTv` replaces the desktop
+    layout under `GOB_WEBOS`. It's drawn for 1920x1080 and scaled.
+    - **Title and messages:** the title is 60 px; the latest message
+      replaces the subtitle in a coloured box.
+    - **Tiles:** three big tiles. The cover is 2:1 (wider than the title
+      picture's 4:3, so its bottom is cut and the game's name stays).
+      Each tile shows the title (38 px) and a status line (28 px):
+      "Installed · 57 MB" (`Tile::bytes`, summed in `refresh`),
+      "On the USB stick · 151 MB", "Installing from the USB stick..."
+      or "Not installed".
+    - **Tile buttons (76 px):** Play (green), Install from USB (amber),
+      or a greyed hint; each carries its colour key's chip. Imported
+      games get Remove, with a big confirmation ("Its files (57 MB) are
+      deleted from this TV. Your saves and settings stay").
+      `removeGame` is now shared with the web build. While a game
+      installs, its tile shows the progress bar, the percentage and
+      Cancel.
+    - **USB card:** "No USB stick plugged in" or "USB stick found · 3
+      game installers on it", three numbered steps on getting the
+      installers onto a stick, and "Browse the USB stick".
+    - **USB browser:** a full-screen dialog (`drawTvBrowser`) listing
+      folders and `.exe` files, with their game and size when they're
+      installers. Other files are only counted; Up goes back.
+      Choosing an installer installs its game (`startImport` with no
+      expected game).
+    - **Colour keys (in the tips bar at the bottom):** red, green and
+      yellow do Gobliiins', Gobliins 2's and Goblins Quest 3's button
+      (Play, or Install from USB); blue opens the browser. In a dialog,
+      red and blue close it.
+  - **On the C1:** Gobliiins installed from the stick in 6.3 s (through
+    `--tile-import-at`, started from SSH in the jail). The library then
+    showed both games installed with their title pictures and sizes,
+    and Goblins Quest 3 "On the USB stick". Captures only: an app
+    started from SSH isn't brought to the front, so the capture during
+    the install showed the TV's home screen.
+  - **User test:** the menu works with the remote: install, Remove,
+    browser, colour keys. Two problems were found.
+  - **Arrow keys and OK (user):** they were ignored. Now the library
+    moves a white focus ring over its buttons: Left/Right along the
+    tiles' buttons, Down to "Browse the USB stick", Up back, OK presses.
+    The first press only shows the ring, and moving the pointer hides it.
+    The browser selects rows with Up/Down (Close after the last; the
+    list scrolls to the selection), OK opens, Left goes up a folder. The
+    Remove dialog starts on "Keep it", Left/Right switch, OK confirms.
+    ImGui's own keyboard navigation is off on the TV.
+  - **Gobliiins and Goblins Quest 3 quit (user):** "unknown block type
+    182 at 0x00BF in INTRO" (Goblins 3 at once, Gobliiins later in its
+    intro), reproduced with `gobrun` on the TV.
+    - **Cause:** GCC 12 (the webOS SDK's) evaluates both arms of
+      `c ? co_await a : co_await b`. `execFuncVersion`,
+      `execDrawVersion` and `goblinFuncVersion` were written that way,
+      so every Goblins 3 opcode also ran Gobliiins' handler and the
+      other way round: script bytes were consumed twice and the
+      positions went wrong. Gobliins 2 (version 2) never goes through
+      them. Clang (macOS, web) is right.
+    - **Found by:** an opcode trace (`--trace-ops`) on the TV against
+      the Mac's. The first assignment took 32 bytes instead of 8, and
+      debug prints showed the handler already 7 bytes in. Not found by:
+      `-funsigned-char`, UBSan, or `gobdis` (which decodes without
+      coroutines).
+    - **Fix:** plain `if` statements, also for the three
+      `_ver != 2 && co_await ...` conditions; a comment in
+      `interpreter_v1.cpp` says why.
+    - **Rule from now on:** no `co_await` inside `?:`, `&&` or `||`.
+      All sources were checked, and none are left.
+    - **Checked:** Gobliiins and Goblins 3 traces on the TV equal the
+      Mac's over 6000 frames. The Goblins 3 intro video plays in the
+      app on the TV. On the Mac, all `test_*` pass, the Gobliiins and
+      Goblins 3 walkthroughs play to the end, and the quick save and
+      Goblins 3 save checks pass.
+  - **Not verified yet:** a stick plugged in or pulled while the app
+    runs; the arrow keys (built after the user's test).
+  - **Left out:** copying game folders (not installers) from a stick.
+    GOG's installers are the way in; a folder on a stick would be
+    played from the stick, so it would need a copy step (later, if
+    wanted).
 - [ ] **T3. Remote control.** Magic Remote: pointer = mouse, wheel,
   cursor show/hide keys. Remote keys: Back (claimed with
   `SDL_WEBOS_ACCESS_POLICY_KEYS_BACK`: close the overlay, else back to

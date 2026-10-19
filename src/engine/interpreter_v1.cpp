@@ -11,16 +11,26 @@
 
 namespace gob {
 
+// No co_await inside ?:, && or || in the engine: GCC 12 (the webOS
+// toolchain) runs both arms of `c ? co_await a : co_await b`, so Gobliiins
+// ran Goblins 3's handlers too and the other way round (wrong script
+// positions, "unknown block type"). Plain statements instead.
 Task<bool> Interpreter::execFuncVersion(uint8_t index, Params &p) {
-	co_return _ver == 1 ? co_await execFuncV1(index, p) : co_await execFuncV3(index, p);
+	if (_ver == 1)
+		co_return co_await execFuncV1(index, p);
+	co_return co_await execFuncV3(index, p);
 }
 
 Task<bool> Interpreter::execDrawVersion(uint8_t op, uint32_t opStart) {
-	co_return _ver == 1 ? co_await execDrawV1(op, opStart) : co_await execDrawV3(op, opStart);
+	if (_ver == 1)
+		co_return co_await execDrawV1(op, opStart);
+	co_return co_await execDrawV3(op, opStart);
 }
 
 Task<bool> Interpreter::goblinFuncVersion(int16_t cmd, int16_t paramCount) {
-	co_return _ver == 1 ? co_await goblinFuncV1(cmd, paramCount) : co_await goblinFuncV3(cmd, paramCount);
+	if (_ver == 1)
+		co_return co_await goblinFuncV1(cmd, paramCount);
+	co_return co_await goblinFuncV3(cmd, paramCount);
 }
 
 // Version 1 switch: the variable is always read as 32 bits, every case

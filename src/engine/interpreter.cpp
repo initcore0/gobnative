@@ -766,8 +766,11 @@ uint32_t Interpreter::checkSwitchTable() {
 // Opcodes
 
 Task<void> Interpreter::execFunc(uint8_t index, Params &p) {
-	if (_ver != 2 && co_await execFuncVersion(index, p))
-		co_return;
+	if (_ver != 2) { // (no co_await inside &&: interpreter_v1.cpp)
+		const bool handled = co_await execFuncVersion(index, p);
+		if (handled)
+			co_return;
+	}
 	Script &s = script();
 	bool tail = p.counter == p.cmdCount && p.retFlag == 2;
 
@@ -1153,8 +1156,11 @@ Task<void> Interpreter::execFunc(uint8_t index, Params &p) {
 	case 0x25: { // goblinFunc
 		int16_t cmd = s.readInt16();
 		int16_t paramCount = s.readInt16();
-		if (_ver != 2 && co_await goblinFuncVersion(cmd, paramCount))
-			co_return;
+		if (_ver != 2) {
+			const bool handled = co_await goblinFuncVersion(cmd, paramCount);
+			if (handled)
+				co_return;
+		}
 		if (cmd == 100) {
 			int16_t a[6];
 			for (int16_t &v : a)
@@ -1351,8 +1357,11 @@ Task<void> Interpreter::execFunc(uint8_t index, Params &p) {
 Task<void> Interpreter::execDraw(uint32_t opStart) {
 	Script &s = script();
 	uint8_t op = s.readByte();
-	if (_ver != 2 && co_await execDrawVersion(op, opStart))
-		co_return;
+	if (_ver != 2) {
+		const bool handled = co_await execDrawVersion(op, opStart);
+		if (handled)
+			co_return;
+	}
 
 	switch (op) {
 	case 0x40: { // totSub
