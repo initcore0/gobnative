@@ -279,6 +279,10 @@ public:
 		std::vector<Rect> rects; // Gobliiins: one per map cell
 	};
 	std::vector<ClickSpot> clickSpots() const;
+	// Gobliiins: how many times a level's script file has been loaded, so a
+	// new run of a level (a jump to it, AGAIN, the next level) can be told
+	// from the one before, even of the same level (engine/hints.h).
+	uint32_t levelStarts() const { return _levelStarts; }
 	// Gobliiins' goblins, objects and map (null for the other games).
 	const GoblinsV1 *goblinsV1() const { return _gobV1.get(); }
 	// The loaded scenery animations (an object's `animation` is a slot).
@@ -877,6 +881,7 @@ private:
 	} _ffSample;
 	double _cdClockOffset = 0;    // ms added to the CD timeline by fast-forwards
 	bool _roomLoopReached = false; // the running room has reached its main loop's input wait
+	uint32_t _levelStarts = 0;     // Gobliiins: level script files loaded (levelStarts())
 	double _lastControlMs = 0;    // game clock when the room's main loop last waited for input
 	bool _waitingForPlayer = false; // in an input wait other than the room's main loop
 

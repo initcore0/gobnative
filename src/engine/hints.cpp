@@ -89,6 +89,36 @@ bool parseCondition(const std::vector<std::string> &w, HintCondition &c) {
 	return false;
 }
 
+// The value a condition compares (ItemGone/ItemPresent: the item's cells).
+int32_t fact(const HintCondition &c, const Interpreter &in) {
+	const GoblinsV1 *g = in.goblinsV1();
+	switch (c.kind) {
+	case HintCondition::Kind::ObjState:
+	case HintCondition::Kind::ObjType: {
+		const GoblinsV1::Object *o = g ? g->object(c.index) : nullptr;
+		return !o ? -1000 : c.kind == HintCondition::Kind::ObjState ? o->state : o->type;
+	}
+	case HintCondition::Kind::Pocket:
+		return g ? g->itemIdInPocket() : -1000;
+	case HintCondition::Kind::ItemGone:
+	case HintCondition::Kind::ItemPresent:
+	case HintCondition::Kind::ItemCells: {
+		int cells = 0;
+		if (g)
+			for (const GoblinsV1::ItemSpot &s : g->itemSpots())
+				if (s.id == c.index)
+					for (uint32_t r : s.rows)
+						cells += std::popcount(r);
+		return cells;
+	}
+	case HintCondition::Kind::Var:
+		return int32_t(in.variables().slot(uint32_t(c.index)));
+	case HintCondition::Kind::Exit:
+		return int32_t(in.variables().slot(136));
+	}
+	return 0;
+}
+
 bool holds(const HintCondition &c, const Interpreter &in) {
 	const GoblinsV1 *g = in.goblinsV1();
 	switch (c.kind) {
@@ -253,6 +283,46 @@ bool HintBook::done(const HintStep &step, const Interpreter &in) {
 		if (std::all_of(line.begin(), line.end(), [&](const HintCondition &c) { return holds(c, in); }))
 			return true;
 	return false;
+}
+
+std::vector<int32_t> HintBook::facts(const HintStep &step, const Interpreter &in) {
+	std::vector<int32_t> out;
+	for (const std::vector<HintCondition> &line : step.done)
+		for (const HintCondition &c : line)
+			out.push_back(fact(c, in));
+	return out;
+}
+
+void HintTracker::update(const HintBook &book, const Interpreter &in) {
+	const std::string name = in.currentLevel();
+	_shown = name.empty() ? nullptr : book.level(name);
+	if (!_shown)
+		return; // (between levels, or a moment the level isn't running: keep the run)
+	const uint32_t run = in.levelStarts();
+	const std::vector<HintStep> &steps = _shown->steps;
+	if (_shown != _level || run != _run) {
+		_level = _shown;
+		_run = run;
+		_start.clear();
+		_stale.clear();
+		for (const HintStep &s : steps) {
+			_start.push_back(HintBook::facts(s, in));
+			_stale.push_back(HintBook::done(s, in));
+		}
+		return;
+	}
+	for (size_t i = 0; i < steps.size(); i++)
+		if (_stale[i] && HintBook::facts(steps[i], in) != _start[i])
+			_stale[i] = false;
+}
+
+size_t HintTracker::current(const Interpreter &in) const {
+	if (!_shown)
+		return 0;
+	for (size_t i = _shown->steps.size(); i > 0; i--)
+		if (!_stale[i - 1] && HintBook::done(_shown->steps[i - 1], in))
+			return i;
+	return 0;
 }
 
 size_t HintBook::current(const HintLevel &level, const Interpreter &in) {

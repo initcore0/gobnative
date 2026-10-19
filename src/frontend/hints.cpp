@@ -91,6 +91,8 @@ public:
 
 	bool update() {
 		Interpreter *in = _host.engine();
+		if (in && !_book.levels().empty())
+			_tracker.update(_book, *in);
 		const HintLevel *l = level();
 		// The step (or the level) has changed: start again from a nudge.
 		const std::string key = l ? l->level + "/" + std::to_string(current(*l)) : std::string();
@@ -176,6 +178,7 @@ private:
 	OverlayHost &_host;
 	const std::string _keyName;
 	HintBook _book;
+	HintTracker _tracker;
 	bool _shown = false;
 	int _tier = 0; // 1 nudge, 2 also who and where, 3 also the solution
 	uint32_t _shownAt = 0;
@@ -190,11 +193,8 @@ private:
 	std::string keyName() const { return _overlay.touchMode ? std::string("the Hint button") : _keyName; }
 
 	// The level being played, if it has hints.
-	const HintLevel *level() {
-		Interpreter *in = _host.engine();
-		return in && !_book.levels().empty() ? _book.level(in->currentLevel()) : nullptr;
-	}
-	size_t current(const HintLevel &l) { return HintBook::current(l, *_host.engine()); }
+	const HintLevel *level() { return _host.engine() ? _tracker.level() : nullptr; }
+	size_t current(const HintLevel &) { return _tracker.current(*_host.engine()); }
 
 	// A rectangle of game pixels in window points (x0, y0, x1, y1).
 	ImVec4 box(int left, int top, int right, int bottom) const {

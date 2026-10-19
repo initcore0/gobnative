@@ -498,13 +498,16 @@ the step is done (the next press starts the next step's nudge). The hint
 key is **H** on a keyboard, the **yellow** key on a TV remote (which then
 no longer hides the key tips; the Video tab still does), and the **Hint**
 button of the touch bar. Hints follow the state of the level, so they
-keep up with quick loads, level jumps and steps solved in another order.
+keep up with quick loads, level jumps, AGAIN after the goblins collapse
+and steps solved in another order.
 
 "Show clickable spots" makes everything in the room the goblins can act on
 glow softly (in Gobliiins the items on the level's map, in the other games
 the room's hotspots); it works in all three games. The hints are in
 `assets/hints/gob1.txt`; the walkthrough check (`tests/check_gob1_walkthrough.sh`)
-plays the game and checks the hint before every step.
+plays the game and checks the hint before every step, and
+`tests/check_gob1_hint_jumps.sh` checks that they start again when a level
+is started again.
 
 ### Filters
 

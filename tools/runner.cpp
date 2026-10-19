@@ -371,10 +371,13 @@ public:
 	bool ended() const { return _ended; }
 	std::string snapDir;
 	HintBook hints; // --hints FILE, for `hint`
+	HintTracker hintTracker; // the step hinted, followed every frame as the front end does
 	bool stateDiff = false; // --state-diff: trace what each step changed
 
 	// Runs the steps that can run now (before the engine frame at host.now).
 	void step(Interpreter &interp, HeadlessHost &host) {
+		if (!hints.levels().empty())
+			hintTracker.update(hints, interp);
 		while (!done() && !_failed && !_ended) {
 			const Step &st = _steps[_pos];
 			if (!_started) {
@@ -733,12 +736,12 @@ private:
 		if (c == "hint") { // once idle: the step hinted is ID (end: all are done)
 			if (!idleFor(interp, host, 100))
 				return false;
-			const HintLevel *l = hints.level(interp.currentLevel());
+			const HintLevel *l = hintTracker.level();
 			if (!l) {
 				fail(host, "no hints for level " + interp.currentLevel());
 				return false;
 			}
-			const size_t cur = HintBook::current(*l, interp);
+			const size_t cur = hintTracker.current(interp);
 			const std::string id = cur < l->steps.size() ? l->steps[cur].id : "end";
 			const std::string want = st.args.empty() ? std::string() : st.args[0];
 			if (id != want && host.now - _startedAt < 5000)

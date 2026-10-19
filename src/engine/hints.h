@@ -60,11 +60,36 @@ public:
 	// Whether step `step` of `level` is done in the running game.
 	static bool done(const HintStep &step, const Interpreter &in);
 	// The step to hint in the running game: the one after the last step
-	// that is done (steps.size() when the last one is).
+	// that is done (steps.size() when the last one is). See HintTracker.
 	static size_t current(const HintLevel &level, const Interpreter &in);
+	// What a step's conditions look at, as now (the values they compare).
+	static std::vector<int32_t> facts(const HintStep &step, const Interpreter &in);
 
 private:
 	std::vector<HintLevel> _levels;
+};
+
+// The step to hint in one run of a level. A level's script doesn't clear
+// every variable it uses when it starts again (a jump to it, AGAIN after the
+// goblins collapse), so a step can look done from the start: such a step
+// counts only once something it looks at has changed in this run. A quick
+// load, put in place after the level has started, counts in full.
+class HintTracker {
+public:
+	// Once a frame: follows the level being played (Interpreter::
+	// currentLevel, levelStarts) and, at a new run, notes what each step
+	// looked at then.
+	void update(const HintBook &book, const Interpreter &in);
+	// The level being played, if it has hints (null otherwise).
+	const HintLevel *level() const { return _shown; }
+	// The step to hint: the one after the last step done in this run.
+	size_t current(const Interpreter &in) const;
+
+private:
+	const HintLevel *_level = nullptr, *_shown = nullptr;
+	uint32_t _run = 0;
+	std::vector<std::vector<int32_t>> _start; // per step: facts() when the run began
+	std::vector<char> _stale;                 // per step: done then, and nothing changed since
 };
 
 const char *hintActionName(HintStep::Action a);
