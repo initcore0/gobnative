@@ -106,6 +106,8 @@ References:
 - [x] Web. WebAssembly build with Emscripten: the library, imports into
   the browser's storage, all three games (commits "Web build: ..." and
   "CI: build the web version ..."; notes in 6.7)
+- [ ] TV. LG webOS build for the Homebrew Channel, target an OLED C1
+  (milestones T0-T5 in 6.8)
 
 Baselines for the current build (Gob2 engine), measured headlessly with
 `gobrun --press-every 5`:
@@ -1939,6 +1941,104 @@ data is never bundled or hosted; local build and test only.
     session; IndexedDB eviction. The test pane was hidden, so
     the browser throttled its frames: `--frame-timer` (posted messages
     instead of animation frames) kept tests at full speed.
+
+### 6.8 TV: LG webOS build (Homebrew Channel)
+
+Goal (user): gobnative as a native app on a rooted LG TV, installed
+through the Homebrew Channel, played with the Magic Remote. Same
+repository, same front end, as the Windows and web builds: a toolchain
+file, an `appinfo.json`, a build script and `#if` branches in
+`src/frontend/`, no fork and no submodule.
+
+**Target TV** (looked at over SSH, read only, 2026-10-19): LG OLED C1
+(2021), webOS 6.5.3 (`o20n`), rooted, Homebrew Channel 0.7.3, RetroArch
+1.22.2 installed.
+- 3 x Cortex-A55; 64-bit kernel, **32-bit armhf userland**
+  (`/lib/ld-linux.so.3`): the build is `arm-webos-linux-gnueabi`.
+- GPU Mali-G51 (3 cores); `libmali` has the ES 3.x entry points
+  (`glBindVertexArray`, `glTexStorage2D`, `glDispatchCompute`): the web
+  build's GLSL ES 3.00 path applies, no ES 2.0 fallback needed.
+- glibc 2.28; system libstdc++ 6.0.25 (GCC 8, too old for our C++20);
+  system SDL2 2.0.10 with LG's webOS extensions (Wayland video,
+  PulseAudio/ALSA audio). 2.0.10 lacks `SDL_OpenURL` (2.0.14).
+- Memory 2.6 GB, ~660 MB available with the TV idle; 1.5 GB free on
+  `/media` (where apps live); a USB stick mounts at `/tmp/usb/sda/sda1`.
+- RetroArch's package bundles `lib/libSDL2-2.0.so.0`, `libstdc++.so.6`
+  and `libatomic.so.1` next to its binary, and sets
+  `useAllMouseButtons`/`useAllKeyboardKeys` in `appinfo.json`: the
+  pattern to follow.
+
+**Decisions (T0):** libstdc++ and libgcc are linked statically (one
+binary, as the MinGW build); the programs need only glibc (2.12 symbols
+or older, `GLIBC_2.6` at most) and, for `gobnative`, `libSDL2-2.0.so.0`.
+SDL2: the SDK's sysroot has 2.24 (webOS build), the TV 2.0.10; T1 bundles
+the SDK's `libSDL2` in the package's `lib/` as RetroArch does, or guards
+what 2.0.10 lacks, whichever runs on the TV.
+
+Milestones (each fits one session; T1 needs the TV, the rest are tested
+on it; nothing on the TV is changed outside the app's own folder):
+
+- [x] **T0. Toolchain and a cross build.** Done. Results:
+  - **SDK:** buildroot-nc4's current release (2026.08, GCC 14) is built
+    for Linux hosts only; on the Mac the SDK is webosbrew's
+    `arm-webos-linux-gnueabi_sdk-buildroot_darwin-arm64` (release
+    webos-d7ed7ee.6, March 2024): GCC 12.2, glibc 2.12 sysroot, SDL2
+    2.24, GLES/EGL, PulseAudio. Unpacked in
+    `../tools/arm-webos-linux-gnueabi_sdk-buildroot`, `relocate-sdk.sh`
+    run once. GCC 12 builds the C++20 engine (coroutines included).
+  - **Build:** `cmake/webos.cmake` (wraps the SDK's
+    `share/buildroot/toolchainfile.cmake`; `WEBOS_SDK`; static
+    libstdc++/libgcc), `scripts/build-webos.sh [--tv root@ADDRESS]`
+    (Release in `build-webos/`, checks every test and tool needs only
+    glibc; `--tv` copies them to `/tmp/gobnative-test` and runs the unit
+    tests there). Everything builds, `gobnative` included (not run yet).
+  - **Portability fixes:** `<cstddef>` in `gfx/hdlayer.h` and
+    `gfx/pixelsource.h` (GCC 12's headers don't bring `size_t` in);
+    `Threads::Threads` on gobcore and `CMAKE_DL_LIBS` on imgui (glibc
+    before 2.34 needs libpthread and libdl named); `test_prefs` skips
+    the read-only-folder case as root (root ignores the permission).
+  - **On the C1:** all 11 unit tests pass (installer tests skip without
+    the GOG setups); `gobdis gobliins2 --all` 0 errors; `gobrun gobliins2
+    --press-every 3 --press-stop 100 --frames 9000` reaches GOB01 in
+    0.85 s (Mac M-series 0.17 s): ~0.09 ms per engine frame headless,
+    far under a 60 Hz frame. The trace equals the Mac's until GOB01's
+    random ambient sounds (107 s): `std::rand()` is glibc's here, macOS
+    libc's there, so click-script runs aren't comparable across
+    platforms (Windows neither) unless the engine gets its own random
+    generator. The scratch folder was removed afterwards.
+- [ ] **T1. First pixels.** `gobnative` for webOS: a fullscreen window
+  sized from the panel (check what SDL reports: 1920x1080 UI plane or
+  4K), the ES 3.0 context and `IMGUI_IMPL_OPENGL_ES3` shared with the web
+  build (a `GOB_GLES` switch instead of `__EMSCRIPTEN__` for the GL
+  bits); the pref root in the app's writable folder; audio through SDL.
+  `webos/appinfo.json` and icons, an `.ipk` made with `ares-package`,
+  installed with `ares-install`. Done when: the library shows on the TV
+  and the Magic Remote moves and clicks in it.
+- [ ] **T2. Games onto the TV.** The library lists GOG installers and
+  game folders found on USB storage (`/tmp/usb/*/*`), instead of the
+  file dialog or drag-and-drop, and imports them as on desktop;
+  "Add existing game folder" from USB too. Done when: all three games
+  import from a USB stick and start; saves and settings survive an app
+  restart and a TV power cycle.
+- [ ] **T3. Remote control.** Magic Remote: pointer = mouse, wheel,
+  cursor show/hide keys. Remote keys: Back (claimed with
+  `SDL_WEBOS_ACCESS_POLICY_KEYS_BACK`: close the overlay, else back to
+  the library, else leave the app; never swallowed), a colour key for the
+  overlay (backquote), others for quick save/load and fast-forward,
+  arrows/OK for ImGui's keyboard navigation so the library and overlay
+  work without the pointer. Optional: gamepad (SDL game controller).
+  The app going to the background (Home, another input) writes a quick
+  save and pauses audio. Done when: each game is played through its
+  first room with the remote only.
+- [ ] **T4. Speed and memory on the TV.** Frame time of every display
+  filter at the TV's output size; HD packs (decode time, memory against
+  the ~660 MB); prefetch threads; a default video setting that holds 60
+  frames per second on the C1. Done when: no dropped frames with the
+  defaults, and the limits written down here.
+- [ ] **T5. Packaging and release.** CI job with the SDK making the
+  `.ipk` as an artifact (and in releases); a Homebrew Channel repository
+  manifest pointing at the release `.ipk` (publishing it is the user's
+  call); a short "LG TV" section in the README and user guide.
 
 ## 7. Open issues
 
