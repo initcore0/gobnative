@@ -116,6 +116,12 @@ add_library(gobcore STATIC
 	src/install/zip.cpp
 )
 target_include_directories(gobcore PUBLIC src)
+if(NOT EMSCRIPTEN)
+	# std::thread (HD pack prefetch); glibc before 2.34 needs libpthread
+	# named (webOS).
+	find_package(Threads REQUIRED)
+	target_link_libraries(gobcore PUBLIC Threads::Threads)
+endif()
 target_include_directories(gobcore SYSTEM PRIVATE third_party/dr_mp3)
 set_source_files_properties(src/audio/dr_mp3_impl.cpp PROPERTIES COMPILE_OPTIONS "${GOB_NO_WARNINGS}")
 
@@ -199,7 +205,7 @@ add_library(imgui STATIC
 	third_party/imgui/backends/imgui_impl_opengl3.cpp
 )
 target_include_directories(imgui SYSTEM PUBLIC third_party/imgui third_party/imgui/backends)
-target_link_libraries(imgui PUBLIC SDL2::SDL2)
+target_link_libraries(imgui PUBLIC SDL2::SDL2 ${CMAKE_DL_LIBS}) # its GL loader dlopens on Linux
 target_compile_options(imgui PRIVATE ${GOB_NO_WARNINGS})
 if(EMSCRIPTEN)
 	target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_ES3) # WebGL 2

@@ -240,7 +240,8 @@ int main() {
 #ifndef _WIN32
 	testMigrate(base);
 	testBothExist(base);
-	testRenameFails(base);
+	if (geteuid() != 0) // root ignores the read-only folder (a rooted TV)
+		testRenameFails(base);
 	testLinkFails(base);
 	testLinks(base);
 #endif
