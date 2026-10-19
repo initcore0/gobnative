@@ -75,6 +75,7 @@ public:
 		if (!l)
 			return;
 		const uint32_t now = SDL_GetTicks();
+		_corner = -1; // placed again, where it hides least now
 		if (!_shown) {
 			_shown = true;
 			_tier = std::max(_tier, 1);
@@ -179,6 +180,9 @@ private:
 	int _tier = 0; // 1 nudge, 2 also who and where, 3 also the solution
 	uint32_t _shownAt = 0;
 	std::string _stepKey;
+	// The card's corner, picked when it is shown (not every frame, or a goblin
+	// fidgeting under it would make it jump); -1: to pick.
+	mutable int _corner = -1;
 	float _x0 = 0, _y0 = 0, _w = 0, _h = 0; // the picture, window points
 
 	// The hint key as the player knows it: the touch bar's button while the
@@ -275,8 +279,9 @@ private:
 	}
 
 	// The card in a corner of the picture (the top left one unless another
-	// covers less of `avoid`): what the level is, then as much help as asked
-	// for, then what the key does next.
+	// covers less of `avoid` when it is shown), see-through enough to show
+	// the game behind it: what the level is, then as much help as asked for,
+	// then what the key does next.
 	void drawCard(ImDrawList &dl, const HintLevel &l, size_t cur, const std::vector<ImVec4> &avoid) const {
 		const UiFonts &fonts = _overlay.fonts();
 		const float size = std::clamp(_h * 0.03f, 14.0f, 40.0f);
@@ -326,20 +331,23 @@ private:
 		const float right = _x0 + _w - margin - width, bottom = point(0, 168).y - margin - height;
 		const ImVec2 corners[] = {{_x0 + margin, _y0 + margin}, {right, _y0 + margin}, {_x0 + margin, bottom},
 		                          {right, bottom}};
-		ImVec2 p0 = corners[0];
-		float best = -1;
-		for (const ImVec2 &c : corners) {
-			float covered = 0;
-			for (const ImVec4 &r : avoid)
-				covered += std::max(0.0f, std::min(c.x + width, r.z) - std::max(c.x, r.x)) *
-				           std::max(0.0f, std::min(c.y + height, r.w) - std::max(c.y, r.y));
-			if (best < 0 || covered < best) {
-				best = covered;
-				p0 = c;
+		if (_corner < 0) {
+			float best = -1;
+			for (int i = 0; i < 4; i++) {
+				const ImVec2 &c = corners[i];
+				float covered = 0;
+				for (const ImVec4 &r : avoid)
+					covered += std::max(0.0f, std::min(c.x + width, r.z) - std::max(c.x, r.x)) *
+					           std::max(0.0f, std::min(c.y + height, r.w) - std::max(c.y, r.y));
+				if (best < 0 || covered < best) {
+					best = covered;
+					_corner = i;
+				}
 			}
 		}
+		const ImVec2 p0 = corners[_corner];
 		const ImVec2 p1(p0.x + width, p0.y + height);
-		dl.AddRectFilled(p0, p1, withAlpha(colour::kBackground, 236), size * 0.6f);
+		dl.AddRectFilled(p0, p1, withAlpha(colour::kBackground, 196), size * 0.6f);
 		dl.AddRect(p0, p1, withAlpha(colour::kAmber, 150), size * 0.6f, 0, 1.5f);
 		float y = p0.y + pad;
 		for (const Line &line : lines) {

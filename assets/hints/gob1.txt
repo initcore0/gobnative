@@ -70,33 +70,33 @@ step right-fruit
   goblin 2
   action act
   at 303 32
-  nudge The fruits up in the tree are out of reach. Two goblins can work together here.
-  pointer The wizard can enchant a fruit; then the fighter can knock it down.
-  solve The wizard casts on the fruit at the top right, then the fighter hits it: it drops onto the ledge.
+  nudge The big apples up in the tree are out of reach. Two goblins can work together here.
+  pointer The wizard can enchant a big apple; then the fighter can knock it down.
+  solve The wizard casts on the big apple at the top right, then the fighter hits it: it drops onto the ledge.
 step left-fruit
   done obj 2 state 11
   goblin 2
   action act
   at 154 31
-  nudge There's a second fruit, and it works the same way.
-  pointer The wizard and the fighter again, on the other fruit.
-  solve The wizard casts on the fruit at the top left, then the fighter hits it down.
+  nudge There's a second big apple, and it works the same way.
+  pointer The wizard and the fighter again, on the other big apple.
+  solve The wizard casts on the big apple at the top left, then the fighter hits it down.
 step plank
   done obj 0 state 13
   goblin 0
   action pick
   at 303 75
   nudge The bridge has a gap. Something thrown into it might fill it.
-  pointer The picker can carry a fruit to the gap.
-  solve The picker picks up the fruit on the right ledge (dropping the pickaxe), then uses the pick cursor on the gap in the bridge: the fruit becomes a plank.
+  pointer The picker can carry a big apple to the gap.
+  solve The picker picks up the big apple on the right ledge (dropping the pickaxe), then uses the pick cursor on the gap in the bridge: the apple becomes a plank.
 step bridge
   done obj 2 state 14
   goblin 0
   action pick
   at 155 40
   nudge One plank isn't a whole bridge.
-  pointer The picker can do the same with the other fruit.
-  solve The picker picks up the second fruit and throws it into the gap with the pick cursor: the bridge is mended.
+  pointer The picker can do the same with the other big apple.
+  solve The picker picks up the second big apple and throws it into the gap with the pick cursor: the bridge is mended.
 step stone
   done obj 4 state 4
   goblin 0
@@ -120,52 +120,52 @@ step use
   goblin 0
   action use
   at 240 78
-  nudge You arrive carrying something useful.
-  pointer The picker can use what he holds on the thing in the middle of the path.
-  solve The picker uses what he carries on the thing in the middle of the path: the exit sign shows.
+  nudge You arrive carrying something precious. Someone here might want it.
+  pointer The picker can use the Diamond on the door of the house on the right.
+  solve The picker uses the Diamond on the door of the house on the right: the exit sign shows.
 
-level AVT004 The rope
+level AVT004 The eye plants
 step rope
   done obj 3 state 2
   done obj 3 state 3
   goblin 2
   action act
   at 108 70
-  nudge The rope hanging there is too short to be any use.
-  pointer The wizard can make it longer.
-  solve The wizard casts on the rope: it reaches the ground.
+  nudge The eye plants on the table are more than decoration.
+  pointer The wizard can make the eye plant at the left of the table grow.
+  solve The wizard casts on the eye plant at the left of the table: its stalk grows up to the shelf, and goblins can climb it.
 step swap
   done pocket 1
   goblin 0
   action pick
   at 28 83
-  nudge There's another item here worth carrying.
-  pointer The picker can swap what he holds for it.
-  solve The picker picks up the item on the left (putting down what he carries).
+  nudge The Diamond is not the only thing worth carrying here.
+  pointer The picker can swap the Diamond for Pot1, the small yellow pot by the big jug on the left.
+  solve The picker picks up Pot1, the small yellow pot by the big jug on the left (he puts the Diamond down there).
 step catcher
   done var 321 1
   goblin 0
   action use
   at 205 95
-  nudge Something grabs goblins that pass by. Don't walk straight past it.
-  pointer The picker can go round by the bottom and use his item on the catcher.
-  solve The picker walks round along the bottom and uses his item on the catcher: it stops grabbing.
+  nudge The eye plant at the front of the table snaps at goblins walking past. Don't walk straight past it.
+  pointer The picker can go round along the bottom and use Pot1 on that plant.
+  solve The picker walks round along the bottom and uses Pot1 on the eye plant at the front of the table: it stops snapping.
 step ladder
   done obj 5 state 2
   goblin 1
   action act
   at 285 80
-  nudge The ladder on the right is broken. The rope leads up to something worth hitting.
-  pointer The fighter can climb the rope.
-  solve The fighter climbs the rope and hits the thing at the top right: the ladder is mended.
+  nudge The way up on the right is missing a step. The big red book on the right looks loose.
+  pointer The fighter can climb the grown plant and hit the book.
+  solve The fighter climbs the grown eye plant and hits the big red book on the right: it falls, and the way up on the right is open.
 step finish
   done exit
   goblin 0
   action use
   at 192 57
-  nudge The first item the picker held is needed after all.
-  pointer The picker takes it back and climbs the mended ladder.
-  solve The picker takes his first item back, walks round by the bottom to the right ladder, climbs it and uses the item at the top: the exit sign shows.
+  nudge The sorcerer at the window is holding out his hand.
+  pointer The picker takes the Diamond back and brings it to him, by the way up on the right.
+  solve The picker swaps Pot1 for the Diamond, walks round along the bottom to the right, climbs up and gives the Diamond to the sorcerer's hand: the exit sign shows.
 
 level AVT005 The giant's head
 step plant
@@ -662,9 +662,9 @@ step spell
   goblin 2
   action act
   at 246 147
-  nudge From the cliff, the wizard can reach something at the bottom right.
-  pointer The wizard casts on it.
-  solve The wizard casts on the thing at the bottom right.
+  nudge From the cliff, the wizard can reach the bulb horn lying at the bottom right.
+  pointer The wizard casts on the bulb horn.
+  solve The wizard casts on the bulb horn at the bottom right.
 step elixir
   done pocket 8, var 410 1
   goblin 0
@@ -796,8 +796,8 @@ step aim-up
   action act
   at 198 75
   nudge The cannon needs ammunition and a better angle.
-  pointer The fighter knocks a ball off the pile and aims the cannon upwards.
-  solve The wizard climbs down out of the way. The fighter knocks a ball off the pile, then hits the cannon: it points upwards.
+  pointer The fighter knocks a cannonball off the pile and aims the cannon upwards.
+  solve The wizard climbs down out of the way. The fighter knocks a cannonball off the pile, then hits the cannon: it points upwards.
 step matches
   done pocket 2
   goblin 0
@@ -820,8 +820,8 @@ step load-ball
   action use
   at 198 75
   nudge The cannon is empty.
-  pointer The picker loads the ball.
-  solve The picker picks up the ball (leaving the matches) and loads it into the cannon. It turns back down.
+  pointer The picker loads the cannonball.
+  solve The picker picks up the cannonball (leaving the matches) and loads it into the cannon. It turns back down.
 step shoot-carrot
   done var 313 1
   done var 400 2
@@ -830,7 +830,7 @@ step shoot-carrot
   at 198 75
   nudge Something hangs high above the cannon.
   pointer The fighter aims the cannon up again; the picker fires it with the matches.
-  solve The fighter aims the cannon upwards again. The picker takes the matches back and fires: the ball brings down a carrot.
+  solve The fighter aims the cannon upwards again. The picker takes the matches back and fires: the cannonball brings down a carrot.
 step load-carrot
   done var 400 2
   goblin 0
@@ -838,7 +838,7 @@ step load-carrot
   at 198 75
   nudge The man is fast asleep. Wake him with something.
   pointer The cannon can fire carrots too.
-  solve The fighter knocks off another ball. The picker picks up the carrot and loads it into the cannon.
+  solve The fighter knocks off another cannonball. The picker picks up the carrot and loads it into the cannon.
 step shoot-man
   done var 396 5 9
   goblin 0
@@ -853,8 +853,8 @@ step second-carrot
   action use
   at 198 75
   nudge He's awake, but he can't hear a thing. Another carrot could help.
-  pointer Fire a second ball upwards, as before.
-  solve The fighter aims the cannon upwards. The picker loads the second ball, the fighter aims it up again, and the picker fires with the matches: a second carrot falls.
+  pointer Fire a second cannonball upwards, as before.
+  solve The fighter aims the cannon upwards. The picker loads the second cannonball, the fighter aims it up again, and the picker fires with the matches: a second carrot falls.
 step trumpet
   done var 397 1
   goblin 2
@@ -884,9 +884,9 @@ step pendulum
   goblin 0
   action use
   at 102 63
-  nudge Something hangs from the beam.
-  pointer The picker hits it with the mallet.
-  solve The picker hits the hanging thing with the mallet: the pendulum falls on the beam.
+  nudge The pendulum hanging from the beam is worth having.
+  pointer The picker hits the pendulum with the mallet.
+  solve The picker hits the pendulum hanging from the beam with the mallet: it falls onto the beam.
 step take
   done exit
   goblin 0
