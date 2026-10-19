@@ -230,7 +230,7 @@ void Expression::loadValue(uint8_t op, uint32_t base, Stack &st) {
 		}
 		case FuncSqr: v = v * v; break;
 		case FuncAbs: v = v < 0 ? -v : v; break;
-		case FuncRand: v = _random ? _random(v) : (v > 0 ? std::rand() % v : 0); break;
+		case FuncRand: v = _random ? _random(v) : _ownRandom.below(v); break;
 		default: break;
 		}
 		_resultInt = v;

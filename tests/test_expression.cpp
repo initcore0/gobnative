@@ -133,6 +133,21 @@ int main() {
 		CHECK(h.script.peekByte() == 0x66);
 	}
 
+	// The engine's random numbers: Park-Miller from seed 1, the sequence of
+	// macOS's unseeded rand() that the walkthroughs were recorded with.
+	{
+		Random r;
+		CHECK(r.next() == 16807);
+		CHECK(r.next() == 282475249);
+		CHECK(r.next() == 1622650073);
+		Random z(0);
+		CHECK(z.next() == 16807);
+		CHECK(z.below(0) == 0);
+		Random a(1234), b(1234);
+		for (int i = 0; i < 100; i++)
+			CHECK(a.below(7) == b.below(7));
+	}
+
 	if (failures == 0)
 		std::printf("all expression tests passed\n");
 	return failures ? 1 : 0;

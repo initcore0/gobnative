@@ -25,6 +25,7 @@
 #include "formats/tot.h"
 #include "script/disasm.h"
 #include "script/expression.h"
+#include "script/random.h"
 #include "script/script.h"
 #include "script/variables.h"
 
@@ -117,6 +118,12 @@ public:
 	// doesn't make the clock jump. The CD timeline and the audio stay on
 	// real time.
 	double speed = 1.0;
+
+	// The engine's random numbers (script rand(), goblin boredom), the same
+	// sequence on every platform for one seed (script/random.h). gobrun
+	// takes --seed; saves don't carry its state, as the original's didn't.
+	void setRandomSeed(uint32_t seed) { _random.setSeed(seed); }
+	int32_t random(int32_t n) { return _random.below(n); }
 
 	// Cutscenes always run at 1x: the intro and the ending poll the CD
 	// position to stay in sync with the music. A cutscene is any playMult
@@ -871,6 +878,7 @@ private:
 	bool _roomStatesLoadedV3 = false;
 	bool _jumpWithoutStateV3 = false; // the jump's room starts from the first room's variables
 	std::string _jumpStateRoomV3; // the jump's room, its recorded state applied again when MENU starts it
+	Random _random;
 	std::optional<SnapshotV1> _pendingSnapshot; // Gobliiins: a quick load waiting for its level to be idle
 	bool _skipAllMults = false; // a skip ends every animation of the cutscene, not just the current one
 	std::array<int16_t, 40> _cursorResources = filled<40>(-1); // resource loaded into each cursor slot

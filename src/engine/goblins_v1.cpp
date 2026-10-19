@@ -44,8 +44,6 @@ constexpr int8_t kRotStates[4][4] = {
 	{27, 25, 26, 6},
 };
 
-int random(int n) { return n > 0 ? std::rand() % n : 0; }
-
 template <typename T>
 T clip(T v, T lo, T hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
@@ -714,8 +712,8 @@ void GoblinsV1::showBoredom(int16_t gobIndex) {
 	g->noTick = 0;
 	g->toRedraw = 1;
 
-	int16_t boreFlag = int16_t(1 << random(7));
-	if (gobIndex != _currentGoblin && random(3) != 0) {
+	int16_t boreFlag = int16_t(1 << _in.random(7));
+	if (gobIndex != _currentGoblin && _in.random(3) != 0) {
 		if (state == 21) {
 			if ((boreFlag & 16) || (boreFlag & 32))
 				g->multState = int16_t(92 + gobIndex);
@@ -1200,7 +1198,7 @@ void GoblinsV1::placeObject(Object &o, int8_t animated) {
 	o.visible = 1;
 	o.pickable = 0;
 	o.unk14 = 0;
-	o.relaxTime = int16_t(random(30));
+	o.relaxTime = int16_t(_in.random(30));
 
 	int16_t layer = state0(o).layer;
 	Scenery &sc = _in._scenery;
@@ -1790,7 +1788,7 @@ void GoblinsV1::moveAdvance(Object &o, int16_t nextAct, int16_t framesCount) {
 
 	// Footsteps.
 	if (o.state >= 0 && o.state < 10 && o.ownStates() && (o.curFrame == 3 || o.curFrame == 6))
-		speaker(10 * random(3) + 50, 5);
+		speaker(10 * _in.random(3) + 50, 5);
 
 	// Goblin 0's pick/drop sound.
 	if (_currentGoblin == 0 && o.ownStates() && (o.state == 10 || o.state == 11) && o.curFrame == 9) {
@@ -2265,7 +2263,7 @@ bool GoblinsV1::goblinFunc(int16_t cmd, int16_t paramCount) {
 			return true;
 		o->relaxTime--;
 		if (o->relaxTime < 0 && getObjMaxFrame(*o) == o->curFrame) {
-			o->relaxTime = int16_t(random(100) + 50);
+			o->relaxTime = int16_t(_in.random(100) + 50);
 			o->curFrame = 0;
 			o->toRedraw = 1;
 		}
