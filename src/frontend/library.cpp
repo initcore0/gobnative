@@ -961,6 +961,8 @@ struct LibraryScreen::State {
 	fs::path browseDir;    // empty: the list of USB drives
 	int tvKey = -1;        // a colour key pressed this frame (webos::RemoteKey)
 	const Tile *removing = nullptr;
+	bool leaving = false; // long Back (the TV's Exit key): asked whether to quit
+	static constexpr int kExitKey = 10; // tvKey for it (beside the RemoteKeys)
 	// The arrow keys and OK (the remote without its pointer) move a focus
 	// ring over the buttons: row 0 the tiles' buttons, left to right, row
 	// 1 the USB card's. The first press shows the ring; moving the pointer
@@ -985,6 +987,7 @@ struct LibraryScreen::State {
 	void drawTvUsb(ImVec2 p0, ImVec2 p1, float s, bool busy);
 	void drawTvBrowser(float s, Nav key);
 	void drawTvRemove(float s, Nav key);
+	void drawTvLeave(float s, Nav key);
 #endif
 	bool openWindow();
 	void debugActions(double now);
@@ -1129,6 +1132,8 @@ bool LibraryScreen::State::frame() {
 				case SDL_SCANCODE_WEBOS_GREEN: tvKey = int(webos::RemoteKey::Green); break;
 				case SDL_SCANCODE_WEBOS_YELLOW: tvKey = int(webos::RemoteKey::Yellow); break;
 				case SDL_SCANCODE_WEBOS_BLUE: tvKey = int(webos::RemoteKey::Blue); break;
+				case SDL_SCANCODE_WEBOS_BACK: tvKey = int(webos::RemoteKey::Back); break;
+				case SDL_SCANCODE_WEBOS_EXIT: tvKey = kExitKey; break;
 				case SDL_SCANCODE_UP: navKey = Nav::Up; break;
 				case SDL_SCANCODE_DOWN: navKey = Nav::Down; break;
 				case SDL_SCANCODE_LEFT: navKey = Nav::Left; break;
@@ -1896,36 +1901,7 @@ std::string megabytes(uint64_t bytes) {
 	return buf;
 }
 
-// A big button drawn in full: rounded, a colour key's chip at the left
-// (when `key` >= 0), the label centred. Disabled: greyed, never clicked.
-// With `focused` (the arrow keys' ring) a thick white ring, and `press`
-// (OK) clicks it.
-bool tvButton(const char *id, const std::string &label, ImVec2 size, ImFont *font, float fontSize, ImU32 base,
-              ImU32 hover, ImU32 text, int key, bool enabled = true, bool focused = false, bool press = false) {
-	ImDrawList *dl = ImGui::GetWindowDrawList();
-	const ImVec2 p = ImGui::GetCursorScreenPos();
-	const bool clicked = (ImGui::InvisibleButton(id, size) || (focused && press)) && enabled;
-	const bool hovered = (ImGui::IsItemHovered() || focused) && enabled;
-	const ImVec2 q(p.x + size.x, p.y + size.y);
-	dl->AddRectFilled(p, q, enabled ? (hovered ? hover : base) : IM_COL32(64, 58, 72, 255), size.y * 0.22f);
-	if (focused) {
-		const float g = std::round(size.y * 0.08f);
-		dl->AddRect(ImVec2(p.x - g, p.y - g), ImVec2(q.x + g, q.y + g), IM_COL32_WHITE, size.y * 0.22f + g, 0,
-		            std::max(3.0f, size.y * 0.05f));
-	} else if (hovered)
-		dl->AddRect(p, q, IM_COL32(255, 255, 255, 150), size.y * 0.22f, 0, 2.0f);
-	const ImVec2 ts = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, label.c_str());
-	float tx = p.x + (size.x - ts.x) / 2;
-	if (key >= 0) {
-		const float chipH = fontSize * 0.8f, chipW = chipH * 1.8f, gap = fontSize * 0.5f;
-		tx = p.x + (size.x - ts.x - chipW - gap) / 2 + chipW + gap;
-		webos::drawKeyChip(*dl, webos::RemoteKey(key), ImVec2(tx - gap - chipW / 2, p.y + size.y / 2), chipH,
-		                   enabled ? 255 : 90);
-	}
-	dl->AddText(font, fontSize, ImVec2(std::round(tx), std::round(p.y + (size.y - ts.y) / 2)),
-	            enabled ? text : colour::kFaint, label.c_str());
-	return clicked;
-}
+using webos::tvButton;
 
 } // namespace
 
@@ -2047,7 +2023,7 @@ void LibraryScreen::State::drawTv(bool busy) {
 	// while open): moved over last frame's buttons.
 	const Nav nav = std::exchange(navKey, Nav::None);
 	navOk = false;
-	if (!browsing && !removing && nav != Nav::None) {
+	if (!browsing && !removing && !leaving && nav != Nav::None) {
 		if (!navShown)
 			navShown = true; // the first press shows where the ring is
 		else
@@ -2106,6 +2082,7 @@ void LibraryScreen::State::drawTv(bool busy) {
 		                can && !busy && allowed(t.game)});
 	}
 	tips.push_back({webos::RemoteKey::Blue, "Browse USB", !usbDrives.empty() && !busy});
+	tips.push_back({webos::RemoteKey::Back, "Leave"});
 	dl->AddRectFilled(ImVec2(0, H - tipsH), ImVec2(W, H), IM_COL32(18, 15, 22, 255));
 	webos::drawKeyTips(*dl, fonts.bold, tips, 0, W, H - tipsH, tipsH);
 	ImGui::End();
@@ -2115,8 +2092,19 @@ void LibraryScreen::State::drawTv(bool busy) {
 	// The colour keys' actions (the dialogs take them first: red and blue
 	// close them, like Escape).
 	const int key = std::exchange(tvKey, -1);
-	const bool closeKey = key == int(webos::RemoteKey::Red) || key == int(webos::RemoteKey::Blue);
-	if (browsing) {
+	const bool closeKey = key == int(webos::RemoteKey::Red) || key == int(webos::RemoteKey::Blue) ||
+	                      key == int(webos::RemoteKey::Back);
+	if (leaving) {
+		if (closeKey)
+			leaving = false;
+		else
+			drawTvLeave(s, nav);
+	} else if (key == kExitKey) {
+		browsing = false;
+		removing = nullptr;
+		leaving = true;
+		dialogSel = 0;
+	} else if (browsing) {
 		if (closeKey)
 			browsing = false;
 		else
@@ -2126,6 +2114,11 @@ void LibraryScreen::State::drawTv(bool busy) {
 			removing = nullptr;
 		else
 			drawTvRemove(s, nav);
+	} else if (key == int(webos::RemoteKey::Back)) {
+		if (import)
+			import->cancel = true; // (a second Back leaves)
+		else
+			quit = true;
 	} else if (key >= 0 && !busy) {
 		if (key < 3 && key < n)
 			tvPrimary(tiles[size_t(key)]);
@@ -2509,6 +2502,48 @@ void LibraryScreen::State::drawTvRemove(float s, Nav key) {
 		removeGame(*gone);
 	} else if (keep)
 		removing = nullptr;
+}
+
+// Long Back: stay, or quit the app (an install is cancelled).
+void LibraryScreen::State::drawTvLeave(float s, Nav key) {
+	ImGuiIO &io = ImGui::GetIO();
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(io.DisplaySize);
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, vec(IM_COL32(0, 0, 0, 170)));
+	ImGui::Begin("##leave", nullptr,
+	             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+	ImGui::PopStyleColor();
+	const ImVec2 size(900 * s, 340 * s);
+	const ImVec2 p0(std::round((io.DisplaySize.x - size.x) / 2), std::round((io.DisplaySize.y - size.y) / 2));
+	const ImVec2 p1(p0.x + size.x, p0.y + size.y);
+	ImDrawList *dl = ImGui::GetWindowDrawList();
+	dl->AddRectFilled(p0, p1, colour::kBackground, 20 * s);
+	dl->AddRect(p0, p1, colour::kBorder, 20 * s, 0, 1.5f);
+	const float pad = 44 * s;
+	dl->AddText(fonts.bold, 44 * s, ImVec2(p0.x + pad, p0.y + 40 * s), colour::kText, "Quit gobnative?");
+	dl->AddText(fonts.regular, 29 * s, ImVec2(p0.x + pad, p0.y + 110 * s), colour::kMuted,
+	            import ? "The installation in progress is cancelled." : "Your games and saves stay on this TV.");
+	// Left and right choose ("Stay" first), OK presses.
+	if (key == Nav::Left)
+		dialogSel = 0;
+	else if (key == Nav::Right)
+		dialogSel = 1;
+	const bool keyOk = key == Nav::Ok;
+	const float bw = 290 * s, bh = 76 * s, by = p1.y - pad - bh;
+	ImGui::SetCursorScreenPos(ImVec2(p1.x - pad - 2 * bw - 24 * s, by));
+	const bool stay = tvButton("stay", "Stay", ImVec2(bw, bh), fonts.bold, 30 * s, colour::kGreen, colour::kGreenHover,
+	                           IM_COL32_WHITE, -1, true, dialogSel == 0, dialogSel == 0 && keyOk);
+	ImGui::SetCursorScreenPos(ImVec2(p1.x - pad - bw, by));
+	const bool leave = tvButton("quit", "Quit", ImVec2(bw, bh), fonts.bold, 30 * s, colour::kCardHover,
+	                            IM_COL32(110, 50, 50, 255), colour::kText, -1, true, dialogSel == 1,
+	                            dialogSel == 1 && keyOk);
+	ImGui::End();
+	if (stay)
+		leaving = false;
+	else if (leave) {
+		leaving = false;
+		quit = true;
+	}
 }
 #endif
 

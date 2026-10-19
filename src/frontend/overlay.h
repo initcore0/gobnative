@@ -120,7 +120,11 @@ public:
 	void shutdown();
 
 	bool isOpen() const { return _open; }
-	void setOpen(bool open) { _open = open; }
+	void setOpen(bool open) {
+		_open = open;
+		if (!open)
+			_dialog = nullptr;
+	}
 
 	void addTab(std::string name, std::function<void()> draw);
 	// Selects tab `name`; "Tab/Sub" also asks for sub-tab "Sub", which the
@@ -147,6 +151,16 @@ public:
 	// Drawn over the game while the overlay is closed, always (a TV's key
 	// tips under the picture).
 	void setBarLayer(std::function<void(ImDrawList &)> draw) { _barDraw = std::move(draw); }
+
+	// A question over the paused game in place of the tabs (a TV's Leave
+	// dialog): the overlay opens for it, `draw` is called every frame
+	// (with the screen's scale) and returns false once answered, and the
+	// overlay closes with it.
+	void showDialog(std::function<bool(float scale)> draw) {
+		_dialog = std::move(draw);
+		_open = true;
+	}
+	bool dialogOpen() const { return bool(_dialog); }
 
 	// True while a popup is open, which should get Escape instead of the
 	// overlay closing.
@@ -184,6 +198,8 @@ private:
 	std::string _selectTab, _selectSub;
 	std::function<bool()> _layerActive;
 	std::function<void(ImDrawList &)> _layerDraw, _touchDraw, _barDraw;
+	std::function<bool(float)> _dialog;
+	float _scale = 1.0f; // sizes and fonts (a TV: larger)
 	bool _open = false, _initialized = false;
 	bool _tapBeside = false; // touchMode: the finger down went down beside the window
 	UiFonts _fonts;

@@ -33,7 +33,7 @@ std::vector<std::string> usbDrives();
 
 // The remote's colour keys, as the app names what they do: a chip in the
 // key's colour, then a label (the key tips under a game or the library).
-enum class RemoteKey { Red, Green, Yellow, Blue };
+enum class RemoteKey { Red, Green, Yellow, Blue, Back };
 ImU32 keyColour(RemoteKey key);
 // A rounded chip `height` high (1.8 times as wide), centred at `centre`.
 void drawKeyChip(ImDrawList &dl, RemoteKey key, ImVec2 centre, float height, int alpha = 255);
@@ -47,6 +47,13 @@ struct KeyTip {
 // `top`, `height` high (text about 0.42 of it).
 void drawKeyTips(ImDrawList &dl, ImFont *font, const std::vector<KeyTip> &tips, float left, float right, float top,
                  float height);
+
+// A big button for the remote, drawn in full at the cursor: rounded, a
+// colour key's chip before the label (`key` >= 0, a RemoteKey), greyed
+// and never clicked when disabled. `focused` (the arrow keys' choice)
+// draws a thick white ring, and `press` (OK) then clicks it.
+bool tvButton(const char *id, const std::string &label, ImVec2 size, ImFont *font, float fontSize, ImU32 base,
+              ImU32 hover, ImU32 text, int key, bool enabled = true, bool focused = false, bool press = false);
 
 } // namespace gob::webos
 
