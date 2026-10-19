@@ -6,9 +6,11 @@
     "main": "gobnative",
     "title": "gobnative",
     "appDescription": "Coktel Vision's Goblins trilogy",
-    "icon": "icon80.png",
-    "largeIcon": "icon130.png",
-    "iconColor": "#2b2340",
+    "icon": "gob-icon-80.png",
+    "largeIcon": "gob-icon-130.png",
+    "mediumLargeIcon": "gob-icon-115.png",
+    "extraLargeIcon": "gob-icon-192.png",
+    "iconColor": "#ec8030",
     "useAllMouseButtons": true,
     "useAllKeyboardKeys": true
 }

@@ -2294,7 +2294,7 @@ on it; nothing on the TV is changed outside the app's own folder):
   - **Manifest:** the script also writes
     `dist/io.github.initcore0.gobnative.manifest.json`, in the Homebrew
     Channel's format (as its own release has it): id, version, type,
-    title, appDescription, iconUri (`webos/icon130.png` on main),
+    title, appDescription, iconUri (`webos/gob-icon-130.png` on main),
     sourceUrl, `rootRequired: false`, `ipkUrl` (the package's name: it
     sits next to the manifest in a release), `ipkHash.sha256` and
     `ipkSize`.
@@ -2325,6 +2325,31 @@ on it; nothing on the TV is changed outside the app's own folder):
 
 ## 7. Open issues
 
+- **webOS: games over the network (after T5, user: "what if someone
+  has no USB stick but a rooted TV?").** The library also scans
+  `<pref root>/Installers` (`installersFolder()`): it is made at start
+  (so the app owns it), and rescanned when the names, sizes or times in
+  it change, not only when drives come and go. There:
+  - installers work as on a stick; the TV's copy is preferred, and is
+    deleted after a successful install (`finishImport`);
+  - top-level folders that hold a game are offered too, and Install
+    moves them into `Games/<game>` (`installFolder`, one rename).
+
+  The tiles say "Copied to this TV"; the card counts them; the browser
+  lists the folder as "This TV". `scripts/send-to-tv.sh root@TV
+  items...` streams each with tar over SSH into
+  `Installers/.incoming/`, gives it to the owner of `data/` (the jail's
+  `prisoner`, uid 6071 on the C1, which exists only inside the jail) and
+  renames it into place. A root-owned folder couldn't be moved by the
+  app, and a hidden name keeps half copies out.
+  - **Checked on the C1:** a 71 MB installer took 35 s over the
+    network; it was found, installed in 5.9 s and removed. A 52 MB game
+    folder was found ("Copied to this TV · 52 MB").
+  - **Not checked:** the folder's Install (needs the remote).
+- **webOS: the icon.** The TV draws its own tile shape around app icons,
+  so the package's icons fill their square (`scripts/make-icon.py
+  --webos`). They used to have the Mac icon's margin and rounded corners,
+  which showed a frame on the home screen (user's photo).
 - **webOS: the overlay without the pointer.** The library and the TV
   dialogs move a focus ring with the arrow keys, but the in-game overlay
   (ImGui) has no visible focus on a TV yet: it needs the pointer.
