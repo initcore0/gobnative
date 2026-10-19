@@ -154,10 +154,13 @@ void main() {
 // in a mirrored frame where it is the bottom-right one.
 const char *const kXbrShader = R"(
 uniform float strength;
-vec3 nb[25];
+ivec2 centre; // the source pixel under this output pixel
 
+// The neighbour (x, y) of the centre in the corner's orientation `m`,
+// fetched where it is needed: most pixels leave after E, F and H (an array
+// of all 25 first was 30 times slower on a TV's Mali GPU).
 vec3 at(int x, int y, ivec2 m) {
-	return nb[(y * m.y + 2) * 5 + x * m.x + 2];
+	return texel(centre + ivec2(x * m.x, y * m.y));
 }
 
 // Luma-weighted colour difference (the eye cares most about brightness).
@@ -172,12 +175,13 @@ bool same(vec3 a, vec3 b) {
 }
 
 void roundCorner(ivec2 m, vec2 f, float aa, inout vec3 col) {
-	vec3 B = at(0, -1, m), C = at(1, -1, m);
-	vec3 D = at(-1, 0, m), E = at(0, 0, m), F = at(1, 0, m), F4 = at(2, 0, m);
-	vec3 G = at(-1, 1, m), H = at(0, 1, m), I = at(1, 1, m), I4 = at(2, 1, m);
-	vec3 H5 = at(0, 2, m), I5 = at(1, 2, m);
+	vec3 E = at(0, 0, m), F = at(1, 0, m), H = at(0, 1, m);
 	if (same(E, F) || same(E, H))
 		return;
+	vec3 B = at(0, -1, m), C = at(1, -1, m);
+	vec3 D = at(-1, 0, m), F4 = at(2, 0, m);
+	vec3 G = at(-1, 1, m), I = at(1, 1, m), I4 = at(2, 1, m);
+	vec3 H5 = at(0, 2, m), I5 = at(1, 2, m);
 	// Change along the "/" diagonals around the corner, and along "\".
 	float slash = diff(E, C) + diff(E, G) + diff(I, F4) + diff(I, H5) + 4.0 * diff(F, H);
 	float backslash = diff(D, H) + diff(H, I5) + diff(B, F) + diff(F, I4) + 4.0 * diff(E, I);
@@ -204,13 +208,10 @@ void roundCorner(ivec2 m, vec2 f, float aa, inout vec3 col) {
 
 void main() {
 	vec2 p = uv * srcSize;
-	ivec2 c = ivec2(floor(p));
+	centre = ivec2(floor(p));
 	vec2 f = p - floor(p);
-	for (int y = -2; y <= 2; y++)
-		for (int x = -2; x <= 2; x++)
-			nb[(y + 2) * 5 + x + 2] = texel(c + ivec2(x, y));
 	float aa = srcSize.x / outSize.x; // one output pixel
-	vec3 col = nb[12];
+	vec3 col = texel(centre);
 	roundCorner(ivec2(1, 1), f, aa, col);
 	roundCorner(ivec2(-1, 1), vec2(1.0 - f.x, f.y), aa, col);
 	roundCorner(ivec2(1, -1), vec2(f.x, 1.0 - f.y), aa, col);
@@ -230,6 +231,7 @@ const char *const kCrtShader = R"(
 uniform float scanlines, sharpness, maskStrength, bloom, curvature, vignette, brightness, gamma;
 uniform int maskType;
 uniform float maskPitch;
+uniform sampler2D glowMap; // kGlowShader's pass, srcSize texels
 
 vec3 toLinear(vec3 c) {
 	return pow(c, vec3(2.4));
@@ -246,19 +248,6 @@ vec3 scanRow(int y, float x, float hs) {
 vec3 beam(vec3 c, float d) {
 	vec3 w = mix(vec3(0.19), vec3(0.32), sqrt(c));
 	return c * exp(-0.5 * d * d / (w * w)) / (w * 2.5066);
-}
-
-vec3 glow(vec2 p) {
-	vec3 sum = vec3(0.0);
-	float total = 0.0;
-	for (int j = 0; j < 4; j++)
-		for (int i = 0; i < 4; i++) {
-			vec2 o = (vec2(float(i), float(j)) - 1.5) * 1.8;
-			float w = exp(-dot(o, o) / 10.0);
-			sum += toLinear(texture(src, (p + o) / srcSize).rgb) * w;
-			total += w;
-		}
-	return sum / total;
 }
 
 vec3 phosphors(vec2 fc) {
@@ -302,8 +291,10 @@ void main() {
 	vec3 even = mix(c0, c1, clamp((dy - 0.5) * scale.y + 0.5, 0.0, 1.0));
 	vec3 col = mix(even, beam(c0, dy) + beam(c1, 1.0 - dy), scanlines);
 
-	vec3 g = glow(p);
-	col += bloom * (0.5 * max(g - col, 0.0) + 0.05 * g);
+	if (bloom > 0.0) {
+		vec3 g = toLinear(texture(glowMap, p / srcSize).rgb);
+		col += bloom * (0.5 * max(g - col, 0.0) + 0.05 * g);
+	}
 
 	if (maskType != 0) {
 		float avg = 1.0 - maskStrength * 2.0 / 3.0;
@@ -312,6 +303,36 @@ void main() {
 	float v = 16.0 * w.x * (1.0 - w.x) * w.y * (1.0 - w.y);
 	col *= mix(1.0, pow(v, 0.3), vignette) * brightness * edge;
 	color = vec4(pow(clamp(col, 0.0, 1.0), vec3(1.0 / gamma)), 1.0);
+}
+)";
+
+// The CRT's glow, a wide blur of the frame, worked out once per source
+// pixel in a pass of its own (srcSize pixels, gamma 2.4 for the 8 bits):
+// the CRT then reads it with one bilinear lookup per window pixel, where it
+// summed 16 samples for every one (a TV's GPU took 50 ms a frame).
+const char *const kGlowShader = R"(
+vec3 toLinear(vec3 c) {
+	return pow(c, vec3(2.4));
+}
+
+// A 4x4 gaussian around p, 1.8 source pixels apart; the weights are
+// exp(-|o|^2 / 10) for those offsets, made constants (a TV's GPU worked
+// them out for every pixel).
+vec3 glow(vec2 p) {
+	const float wc = 0.23270121, we = 0.44485807, wi = 0.85044120, total = 7.89143420; // corners, edges, inner four
+	vec3 sum = vec3(0.0);
+	for (int j = 0; j < 4; j++)
+		for (int i = 0; i < 4; i++) {
+			vec2 o = (vec2(float(i), float(j)) - 1.5) * 1.8;
+			bool outerI = i == 0 || i == 3, outerJ = j == 0 || j == 3;
+			float w = outerI && outerJ ? wc : outerI || outerJ ? we : wi;
+			sum += toLinear(texture(src, (p + o) / srcSize).rgb) * w;
+		}
+	return sum / total;
+}
+
+void main() {
+	color = vec4(pow(glow(uv * srcSize), vec3(1.0 / 2.4)), 1.0);
 }
 )";
 
@@ -498,7 +519,8 @@ bool GlPresenter::init(int frameW, int frameH, std::string &error) {
 	_srcScale = 1;
 
 	const char *const bodies[kProgramCount] = {kNearestShader, kSmoothShader, kSharpShader, kScale2xShader,
-	                                           kScale3xShader, kXbrShader,    kCrtShader,   kTextShader};
+	                                           kScale3xShader, kXbrShader,    kCrtShader,   kGlowShader,
+	                                           kTextShader};
 	for (int i = 0; i < kProgramCount; i++) {
 		_programs[i] = link(bodies[i], error);
 		if (!_programs[i])
@@ -514,11 +536,13 @@ bool GlPresenter::init(int frameW, int frameH, std::string &error) {
 }
 
 void GlPresenter::shutdown() {
-	if (_upscaled.fbo)
-		gl::DeleteFramebuffers(1, &_upscaled.fbo);
-	if (_upscaled.texture)
-		gl::DeleteTextures(1, &_upscaled.texture);
-	_upscaled = Target();
+	for (Target *t : {&_upscaled, &_glow}) {
+		if (t->fbo)
+			gl::DeleteFramebuffers(1, &t->fbo);
+		if (t->texture)
+			gl::DeleteTextures(1, &t->texture);
+		*t = Target();
+	}
 	for (unsigned *t : {&_textMap, &_textColors, &_textAtlas})
 		if (*t) {
 			gl::DeleteTextures(1, t);
@@ -582,7 +606,7 @@ void GlPresenter::runPass(Program p, unsigned texture, int srcW, int srcH, int o
 	gl::ActiveTexture(gl::TEXTURE0);
 	gl::BindTexture(gl::TEXTURE_2D, texture);
 	gl::Uniform1i(loc("src"), 0);
-	gl::Uniform1i(loc("toTarget"), p == kScale2x || p == kScale3x || p == kXbr);
+	gl::Uniform1i(loc("toTarget"), p == kScale2x || p == kScale3x || p == kXbr || p == kGlow);
 	gl::Uniform2f(loc("srcSize"), float(srcW), float(srcH));
 	gl::Uniform2f(loc("outSize"), float(outW), float(outH));
 	gl::Uniform1f(loc("softness"), f.softness / 100.0f);
@@ -599,6 +623,10 @@ void GlPresenter::runPass(Program p, unsigned texture, int srcW, int srcH, int o
 		gl::Uniform1f(loc("vignette"), f.vignette / 100.0f);
 		gl::Uniform1f(loc("brightness"), f.brightness / 100.0f);
 		gl::Uniform1f(loc("gamma"), float(std::clamp(f.gamma, 1.0, 3.0)));
+		gl::ActiveTexture(gl::TEXTURE0 + 1);
+		gl::BindTexture(gl::TEXTURE_2D, _glow.texture);
+		gl::Uniform1i(loc("glowMap"), 1);
+		gl::ActiveTexture(gl::TEXTURE0);
 	}
 	gl::BindVertexArray(_vao);
 	gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
@@ -669,6 +697,14 @@ void GlPresenter::redraw(int dw, int dh, const Rect &vp, const FilterSettings &f
 		texture = _upscaled.texture;
 		srcW = _upscaled.w;
 		srcH = _upscaled.h;
+	}
+
+	// The CRT's glow, at the source's size.
+	if (f.filter == VideoFilter::Crt && f.bloom > 0 && ensureTarget(_glow, srcW, srcH)) {
+		gl::BindFramebuffer(gl::FRAMEBUFFER, _glow.fbo);
+		gl::Viewport(0, 0, _glow.w, _glow.h);
+		runPass(kGlow, texture, srcW, srcH, _glow.w, _glow.h, f);
+		gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
 	}
 
 	gl::Viewport(0, 0, dw, dh);

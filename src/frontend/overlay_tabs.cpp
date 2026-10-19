@@ -77,7 +77,13 @@ const char *filterHelp(VideoFilter f) {
 	case VideoFilter::Xbr:
 		return "Edge-directed upscaler in the spirit of xBR: rounds off diagonal staircases,\n"
 		       "then sharp bilinear to the window size.";
-	case VideoFilter::Crt: return "CRT monitor look: scanlines, phosphor mask, glow; best at 3x and above.";
+	case VideoFilter::Crt:
+#ifdef GOB_WEBOS
+		return "CRT monitor look: scanlines, phosphor mask, glow. Heavy for a TV: about 40 frames a second on an "
+		       "LG C1 (2021), where the other filters keep 60.";
+#else
+		return "CRT monitor look: scanlines, phosphor mask, glow; best at 3x and above.";
+#endif
 	}
 	return "";
 }
