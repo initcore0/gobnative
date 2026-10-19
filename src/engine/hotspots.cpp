@@ -659,6 +659,11 @@ Task<int> Interpreter::updateInput(const InputField &in, int handleMouse, uint16
 
 // Runs the block's text inputs. Gobliins 2 has a single one (the save name).
 Task<int> Interpreter::handleInputs(std::vector<InputField> &inputs, int handleMouse, uint16_t *id, uint16_t *index) {
+	struct Editing { // editingText() while the inputs run, however they end
+		bool &flag;
+		explicit Editing(bool &f) : flag(f) { flag = true; }
+		~Editing() { flag = false; }
+	} editing(_editingText);
 	for (uint32_t v = 17; v <= 56; v++)
 		writeVar(v, 0);
 	size_t cur = 0;

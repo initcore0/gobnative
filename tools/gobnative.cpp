@@ -119,6 +119,10 @@
 #else
 #include <unistd.h>
 #endif
+#ifdef GOB_WEBOS
+#include "frontend/webos.h"
+#include <fcntl.h>
+#endif
 
 #include <algorithm>
 #include <cctype>
@@ -222,6 +226,9 @@ int translateKey(const SDL_Keysym &k) {
 #ifdef __APPLE__
 constexpr Uint16 kShortcutMod = KMOD_GUI;
 const char *const kQuickSaveShortcut = "Cmd+S", *const kQuickLoadShortcut = "Cmd+L";
+#elif defined(GOB_WEBOS)
+constexpr Uint16 kShortcutMod = KMOD_CTRL; // a USB keyboard's; on the remote both are in the overlay
+const char *const kQuickSaveShortcut = "", *const kQuickLoadShortcut = "";
 #else
 constexpr Uint16 kShortcutMod = KMOD_CTRL;
 const char *const kQuickSaveShortcut = "Ctrl+S", *const kQuickLoadShortcut = "Ctrl+L";
@@ -234,6 +241,26 @@ bool isOverlayKey(const SDL_Keysym &k) {
 // Held for turbo speed. The game's scripts never test Tab (hotspot keys are
 // F1-F7, Enter and Escape; key comparisons are Escape, Backspace and text).
 constexpr SDL_Scancode kTurboKey = SDL_SCANCODE_TAB;
+
+#ifdef GOB_WEBOS
+// A TV remote has no keyboard: its colour keys stand in for the desktop's
+// keys, rewritten before anything looks at the event, and the tips bar
+// under the picture names them (GameRun::drawTvBar). Red is Escape (skips
+// the intro and cutscenes, leaves the game's menus; held, leaves the
+// game), green the overlay key. Yellow shows and hides the tips, blue
+// switches fast (turbo, held Tab on a keyboard) on and off; both in
+// GameRun::handleEvents. Quick save and quick load are in the overlay.
+void remapRemoteKey(SDL_Keysym &k) {
+	switch (int(k.scancode)) {
+	case SDL_SCANCODE_WEBOS_RED: k = {SDL_SCANCODE_ESCAPE, SDLK_ESCAPE, KMOD_NONE, 0}; break;
+	case SDL_SCANCODE_WEBOS_GREEN: k = {SDL_SCANCODE_GRAVE, SDLK_BACKQUOTE, KMOD_NONE, 0}; break;
+	default: break;
+	}
+}
+
+// The tips bar's height under the picture, in drawable pixels.
+int tvBarHeight(int dh) { return dh * 7 / 100; }
+#endif
 
 // Held to outline the hotspots. Option/Alt alone never meant anything to the
 // game (it only reads keys with an ASCII or BIOS scan code); the left one is
@@ -277,6 +304,7 @@ public:
 	int scaleOverride = 0; // --scale: used for this run, not saved
 	int savedScale = 3;    // the scale the settings file had
 	bool turbo = false;
+	bool fastOn = false; // switched by the TV remote's blue key
 	std::string title;
 
 	// --- OverlayHost
@@ -662,7 +690,7 @@ public:
 
 	// Game speed for this frame: turbo while its key is held.
 	void updateSpeed() {
-		turbo = !overlay.isOpen() && SDL_GetKeyboardState(nullptr)[kTurboKey];
+		turbo = !overlay.isOpen() && (SDL_GetKeyboardState(nullptr)[kTurboKey] || fastOn);
 		interp->speed = turbo ? config.turboSpeed : config.speed;
 		interp->cutscenesAtNormalSpeed = config.cutscenesAtNormalSpeed;
 
@@ -742,6 +770,12 @@ public:
 	}
 
 	void applyVideo(bool force) {
+#ifdef GOB_WEBOS
+		// The window always covers the TV's screen.
+		(void)force;
+		_applied = config;
+		return;
+#endif
 		bool sizeChanged = force || config.windowScale != _applied.windowScale ||
 		                   config.aspectCorrection != _applied.aspectCorrection;
 		if (force || config.fullscreen != _applied.fullscreen) {
@@ -762,7 +796,13 @@ public:
 
 	GlPresenter::Rect viewport(int &dw, int &dh) const {
 		SDL_GL_GetDrawableSize(window, &dw, &dh);
+#ifdef GOB_WEBOS
+		// The picture above the key tips bar, or the whole screen without it.
+		return presenter.layout(dw, dh - (config.keyTips ? tvBarHeight(dh) : 0), config.aspectCorrection,
+		                        config.integerScaling);
+#else
 		return presenter.layout(dw, dh, config.aspectCorrection, config.integerScaling);
+#endif
 	}
 
 	// Window coordinates (points) <-> game screen coordinates, through the
@@ -910,8 +950,8 @@ void audioCallback(void *user, Uint8 *stream, int len) {
 }
 
 bool createGlWindow(App &app, std::string &error) {
-#ifdef __EMSCRIPTEN__
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES); // WebGL 2
+#ifdef GOB_GLES
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES); // WebGL 2, webOS
 #else
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 #endif
@@ -923,13 +963,19 @@ bool createGlWindow(App &app, std::string &error) {
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
 
 	int w, h;
+#ifdef GOB_WEBOS
+	// A TV: the whole screen, always.
+	webos::screenSize(w, h);
+	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN;
+#else
 	app.windowSizeFor(w, h);
 	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
 	if (app.config.fullscreen)
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+#endif
 	// 3.3 core where available, else 3.2 (all the shaders need); OpenGL
-	// ES 3.0 (WebGL 2) in a browser.
-#ifdef __EMSCRIPTEN__
+	// ES 3.0 in a browser (WebGL 2) and on a TV.
+#ifdef GOB_GLES
 	for (int minor : {0}) {
 #else
 	for (int minor : {3, 2}) {
@@ -950,6 +996,8 @@ bool createGlWindow(App &app, std::string &error) {
 	if (!app.glContext) {
 #ifdef __EMSCRIPTEN__
 		error = std::string("WebGL 2 context: ") + SDL_GetError();
+#elif defined(GOB_GLES)
+		error = std::string("OpenGL ES 3.0 context: ") + SDL_GetError();
 #else
 		error = std::string("OpenGL 3.2 core context: ") + SDL_GetError();
 #endif
@@ -1041,6 +1089,9 @@ struct GameRun {
 	int finish();
 	// The touch bar, over everything (Overlay::setTouchLayer).
 	void drawTouchBar(ImDrawList &dl);
+#ifdef GOB_WEBOS
+	void drawTvBar(ImDrawList &dl);
+#endif
 
 private:
 	void handleEvents();
@@ -1100,6 +1151,12 @@ bool GameRun::frame() {
 			if (app.game.done() || (app.interp->quitRequested() && !app.interp->scheduler().waiting()))
 				return false;
 		}
+#ifdef GOB_WEBOS
+		// The TV's on-screen keyboard while the game edits text (a save
+		// name), and only then.
+		if (const bool want = app.interp->editingText() && !app.overlay.isOpen(); want != bool(SDL_IsTextInputActive()))
+			want ? SDL_StartTextInput() : SDL_StopTextInput();
+#endif
 		draw();
 #ifdef __EMSCRIPTEN__
 		(void)frameStart; // the browser paces the frames
@@ -1128,6 +1185,26 @@ void GameRun::handleEvents() {
 	SDL_Event ev;
 	while (SDL_PollEvent(&ev)) {
 		const bool open = app.overlay.isOpen();
+#ifdef GOB_WEBOS
+		if ((ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP) && ev.key.keysym.scancode == SDL_SCANCODE_WEBOS_BLUE) {
+			if (ev.type == SDL_KEYDOWN && !ev.key.repeat && !open) {
+				app.fastOn = !app.fastOn;
+				app.overlay.toast(app.fastOn ? "Fast on" : "Fast off");
+			}
+			continue; // never reaches the game
+		}
+		if ((ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP) && ev.key.keysym.scancode == SDL_SCANCODE_WEBOS_YELLOW) {
+			if (ev.type == SDL_KEYDOWN && !ev.key.repeat) {
+				app.config.keyTips = !app.config.keyTips;
+				app.settingsChanged(); // kept in settings.ini
+				if (!app.config.keyTips)
+					app.overlay.toast("Key tips hidden: the yellow key shows them");
+			}
+			continue; // never reaches the game
+		}
+		if (ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP)
+			remapRemoteKey(ev.key.keysym);
+#endif
 		switch (ev.type) {
 		case SDL_QUIT:
 			app.quitPending = true;
@@ -1161,7 +1238,12 @@ void GameRun::handleEvents() {
 					// polls for Escape) or a scripted sequence; a no-op during play
 					app.interp->skipCutscene();
 				}
-				if (int k = translateKey(ev.key.keysym); k && app.host.keys.size() < 16) {
+				int k = translateKey(ev.key.keysym);
+#ifdef GOB_WEBOS
+				if (k >= ' ' && k < 127 && SDL_IsTextInputActive())
+					k = 0; // the same letter comes as text (SDL_TEXTINPUT)
+#endif
+				if (k && app.host.keys.size() < 16) {
 					app.host.keys.push_back(k);
 					if (app.host.traceEnabled) {
 						char buf[32];
@@ -1180,6 +1262,14 @@ void GameRun::handleEvents() {
 		case SDL_TEXTINPUT:
 			if (open && !std::strchr(ev.text.text, '`'))
 				app.overlay.processEvent(ev);
+#ifdef GOB_WEBOS
+			// The TV's on-screen keyboard (shown while the game edits text):
+			// its letters go to the game as keys.
+			else if (!open)
+				for (const char *c = ev.text.text; *c; c++)
+					if (*c >= ' ' && *c < 127 && *c != '`' && app.host.keys.size() < 16)
+						app.host.keys.push_back(*c);
+#endif
 			break;
 		case SDL_FINGERDOWN:
 		case SDL_FINGERMOTION:
@@ -1333,6 +1423,55 @@ void GameRun::drawTouchBar(ImDrawList &dl) {
 		dl.AddText(font, size, ImVec2(b.x + (b.w - ts.x) / 2, b.y + (b.h - ts.y) / 2), text, b.label);
 	}
 }
+
+#ifdef GOB_WEBOS
+// The TV remote's colour keys and what they do now, as on the remote, in
+// the strip under the picture: [red] Skip  [green] Menu  [yellow] Hide tips
+// [blue] Fast. Skip is dimmed when there is nothing to skip; Fast is lit
+// while on. Not drawn while hidden (the picture then takes the strip).
+void GameRun::drawTvBar(ImDrawList &dl) {
+	App &app = *this->app;
+	int ww, wh;
+	SDL_GetWindowSize(app.window, &ww, &wh);
+	float gx, gy, gw, gh;
+	app.gameRectPoints(gx, gy, gw, gh);
+	const float barTop = gy + gh, barH = float(wh) - barTop;
+	if (!app.config.keyTips || barH < 8)
+		return;
+	struct Tip {
+		ImU32 key;
+		const char *label;
+		bool enabled, lit;
+	};
+	const Tip tips[] = {
+		{IM_COL32(214, 48, 49, 255), "Skip", app.canSkip(), false},
+		{IM_COL32(39, 174, 96, 255), "Menu", true, false},
+		{IM_COL32(241, 196, 15, 255), "Hide tips", true, false},
+		{IM_COL32(41, 128, 185, 255), app.fastOn ? "Fast: on" : "Fast", true, app.fastOn},
+	};
+	ImFont *font = app.overlay.fonts().bold;
+	const float size = std::round(barH * 0.42f), keyW = size * 1.6f, keyH = size * 0.9f, gap = size * 0.5f,
+	            spacing = size * 1.8f;
+	float total = 0;
+	for (const Tip &t : tips)
+		total += keyW + gap + font->CalcTextSizeA(size, FLT_MAX, 0.0f, t.label).x + spacing;
+	total -= spacing;
+	float x = std::round((float(ww) - total) / 2);
+	const float cy = barTop + barH / 2;
+	for (const Tip &t : tips) {
+		const int alpha = t.enabled ? 255 : 90;
+		dl.AddRectFilled(ImVec2(x, cy - keyH / 2), ImVec2(x + keyW, cy + keyH / 2), withAlpha(t.key, alpha), keyH / 2);
+		if (t.lit)
+			dl.AddRect(ImVec2(x - 3, cy - keyH / 2 - 3), ImVec2(x + keyW + 3, cy + keyH / 2 + 3), colour::kText,
+			           keyH / 2 + 3, 0, 2.0f);
+		x += keyW + gap;
+		const ImVec2 ts = font->CalcTextSizeA(size, FLT_MAX, 0.0f, t.label);
+		dl.AddText(font, size, ImVec2(x, cy - ts.y / 2),
+		           t.lit ? colour::kText : withAlpha(t.enabled ? colour::kText : colour::kFaint, alpha), t.label);
+		x += ts.x + spacing;
+	}
+}
+#endif
 
 void GameRun::debugActions() {
 	App &app = *this->app;
@@ -1581,6 +1720,9 @@ int openGame(Startup &st, std::vector<std::string> argStrings, std::unique_ptr<G
 		run.reset();
 		return 1;
 	}
+#ifdef GOB_WEBOS
+	SDL_StopTextInput(); // SDL starts with text input on; on a TV that is the on-screen keyboard
+#endif
 	if (!st.sharedPath.empty()) {
 		std::error_code ec;
 		st.shared.addRecent(std::filesystem::absolute(argv[1], ec).lexically_normal().string(), game->key);
@@ -1756,6 +1898,9 @@ int openGame(Startup &st, std::vector<std::string> argStrings, std::unique_ptr<G
 	addSettingsTabs(app.overlay, app);
 	addToolsTab(app.overlay, app);
 	app.overlay.setTouchLayer([&r](ImDrawList &dl) { r.drawTouchBar(dl); });
+#ifdef GOB_WEBOS
+	app.overlay.setBarLayer([&r](ImDrawList &dl) { r.drawTvBar(dl); });
+#endif
 #ifdef __EMSCRIPTEN__
 	// A page knows of a touchscreen once a finger touched it (the library's
 	// Play): show the touch bar from the start then.
@@ -1934,6 +2079,13 @@ int main(int argc, char **argv) {
 	// takeGameOption() moves the arguments within argv, and SDL2main on
 	// Windows frees argv's strings after main returns: work on a copy.
 	std::vector<char *> argvCopy(argv, argv + argc + 1);
+#ifdef GOB_WEBOS
+	// The TV's launcher passes its launch parameters (JSON) first.
+	if (argc >= 2 && argv[1][0] == '{') {
+		argvCopy.erase(argvCopy.begin() + 1);
+		argc--;
+	}
+#endif
 	argv = argvCopy.data();
 #ifdef _WIN32
 	windowsAttachConsole();
@@ -1999,6 +2151,9 @@ int main(int argc, char **argv) {
 #ifdef __EMSCRIPTEN__
 	else
 		st.root = web::kRoot; // kept in the browser's storage (web.h)
+#elif defined(GOB_WEBOS)
+	else
+		st.root = webos::dataFolder(argv[0]);
 #else
 	else if (char *pref = SDL_GetPrefPath("", "gobnative")) {
 		st.root = pref; // ~/Library/Application Support/gobnative/ on macOS
@@ -2008,6 +2163,17 @@ int main(int argc, char **argv) {
 	if (!st.root.empty()) {
 		std::error_code ec;
 		std::filesystem::create_directories(st.root, ec);
+#ifdef GOB_WEBOS
+		// The TV's launcher shows no output: the last run's is kept in the
+		// data folder.
+		if (!isatty(2)) {
+			const int log = open((st.root / "gobnative.log").string().c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+			if (log >= 0) {
+				dup2(log, 2);
+				close(log);
+			}
+		}
+#endif
 		st.sharedPath = (st.root / "settings.ini").string();
 		st.shared.load(st.sharedPath);
 	}

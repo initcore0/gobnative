@@ -253,8 +253,10 @@ void hdPackSection(OverlayHost &host) {
 void videoTab(OverlayHost &host) {
 	Settings &s = host.settings();
 	bool changed = false;
+#ifndef GOB_WEBOS // a TV's window is the screen
 	changed |= ImGui::Checkbox("Fullscreen", &s.fullscreen);
-#ifndef __EMSCRIPTEN__ // the page sizes the game in a browser
+#endif
+#if !defined(__EMSCRIPTEN__) && !defined(GOB_WEBOS) // the page sizes the game in a browser, a TV has one size
 	ImGui::BeginDisabled(s.fullscreen);
 	changed |= ImGui::SliderInt("Window scale", &s.windowScale, Settings::kMinScale, Settings::kMaxScale, "%dx",
 	                            ImGuiSliderFlags_AlwaysClamp);
@@ -263,6 +265,10 @@ void videoTab(OverlayHost &host) {
 	changed |= ImGui::Checkbox("Integer scaling", &s.integerScaling);
 	ImGui::SetItemTooltip("Only whole multiples of the image size; the rest is black border.");
 	changed |= ImGui::Checkbox("4:3 aspect correction", &s.aspectCorrection);
+#ifdef GOB_WEBOS
+	changed |= ImGui::Checkbox("Key tips under the picture (yellow key)", &s.keyTips);
+	ImGui::SetItemTooltip("What the remote's colour keys do, in a strip under the game.");
+#endif
 	ImGui::SetItemTooltip("Show the 320x200 image with tall pixels, as on a CRT monitor (320x240).");
 
 	ImGui::SeparatorText("Filter");
@@ -486,9 +492,20 @@ void speedTab(OverlayHost &host) {
 	}
 	if (!preset)
 		ImGui::Text("Custom speed from settings.ini: %gx", s.speed);
-	changed |= ImGui::SliderInt("Turbo (hold Tab)", &s.turboSpeed, Settings::kMinTurbo, Settings::kMaxTurbo, "%dx",
-	                            ImGuiSliderFlags_AlwaysClamp);
-	ImGui::SetItemTooltip("While Tab is held the game runs at this speed instead.");
+#ifdef GOB_WEBOS
+#define GOB_TURBO_KEY "the blue key" // the remote's, a toggle there (tools/gobnative.cpp)
+#else
+#define GOB_TURBO_KEY "Tab"
+#endif
+#ifdef GOB_WEBOS
+	changed |= ImGui::SliderInt("Fast (" GOB_TURBO_KEY ")", &s.turboSpeed, Settings::kMinTurbo, Settings::kMaxTurbo,
+	                            "%dx", ImGuiSliderFlags_AlwaysClamp);
+	ImGui::SetItemTooltip("While fast is on (" GOB_TURBO_KEY ") the game runs at this speed instead.");
+#else
+	changed |= ImGui::SliderInt("Turbo (hold " GOB_TURBO_KEY ")", &s.turboSpeed, Settings::kMinTurbo,
+	                            Settings::kMaxTurbo, "%dx", ImGuiSliderFlags_AlwaysClamp);
+	ImGui::SetItemTooltip("While " GOB_TURBO_KEY " is held the game runs at this speed instead.");
+#endif
 	changed |= ImGui::Checkbox("Cutscenes at normal speed", &s.cutscenesAtNormalSpeed);
 	ImGui::SetItemTooltip("The intro and the ending are timed to the CD music; at other speeds they drift out of\n"
 	                      "sync. Turbo doesn't apply to them either while this is on.");
@@ -533,8 +550,14 @@ public:
 			ImGui::TextDisabled("No level is running (intro, ending, access code or between levels).");
 
 		char saveLabel[64], loadLabel[64];
-		std::snprintf(saveLabel, sizeof(saveLabel), "Quick save (%s)", _host.quickSaveShortcut());
-		std::snprintf(loadLabel, sizeof(loadLabel), "Quick load (%s)", _host.quickLoadShortcut());
+		if (*_host.quickSaveShortcut())
+			std::snprintf(saveLabel, sizeof(saveLabel), "Quick save (%s)", _host.quickSaveShortcut());
+		else
+			std::snprintf(saveLabel, sizeof(saveLabel), "Quick save");
+		if (*_host.quickLoadShortcut())
+			std::snprintf(loadLabel, sizeof(loadLabel), "Quick load (%s)", _host.quickLoadShortcut());
+		else
+			std::snprintf(loadLabel, sizeof(loadLabel), "Quick load");
 		ImGui::BeginDisabled(current.empty());
 		if (ImGui::Button(saveLabel))
 			_host.quickSave();

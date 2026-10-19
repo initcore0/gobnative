@@ -3,6 +3,8 @@
 
 #include "frontend/overlay.h"
 
+#include "frontend/gl.h"
+
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl2.h"
@@ -10,6 +12,13 @@
 #include <SDL.h>
 
 #include <algorithm>
+
+// The keys that close the overlay, as the player knows them.
+#ifdef GOB_WEBOS
+#define GOB_OVERLAY_KEYS "the green or red key"
+#else
+#define GOB_OVERLAY_KEYS "` or Escape"
+#endif
 
 namespace gob {
 
@@ -26,8 +35,8 @@ bool Overlay::init(SDL_Window *window, void *glContext) {
 	style.FramePadding = ImVec2(8, 4);
 	style.ItemSpacing = ImVec2(8, 6);
 	style.WindowBorderSize = 1;
-#ifdef __EMSCRIPTEN__
-	const char *glsl = "#version 300 es"; // WebGL 2
+#ifdef GOB_GLES
+	const char *glsl = "#version 300 es"; // WebGL 2, webOS
 #else
 	const char *glsl = "#version 150";
 #endif
@@ -98,7 +107,8 @@ void Overlay::drawToasts() {
 void Overlay::render() {
 	const bool layer = _layerActive && _layerActive();
 	const bool touchLayer = touchMode && _touchDraw;
-	if (!_initialized || (!_open && _toasts.empty() && !layer && !touchLayer))
+	const bool barLayer = bool(_barDraw);
+	if (!_initialized || (!_open && _toasts.empty() && !layer && !touchLayer && !barLayer))
 		return;
 	// While closed the game hides the system cursor; ImGui must leave it alone.
 	ImGuiIO &io = ImGui::GetIO();
@@ -115,6 +125,8 @@ void Overlay::render() {
 			_layerDraw(*ImGui::GetBackgroundDrawList());
 		if (touchLayer)
 			_touchDraw(*ImGui::GetForegroundDrawList());
+		if (barLayer)
+			_barDraw(*ImGui::GetForegroundDrawList());
 		drawToasts();
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -157,9 +169,9 @@ void Overlay::render() {
 			ImGui::TextDisabled(dimGame ? "Game paused. Tap beside this window to resume."
 			                            : "Game running (see Tools). Tap beside this window to close it.");
 		else if (dimGame)
-			ImGui::TextDisabled("Game paused. Press ` or Escape to resume.");
+			ImGui::TextDisabled("Game paused. Press " GOB_OVERLAY_KEYS " to resume.");
 		else
-			ImGui::TextDisabled("Game running (see Tools). Press ` or Escape to close.");
+			ImGui::TextDisabled("Game running (see Tools). Press " GOB_OVERLAY_KEYS " to close.");
 		if (ImGui::BeginTabBar("tabs")) {
 			for (const Tab &t : _tabs) {
 				ImGuiTabItemFlags flags = t.name == _selectTab ? ImGuiTabItemFlags_SetSelected : 0;

@@ -47,6 +47,7 @@ bool Settings::load(const std::string &path) {
 	windowScale = std::clamp(_ini.getInt("video", "scale", windowScale), kMinScale, kMaxScale);
 	integerScaling = _ini.getBool("video", "integer_scaling", integerScaling);
 	aspectCorrection = _ini.getBool("video", "aspect_correction", aspectCorrection);
+	keyTips = _ini.getBool("video", "key_tips", keyTips);
 	sharpText = _ini.getBool("video", "sharp_text", sharpText);
 	hdPack = _ini.get("video", "hd_pack");
 	if (!parseSpriteFilter(_ini.get("video", "hd_sprite_filter"), hdSpriteFilter) &&
@@ -96,6 +97,9 @@ bool Settings::save(const std::string &path) {
 	_ini.setInt("video", "scale", windowScale);
 	_ini.setBool("video", "integer_scaling", integerScaling);
 	_ini.setBool("video", "aspect_correction", aspectCorrection);
+#ifdef GOB_WEBOS
+	_ini.setBool("video", "key_tips", keyTips);
+#endif
 	_ini.setBool("video", "sharp_text", sharpText);
 	_ini.set("video", "hd_pack", hdPack);
 	_ini.set("video", "hd_sprite_filter", spriteFilterName(hdSpriteFilter));
