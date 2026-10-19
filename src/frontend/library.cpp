@@ -209,6 +209,7 @@ struct Tile {
 	int texW = 0, texH = 0;
 	std::string textureFolder; // the folder the picture is from
 	std::string manual;        // the game's Manual.pdf, if it has one
+	uint64_t bytes = 0;        // the folder's size (webOS: shown on the tile)
 };
 
 struct Recent {
@@ -537,6 +538,16 @@ struct LibraryScreen::State {
 				std::error_code ec;
 				t.imported = fs::equivalent(t.folder, libraryGameFolder(ctx.prefRoot, t.game->prefFolder), ec);
 			}
+#ifdef GOB_WEBOS
+			t.bytes = 0;
+			if (!t.folder.empty()) {
+				std::error_code ec;
+				for (auto it = fs::recursive_directory_iterator(t.folder, ec); !ec && it != fs::recursive_directory_iterator();
+				     it.increment(ec))
+					if (it->is_regular_file(ec))
+						t.bytes += it->file_size(ec);
+			}
+#endif
 			if (t.textureFolder != t.folder) {
 				if (t.texture)
 					gl::DeleteTextures(1, &t.texture);
@@ -770,6 +781,30 @@ struct LibraryScreen::State {
 			addFolder(p);
 	}
 
+#if defined(__EMSCRIPTEN__) || defined(GOB_WEBOS)
+	// Deletes an installed game's folder (from the browser's storage, or the
+	// TV's data folder); saves and settings are elsewhere and stay.
+	void removeGame(const Tile &t) {
+		const std::string folder = t.folder, title = t.game->title;
+		std::error_code ec;
+		fs::remove_all(folder, ec);
+		if (ctx.shared) {
+			std::erase(ctx.shared->recentFolders, folder);
+			if (!ctx.sharedPath.empty())
+				ctx.shared->save(ctx.sharedPath);
+		}
+		refresh();
+		if (ec)
+			say("Couldn't remove " + title + ".", true, ec.message());
+		else
+			say(title + (kWeb ? " was removed from this browser." : " was removed from this TV."), false);
+#ifdef __EMSCRIPTEN__
+		web::sync();
+		savePending = true;
+#endif
+	}
+#endif
+
 #ifdef __EMSCRIPTEN__
 	// The browser's file dialogs: the installer goes to memory (kTemp), a
 	// game folder's files straight into Games/.incoming in the storage.
@@ -798,25 +833,6 @@ struct LibraryScreen::State {
 		picking = Picking::Folder;
 		message.clear();
 	}
-	// Deletes an installed game's folder from the browser's storage.
-	void removeGame(const Tile &t) {
-		const std::string folder = t.folder, title = t.game->title;
-		std::error_code ec;
-		fs::remove_all(folder, ec);
-		if (ctx.shared) {
-			std::erase(ctx.shared->recentFolders, folder);
-			if (!ctx.sharedPath.empty())
-				ctx.shared->save(ctx.sharedPath);
-		}
-		refresh();
-		if (ec)
-			say("Couldn't remove " + title + ".", true, ec.message());
-		else
-			say(title + " was removed from this browser.", false);
-		web::sync();
-		savePending = true;
-	}
-
 	// A game folder copied into the storage: put where an import would
 	// put it, if it is a game that isn't installed yet.
 	void takeFolder() {
@@ -923,6 +939,53 @@ struct LibraryScreen::State {
 	}
 #endif
 
+#ifdef GOB_WEBOS
+	// A TV (frontend/webos.h): a layout for the remote, big enough to read
+	// from a sofa, without the desktop's small and folding parts. Games come
+	// from USB storage, polled every few seconds; the GOG installers on it
+	// are found by a scan on a worker thread. The colour keys do what the
+	// tips bar at the bottom says.
+	struct UsbFile {
+		fs::path path;
+		const GameInfo *game = nullptr;
+		uint64_t bytes = 0; // what it installs
+	};
+	std::vector<std::string> usbDrives;
+	std::vector<UsbFile> usbFiles;
+	std::jthread usbScan;
+	std::atomic<bool> usbScanDone{false};
+	std::vector<UsbFile> usbFound; // the scan's result, taken once it is done
+	bool usbScanning = false;
+	uint32_t usbCheckedAt = 0;
+	bool browsing = false; // the USB file browser
+	fs::path browseDir;    // empty: the list of USB drives
+	int tvKey = -1;        // a colour key pressed this frame (webos::RemoteKey)
+	const Tile *removing = nullptr;
+	// The arrow keys and OK (the remote without its pointer) move a focus
+	// ring over the buttons: row 0 the tiles' buttons, left to right, row
+	// 1 the USB card's. The first press shows the ring; moving the pointer
+	// hides it. The dialogs keep their own selection (dialogSel).
+	enum class Nav { None, Up, Down, Left, Right, Ok };
+	Nav navKey = Nav::None;
+	bool navShown = false, navOk = false;
+	int navRow = 0, navCol = 0, dialogSel = 0;
+	int navSeen[2] = {0, 0}, navNext[2] = {0, 0}; // focusable buttons per row: last frame, this frame
+	bool navFocus(int row, bool enabled) {
+		if (!enabled)
+			return false;
+		const int col = navNext[row]++;
+		return navShown && row == navRow && col == navCol;
+	}
+	static std::vector<UsbFile> findInstallers(const std::vector<std::string> &roots);
+	void pollUsb();
+	const UsbFile *usbInstaller(const GameInfo *g) const;
+	void tvPrimary(Tile &t);
+	void drawTv(bool busy);
+	void drawTvTile(Tile &t, int index, ImVec2 p0, float w, float coverH, float h, float s, bool busy);
+	void drawTvUsb(ImVec2 p0, ImVec2 p1, float s, bool busy);
+	void drawTvBrowser(float s, Nav key);
+	void drawTvRemove(float s, Nav key);
+#endif
 	bool openWindow();
 	void debugActions(double now);
 	void draw();
@@ -980,6 +1043,9 @@ bool LibraryScreen::State::openWindow() {
 	ImGuiIO &io = ImGui::GetIO();
 	io.IniFilename = nullptr;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+#ifdef GOB_WEBOS
+	io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableKeyboard; // the TV layout moves its own focus (drawTv)
+#endif
 	fonts = addUiFonts(*io.Fonts);
 	applyStyle(ImGui::GetStyle());
 	ImGui_ImplSDL2_InitForOpenGL(window, context);
@@ -1056,8 +1122,28 @@ bool LibraryScreen::State::frame() {
 				setPath(dropped);
 				openPath(dropped);
 			}
+#ifdef GOB_WEBOS
+			else if (ev.type == SDL_KEYDOWN && !ev.key.repeat) {
+				switch (int(ev.key.keysym.scancode)) {
+				case SDL_SCANCODE_WEBOS_RED: tvKey = int(webos::RemoteKey::Red); break;
+				case SDL_SCANCODE_WEBOS_GREEN: tvKey = int(webos::RemoteKey::Green); break;
+				case SDL_SCANCODE_WEBOS_YELLOW: tvKey = int(webos::RemoteKey::Yellow); break;
+				case SDL_SCANCODE_WEBOS_BLUE: tvKey = int(webos::RemoteKey::Blue); break;
+				case SDL_SCANCODE_UP: navKey = Nav::Up; break;
+				case SDL_SCANCODE_DOWN: navKey = Nav::Down; break;
+				case SDL_SCANCODE_LEFT: navKey = Nav::Left; break;
+				case SDL_SCANCODE_RIGHT: navKey = Nav::Right; break;
+				case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER: navKey = Nav::Ok; break;
+				default: break;
+				}
+			} else if (ev.type == SDL_MOUSEMOTION)
+				navShown = false; // the pointer again
+#endif
 		} while (SDL_PollEvent(&ev));
 	}
+#ifdef GOB_WEBOS
+	pollUsb();
+#endif
 	const double now = (SDL_GetTicks() - start) / 1000.0;
 	debugActions(now);
 #ifdef __EMSCRIPTEN__
@@ -1127,6 +1213,10 @@ constexpr float kListH = 132; // the height of a tile in the list of narrow wind
 // games), and "More options" at the bottom (folders of the player's own,
 // a path field, the recent folders, the details of the latest message).
 void LibraryScreen::State::draw() {
+#ifdef GOB_WEBOS
+	drawTv(import != nullptr);
+	return;
+#endif
 	ImGuiIO &io = ImGui::GetIO();
 	const bool narrow = io.DisplaySize.x < 600;
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -1796,6 +1886,631 @@ void LibraryScreen::State::drawMore() {
 	if (opened)
 		ImGui::SetScrollHereY(1.0f); // what was opened is in view
 }
+
+#ifdef GOB_WEBOS
+namespace {
+
+std::string megabytes(uint64_t bytes) {
+	char buf[32];
+	std::snprintf(buf, sizeof(buf), "%llu MB", (unsigned long long)((bytes + (1 << 19)) >> 20));
+	return buf;
+}
+
+// A big button drawn in full: rounded, a colour key's chip at the left
+// (when `key` >= 0), the label centred. Disabled: greyed, never clicked.
+// With `focused` (the arrow keys' ring) a thick white ring, and `press`
+// (OK) clicks it.
+bool tvButton(const char *id, const std::string &label, ImVec2 size, ImFont *font, float fontSize, ImU32 base,
+              ImU32 hover, ImU32 text, int key, bool enabled = true, bool focused = false, bool press = false) {
+	ImDrawList *dl = ImGui::GetWindowDrawList();
+	const ImVec2 p = ImGui::GetCursorScreenPos();
+	const bool clicked = (ImGui::InvisibleButton(id, size) || (focused && press)) && enabled;
+	const bool hovered = (ImGui::IsItemHovered() || focused) && enabled;
+	const ImVec2 q(p.x + size.x, p.y + size.y);
+	dl->AddRectFilled(p, q, enabled ? (hovered ? hover : base) : IM_COL32(64, 58, 72, 255), size.y * 0.22f);
+	if (focused) {
+		const float g = std::round(size.y * 0.08f);
+		dl->AddRect(ImVec2(p.x - g, p.y - g), ImVec2(q.x + g, q.y + g), IM_COL32_WHITE, size.y * 0.22f + g, 0,
+		            std::max(3.0f, size.y * 0.05f));
+	} else if (hovered)
+		dl->AddRect(p, q, IM_COL32(255, 255, 255, 150), size.y * 0.22f, 0, 2.0f);
+	const ImVec2 ts = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, label.c_str());
+	float tx = p.x + (size.x - ts.x) / 2;
+	if (key >= 0) {
+		const float chipH = fontSize * 0.8f, chipW = chipH * 1.8f, gap = fontSize * 0.5f;
+		tx = p.x + (size.x - ts.x - chipW - gap) / 2 + chipW + gap;
+		webos::drawKeyChip(*dl, webos::RemoteKey(key), ImVec2(tx - gap - chipW / 2, p.y + size.y / 2), chipH,
+		                   enabled ? 255 : 90);
+	}
+	dl->AddText(font, fontSize, ImVec2(std::round(tx), std::round(p.y + (size.y - ts.y) / 2)),
+	            enabled ? text : colour::kFaint, label.c_str());
+	return clicked;
+}
+
+} // namespace
+
+// The GOG installers of the three games on the USB drives (a few folders
+// deep; the TV's own folders skipped), each opened to check which game it
+// holds. Runs on a worker thread.
+std::vector<LibraryScreen::State::UsbFile> LibraryScreen::State::findInstallers(const std::vector<std::string> &roots) {
+	std::vector<UsbFile> found;
+	for (const std::string &root : roots) {
+		std::error_code ec;
+		for (auto it = fs::recursive_directory_iterator(root, fs::directory_options::skip_permission_denied, ec);
+		     !ec && it != fs::recursive_directory_iterator(); it.increment(ec)) {
+			const std::string name = it->path().filename().string();
+			if (it->is_directory(ec)) {
+				if (it.depth() >= 3 || name.empty() || name[0] == '.' || name == "System Volume Information" ||
+				    name == "LG Smart TV")
+					it.disable_recursion_pending();
+				continue;
+			}
+			std::string lower = name;
+			std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return char(std::tolower(c)); });
+			if (lower.rfind("setup_", 0) != 0 || !isInstallerName(lower))
+				continue;
+			GameInstaller in;
+			if (in.open(it->path()) && in.plan().game)
+				found.push_back({it->path(), in.plan().game, in.plan().bytes});
+			else
+				std::fprintf(stderr, "game library: %s is not an installer of the games (%s)\n", it->path().c_str(),
+				             in.error().c_str());
+		}
+	}
+	return found;
+}
+
+void LibraryScreen::State::pollUsb() {
+	if (usbScanning && usbScanDone) {
+		usbScan.join();
+		usbFiles = std::move(usbFound);
+		usbScanning = false;
+		for (const UsbFile &f : usbFiles)
+			std::fprintf(stderr, "game library: on USB: %s (%s)\n", f.path.c_str(), f.game->title);
+	}
+	const uint32_t now = SDL_GetTicks();
+	if (usbCheckedAt && now - usbCheckedAt < 3000)
+		return;
+	usbCheckedAt = now ? now : 1;
+	if (usbScanning)
+		return;
+	std::vector<std::string> drives = webos::usbDrives();
+	if (drives == usbDrives)
+		return;
+	std::fprintf(stderr, "game library: USB storage: %zu drive(s)\n", drives.size());
+	usbDrives = drives;
+	usbFiles.clear();
+	if (browsing && !browseDir.empty()) {
+		bool still = false;
+		for (const std::string &d : usbDrives)
+			still |= browseDir.string().rfind(d, 0) == 0;
+		if (!still)
+			browseDir.clear();
+	}
+	if (drives.empty())
+		return;
+	usbScanning = true;
+	usbScanDone = false;
+	usbScan = std::jthread([this, drives] {
+		usbFound = findInstallers(drives);
+		usbScanDone = true;
+	});
+}
+
+const LibraryScreen::State::UsbFile *LibraryScreen::State::usbInstaller(const GameInfo *g) const {
+	for (const UsbFile &f : usbFiles)
+		if (f.game == g)
+			return &f;
+	return nullptr;
+}
+
+// What a tile's button (and its colour key) does: play, install from the
+// USB stick, or say how to get the game there.
+void LibraryScreen::State::tvPrimary(Tile &t) {
+	if (import || !allowed(t.game))
+		return;
+	if (!t.folder.empty())
+		play(t.folder);
+	else if (const UsbFile *f = usbInstaller(t.game))
+		startImport(f->path.string(), t.game);
+	else if (usbDrives.empty())
+		say(std::string("To install ") + t.game->title +
+		        ", copy its GOG installer (setup_...exe) onto a USB stick and plug it into this TV.",
+		    true);
+	else if (usbScanning)
+		say("Still looking at the USB stick. A moment, please.", false);
+	else
+		say(std::string("The installer of ") + t.game->title +
+		        " isn't on the USB stick. Copy its setup_...exe there, or find it with Browse the USB stick.",
+		    true);
+}
+
+// The TV's library: the title, three big tiles, a card about the USB stick
+// (how to put the games on it, what is on it), and the colour keys' tips.
+// Sizes are for 1920x1080, scaled to the screen.
+void LibraryScreen::State::drawTv(bool busy) {
+	ImGuiIO &io = ImGui::GetIO();
+	const float W = io.DisplaySize.x, H = io.DisplaySize.y, s = H / 1080.0f;
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(io.DisplaySize);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+	ImGui::Begin("##library", nullptr,
+	             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+	                 ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
+	                 ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus);
+	ImGui::PopStyleVar();
+	ImDrawList *dl = ImGui::GetWindowDrawList();
+	const float mx = std::round(96 * s), top = std::round(48 * s), gap = std::round(36 * s);
+	const float tipsH = std::round(80 * s);
+
+	// The arrow keys and OK, on the main screen (the dialogs below take them
+	// while open): moved over last frame's buttons.
+	const Nav nav = std::exchange(navKey, Nav::None);
+	navOk = false;
+	if (!browsing && !removing && nav != Nav::None) {
+		if (!navShown)
+			navShown = true; // the first press shows where the ring is
+		else
+			switch (nav) {
+			case Nav::Left: navCol--; break;
+			case Nav::Right: navCol++; break;
+			case Nav::Up: navRow = 0; break;
+			case Nav::Down: navRow = 1; break;
+			case Nav::Ok: navOk = true; break;
+			case Nav::None: break;
+			}
+	}
+	if (navSeen[navRow] == 0 && navSeen[1 - navRow] > 0)
+		navRow = 1 - navRow;
+	navCol = std::clamp(navCol, 0, std::max(0, navSeen[navRow] - 1));
+	navNext[0] = navNext[1] = 0;
+
+	// The title, and the latest message in place of the subtitle.
+	dl->AddText(fonts.bold, 60 * s, ImVec2(mx, top), colour::kText, "Goblins Trilogy");
+	const float subY = top + 80 * s;
+	if (!message.empty()) {
+		const float fs = 27 * s, wrap = W - 2 * mx - 110 * s;
+		const ImVec2 ts = textSize(fonts.regular, fs, message.c_str(), wrap);
+		const ImVec2 b0(mx, subY - 8 * s), b1(W - mx, subY + ts.y + 8 * s);
+		dl->AddRectFilled(b0, b1, messageIsError ? IM_COL32(72, 36, 42, 255) : IM_COL32(36, 60, 46, 255), 12 * s);
+		dl->AddCircleFilled(ImVec2(b0.x + 24 * s, subY + fs * 0.6f), 7 * s, messageIsError ? colour::kBad : colour::kGood);
+		dl->AddText(fonts.regular, fs, ImVec2(b0.x + 46 * s, subY), colour::kText, message.c_str(), nullptr, wrap);
+		ImGui::SetCursorScreenPos(ImVec2(b1.x - 60 * s, b0.y));
+		if (ImGui::InvisibleButton("dismiss", ImVec2(60 * s, b1.y - b0.y)))
+			message.clear();
+		dl->AddText(fonts.bold, 34 * s, ImVec2(b1.x - 42 * s, b0.y + (b1.y - b0.y - 40 * s) / 2),
+		            ImGui::IsItemHovered() ? colour::kText : colour::kMuted, "\xC3\x97"); // ×
+	} else
+		dl->AddText(fonts.regular, 28 * s, ImVec2(mx, subY), colour::kMuted,
+		            "Gobliiins, Gobliins 2 and Goblins Quest 3, from your own GOG copies.");
+
+	// The tiles.
+	const float tilesY = top + 150 * s;
+	const int n = int(tiles.size());
+	const float tileW = std::floor((W - 2 * mx - gap * float(n - 1)) / float(std::max(n, 1)));
+	const float coverH = std::floor(tileW * 0.5f), tileH = coverH + std::round(236 * s);
+	for (int i = 0; i < n; i++)
+		drawTvTile(tiles[size_t(i)], i, ImVec2(mx + float(i) * (tileW + gap), tilesY), tileW, coverH, tileH, s, busy);
+
+	// The USB stick, between the tiles and the tips.
+	const float usbY = tilesY + tileH + gap;
+	drawTvUsb(ImVec2(mx, usbY), ImVec2(W - mx, H - tipsH - 24 * s), s, busy);
+
+	// The colour keys: each game's button, and the USB stick.
+	std::vector<webos::KeyTip> tips;
+	const char *const shortName[] = {"Gobliiins", "Gobliins 2", "Goblins 3"};
+	for (int i = 0; i < n && i < 3; i++) {
+		const Tile &t = tiles[size_t(i)];
+		const bool can = !t.folder.empty() || usbInstaller(t.game);
+		tips.push_back({webos::RemoteKey(i), std::string(t.folder.empty() ? "Install " : "Play ") + shortName[i],
+		                can && !busy && allowed(t.game)});
+	}
+	tips.push_back({webos::RemoteKey::Blue, "Browse USB", !usbDrives.empty() && !busy});
+	dl->AddRectFilled(ImVec2(0, H - tipsH), ImVec2(W, H), IM_COL32(18, 15, 22, 255));
+	webos::drawKeyTips(*dl, fonts.bold, tips, 0, W, H - tipsH, tipsH);
+	ImGui::End();
+	navSeen[0] = navNext[0];
+	navSeen[1] = navNext[1];
+
+	// The colour keys' actions (the dialogs take them first: red and blue
+	// close them, like Escape).
+	const int key = std::exchange(tvKey, -1);
+	const bool closeKey = key == int(webos::RemoteKey::Red) || key == int(webos::RemoteKey::Blue);
+	if (browsing) {
+		if (closeKey)
+			browsing = false;
+		else
+			drawTvBrowser(s, nav);
+	} else if (removing) {
+		if (closeKey)
+			removing = nullptr;
+		else
+			drawTvRemove(s, nav);
+	} else if (key >= 0 && !busy) {
+		if (key < 3 && key < n)
+			tvPrimary(tiles[size_t(key)]);
+		else if (key == int(webos::RemoteKey::Blue) && !usbDrives.empty()) {
+			browsing = true;
+			browseDir.clear();
+			dialogSel = 0;
+		}
+	}
+}
+
+void LibraryScreen::State::drawTvTile(Tile &t, int index, ImVec2 p0, float w, float coverH, float h, float s,
+                                      bool busy) {
+	const bool installed = !t.folder.empty();
+	const bool usable = allowed(t.game);
+	const bool installing = import && import->game == t.game;
+	const UsbFile *onUsb = installed ? nullptr : usbInstaller(t.game);
+	const TileLook &look = lookOf(*t.game);
+	const char *title = t.game->title;
+	ImDrawList *dl = ImGui::GetWindowDrawList();
+	ImGui::PushID(index);
+	const ImVec2 p1(p0.x + w, p0.y + h), c1(p1.x, p0.y + coverH);
+	const float round = 18 * s;
+
+	// The card and its cover (the title picture, cropped to the cover's
+	// shape; or a tinted card with the game's numeral).
+	shadow(dl, p0, p1, round);
+	dl->AddRectFilled(p0, p1, colour::kCard, round);
+	if (installed && t.texture) {
+		// (wider than 4:3: the top kept, where the title pictures have the
+		// game's name, the bottom cut)
+		const float aspect = w / coverH, art = 4.0f / 3;
+		const float cx = aspect < art ? (1 - aspect / art) / 2 : 0, cut = aspect > art ? 1 - art / aspect : 0;
+		dl->AddImageRounded(ImTextureRef(ImTextureID(t.texture)), p0, c1, ImVec2(cx, cut * 0.1f),
+		                    ImVec2(1 - cx, 1 - cut * 0.9f), IM_COL32_WHITE, round, ImDrawFlags_RoundCornersTop);
+	} else {
+		gradientRect(dl, p0, c1, look.top, look.bottom, round, ImDrawFlags_RoundCornersTop);
+		const float numSize = coverH * 1.15f;
+		const ImVec2 ns = textSize(fonts.bold, numSize, look.numeral);
+		dl->PushClipRect(p0, c1, true);
+		dl->AddText(fonts.bold, numSize, ImVec2(c1.x - ns.x - w * 0.03f, c1.y - ns.y * 0.84f), IM_COL32(255, 255, 255, 28),
+		            look.numeral);
+		dl->PopClipRect();
+		const ImVec2 ts = textSize(fonts.bold, 44 * s, title);
+		dl->AddText(fonts.bold, 44 * s, ImVec2(p0.x + (w - ts.x) / 2, p0.y + (coverH - ts.y) / 2),
+		            IM_COL32(255, 255, 255, 240), title);
+	}
+	dl->AddRect(p0, p1, colour::kBorder, round, 0, 1.5f);
+
+	// The title and the status: installed (with its size), installing, on
+	// the USB stick, or not installed.
+	const float pad = std::round(26 * s), x = p0.x + pad, innerW = w - 2 * pad;
+	float y = c1.y + 18 * s;
+	char year[16];
+	std::snprintf(year, sizeof(year), "   %d", look.year);
+	dl->AddText(fonts.bold, 38 * s, ImVec2(x, y), colour::kText, title);
+	dl->AddText(fonts.regular, 26 * s, ImVec2(x + textSize(fonts.bold, 38 * s, title).x, y + 10 * s), colour::kFaint,
+	            year);
+	y += 54 * s;
+	std::string status;
+	ImU32 dot = colour::kFaint;
+	if (installing) {
+		status = "Installing from the USB stick...";
+		dot = colour::kAmber;
+	} else if (installed) {
+		status = "Installed  \xC2\xB7  " + megabytes(t.bytes); // ·
+		dot = colour::kGood;
+	} else if (onUsb) {
+		status = "On the USB stick  \xC2\xB7  " + megabytes(onUsb->bytes);
+		dot = colour::kAmber;
+	} else
+		status = usable ? "Not installed" : "Not available";
+	dl->AddCircleFilled(ImVec2(x + 8 * s, y + 18 * s), 8 * s, dot, 20);
+	dl->AddText(fonts.regular, 28 * s, ImVec2(x + 26 * s, y), installed ? colour::kGood : colour::kMuted,
+	            status.c_str());
+	y += 54 * s;
+
+	// The button: Play, Install from USB (the colour key's chip in it), the
+	// install's progress, or a hint.
+	const float bh = std::round(76 * s);
+	ImGui::SetCursorScreenPos(ImVec2(x, y));
+	const int key = index < 3 ? index : -1;
+	if (installing) {
+		const float f = std::clamp(import->fraction.load(), 0.0f, 1.0f), barH = 16 * s;
+		const float cancelW = 190 * s, barW = innerW - cancelW - 24 * s, barY = y + 14 * s;
+		dl->AddRectFilled(ImVec2(x, barY), ImVec2(x + barW, barY + barH), IM_COL32(20, 17, 24, 255), barH / 2);
+		gradientRect(dl, ImVec2(x, barY), ImVec2(x + std::max(barH, barW * f), barY + barH), colour::kAmberHover,
+		             colour::kAmber, barH / 2, 0);
+		char pct[16];
+		std::snprintf(pct, sizeof(pct), "%d%%", int(f * 100));
+		dl->AddText(fonts.bold, 30 * s, ImVec2(x, barY + barH + 8 * s), colour::kText, pct);
+		ImGui::SetCursorScreenPos(ImVec2(x + innerW - cancelW, y));
+		const bool fc = navFocus(0, true);
+		if (tvButton("cancel", "Cancel", ImVec2(cancelW, bh), fonts.bold, 28 * s, colour::kCardHover,
+		             IM_COL32(70, 62, 82, 255), colour::kText, -1, true, fc, fc && navOk))
+			import->cancel = true;
+	} else if (installed) {
+		const bool removable = t.imported;
+		const float removeW = 190 * s, playW = removable ? innerW - removeW - 20 * s : innerW;
+		const bool canPlay = usable && !busy, fp = navFocus(0, canPlay);
+		if (tvButton("play", "Play", ImVec2(playW, bh), fonts.bold, 34 * s, colour::kGreen, colour::kGreenHover,
+		             IM_COL32_WHITE, key, canPlay, fp, fp && navOk))
+			tvPrimary(t);
+		if (removable) {
+			ImGui::SetCursorScreenPos(ImVec2(x + innerW - removeW, y));
+			const bool fr = navFocus(0, !busy);
+			if (tvButton("remove", "Remove", ImVec2(removeW, bh), fonts.bold, 28 * s, colour::kCardHover,
+			             IM_COL32(110, 50, 50, 255), colour::kText, -1, !busy, fr, fr && navOk)) {
+				removing = &t;
+				dialogSel = 1; // "Keep it" first
+			}
+		}
+	} else if (onUsb) {
+		const bool canInstall = usable && !busy, f = navFocus(0, canInstall);
+		if (tvButton("install", "Install from USB", ImVec2(innerW, bh), fonts.bold, 32 * s, colour::kAmber,
+		             colour::kAmberHover, colour::kOnAmber, key, canInstall, f, f && navOk))
+			tvPrimary(t);
+	} else
+		tvButton("missing", usbScanning ? "Looking at the USB stick..." : "Its installer isn't on a USB stick",
+		         ImVec2(innerW, bh), fonts.bold, 27 * s, 0, 0, 0, -1, false);
+	ImGui::PopID();
+}
+
+// The card about the USB stick: how to put the games on one, whether one
+// is plugged in and what is on it, and the file browser's button.
+void LibraryScreen::State::drawTvUsb(ImVec2 p0, ImVec2 p1, float s, bool busy) {
+	ImDrawList *dl = ImGui::GetWindowDrawList();
+	dl->AddRectFilled(p0, p1, colour::kCard, 18 * s);
+	dl->AddRect(p0, p1, colour::kBorder, 18 * s, 0, 1.5f);
+	const float pad = 32 * s, x = p0.x + pad;
+	float y = p0.y + 24 * s;
+
+	std::string heading;
+	ImU32 dot = colour::kFaint;
+	if (usbDrives.empty())
+		heading = "No USB stick plugged in";
+	else if (usbScanning) {
+		heading = "USB stick found  \xC2\xB7  looking for game installers...";
+		dot = colour::kAmber;
+	} else {
+		heading = "USB stick found  \xC2\xB7  ";
+		heading += usbFiles.empty()       ? std::string("no game installers on it")
+		           : usbFiles.size() == 1 ? std::string("1 game installer on it")
+		                                  : std::to_string(usbFiles.size()) + " game installers on it";
+		dot = usbFiles.empty() ? colour::kBad : colour::kGood;
+	}
+	dl->AddCircleFilled(ImVec2(x + 9 * s, y + 20 * s), 9 * s, dot, 20);
+	dl->AddText(fonts.bold, 34 * s, ImVec2(x + 32 * s, y), colour::kText, heading.c_str());
+	y += 60 * s;
+
+	// How to get the games onto the TV: always there, short.
+	const char *const steps[] = {
+	    "On a computer, open your GOG library and download each game's offline backup installer (setup_...exe).",
+	    "Copy the files onto a USB stick, into any folder, and plug it into this TV.",
+	    "The games show up here by themselves: press Install from USB, or the game's colour key.",
+	};
+	const float browseW = 420 * s, textW = p1.x - x - pad - browseW - 40 * s;
+	for (int i = 0; i < 3; i++) {
+		char digit[4];
+		std::snprintf(digit, sizeof(digit), "%d", i + 1);
+		const float r = 16 * s;
+		dl->AddCircleFilled(ImVec2(x + r, y + r + 1 * s), r, colour::kAmber, 24);
+		const ImVec2 ds = textSize(fonts.bold, 22 * s, digit);
+		dl->AddText(fonts.bold, 22 * s, ImVec2(x + r - ds.x / 2, y + r + 1 * s - ds.y / 2), colour::kOnAmber, digit);
+		dl->AddText(fonts.regular, 27 * s, ImVec2(x + 2 * r + 16 * s, y), colour::kMuted, steps[i], nullptr, textW);
+		y += 44 * s;
+	}
+
+	// The file browser, for installers with other names or deeper folders.
+	const float bh = 76 * s;
+	ImGui::SetCursorScreenPos(ImVec2(p1.x - pad - browseW, p0.y + 84 * s + (p1.y - p0.y - 84 * s - bh) / 2));
+	const bool canBrowse = !usbDrives.empty() && !busy, f = navFocus(1, canBrowse);
+	if (tvButton("browse", "Browse the USB stick", ImVec2(browseW, bh), fonts.bold, 30 * s, IM_COL32(41, 98, 145, 255),
+	             IM_COL32(52, 118, 170, 255), IM_COL32_WHITE, int(webos::RemoteKey::Blue), canBrowse, f, f && navOk)) {
+		browsing = true;
+		browseDir.clear();
+		dialogSel = 0;
+	}
+}
+
+// The USB file browser: folders and installers (other files are left
+// out); choosing an installer installs its game.
+void LibraryScreen::State::drawTvBrowser(float s, Nav key) {
+	ImGuiIO &io = ImGui::GetIO();
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(io.DisplaySize);
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, vec(IM_COL32(0, 0, 0, 170)));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+	ImGui::Begin("##browser", nullptr,
+	             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+	ImGui::PopStyleVar();
+	ImGui::PopStyleColor();
+	ImDrawList *dl = ImGui::GetWindowDrawList();
+	const ImVec2 size(1360 * s, 860 * s);
+	const ImVec2 p0(std::round((io.DisplaySize.x - size.x) / 2), std::round((io.DisplaySize.y - size.y) / 2 - 30 * s));
+	const ImVec2 p1(p0.x + size.x, p0.y + size.y);
+	dl->AddRectFilled(p0, p1, colour::kBackground, 20 * s);
+	dl->AddRect(p0, p1, colour::kBorder, 20 * s, 0, 1.5f);
+	const float pad = 40 * s, x = p0.x + pad, innerW = size.x - 2 * pad;
+
+	// Where we are.
+	std::string where = "Your USB storage";
+	for (const std::string &d : usbDrives)
+		if (!browseDir.empty() && browseDir.string().rfind(d, 0) == 0) {
+			const std::string rel = browseDir.string().substr(d.size());
+			where = "USB stick (" + fs::path(d).filename().string() + ")" + (rel.empty() ? std::string("/") : rel);
+		}
+	dl->AddText(fonts.bold, 42 * s, ImVec2(x, p0.y + 32 * s), colour::kText, "Choose a game installer");
+	dl->AddText(fonts.regular, 27 * s, ImVec2(x, p0.y + 88 * s), colour::kMuted, where.c_str());
+
+	// The entries: up, folders, installers.
+	struct Entry {
+		std::string label, detail;
+		fs::path path;
+		bool folder = false, up = false;
+	};
+	std::vector<Entry> entries;
+	if (browseDir.empty() && usbDrives.size() == 1)
+		browseDir = usbDrives.front(); // one stick: its top
+	if (!browseDir.empty()) {
+		bool root = false;
+		for (const std::string &d : usbDrives)
+			root |= browseDir == fs::path(d);
+		if (!(root && usbDrives.size() == 1))
+			entries.push_back({"Up", "", root ? fs::path() : browseDir.parent_path(), true, true});
+		std::vector<Entry> folders, files;
+		std::error_code ec;
+		int other = 0;
+		for (const auto &e : fs::directory_iterator(browseDir, fs::directory_options::skip_permission_denied, ec)) {
+			const std::string name = e.path().filename().string();
+			if (name.empty() || name[0] == '.' || name == "System Volume Information" || name == "LG Smart TV")
+				continue;
+			if (e.is_directory(ec))
+				folders.push_back({name, "", e.path(), true, false});
+			else if (isInstallerName(name)) {
+				std::string game;
+				for (const UsbFile &f : usbFiles)
+					if (f.path == e.path())
+						game = std::string(f.game->title) + "  \xC2\xB7  ";
+				files.push_back({name, game + megabytes(e.file_size(ec)), e.path(), false, false});
+			} else
+				other++;
+		}
+		auto byName = [](const Entry &a, const Entry &b) { return a.label < b.label; };
+		std::sort(folders.begin(), folders.end(), byName);
+		std::sort(files.begin(), files.end(), byName);
+		entries.insert(entries.end(), folders.begin(), folders.end());
+		entries.insert(entries.end(), files.begin(), files.end());
+		if (other)
+			entries.push_back({std::to_string(other) + (other == 1 ? " other file" : " other files") +
+			                       " not shown (only installers, setup_...exe)",
+			                   "", {}, false, false});
+	} else
+		for (const std::string &d : usbDrives)
+			entries.push_back({"USB stick (" + fs::path(d).filename().string() + ")", "", d, true, false});
+
+	// The arrow keys: up and down choose a row (Close after the last), OK
+	// opens it, left goes up a folder.
+	const int closeSel = int(entries.size());
+	bool keyOk = false, scrollTo = false;
+	switch (key) {
+	case Nav::Up: dialogSel--; scrollTo = true; break;
+	case Nav::Down: dialogSel++; scrollTo = true; break;
+	case Nav::Ok: keyOk = true; break;
+	case Nav::Left:
+		if (!entries.empty() && entries.front().up) {
+			dialogSel = 0;
+			keyOk = true;
+		}
+		break;
+	default: break;
+	}
+	if (key != Nav::None)
+		navShown = true;
+	dialogSel = std::clamp(dialogSel, 0, closeSel);
+	while (dialogSel < closeSel && !(entries[size_t(dialogSel)].up || !entries[size_t(dialogSel)].path.empty()))
+		dialogSel += key == Nav::Up && dialogSel > 0 ? -1 : 1; // (the "other files" line can't be chosen)
+
+	// The list, scrolling when long.
+	const float listY = p0.y + 140 * s, bh = 76 * s, listH = p1.y - pad - bh - 24 * s - listY;
+	ImGui::SetCursorScreenPos(ImVec2(x, listY));
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, vec(IM_COL32(0, 0, 0, 0)));
+	ImGui::BeginChild("entries", ImVec2(innerW, listH), 0, 0);
+	ImDrawList *ld = ImGui::GetWindowDrawList();
+	const float rowH = 66 * s, rowW = ImGui::GetContentRegionAvail().x;
+	std::optional<fs::path> open, install;
+	for (size_t i = 0; i < entries.size(); i++) {
+		const Entry &e = entries[i];
+		ImGui::PushID(int(i));
+		const ImVec2 r0 = ImGui::GetCursorScreenPos();
+		const bool actionable = e.up || !e.path.empty();
+		const bool selected = navShown && int(i) == dialogSel;
+		const bool clicked = (ImGui::InvisibleButton("row", ImVec2(rowW, rowH)) || (selected && keyOk)) && actionable;
+		const bool hovered = (ImGui::IsItemHovered() || selected) && actionable;
+		if (selected && scrollTo)
+			ImGui::SetScrollHereY(0.5f);
+		if (hovered)
+			ld->AddRectFilled(r0, ImVec2(r0.x + rowW, r0.y + rowH), colour::kCardHover, 12 * s);
+		if (selected)
+			ld->AddRect(r0, ImVec2(r0.x + rowW, r0.y + rowH), IM_COL32_WHITE, 12 * s, 0, 3.0f);
+		const char *icon = e.up ? "\xE2\x86\x91" : e.folder ? "\xE2\x96\xB8" : actionable ? "\xE2\x80\xA2" : ""; // ↑ ▸ •
+		ld->AddText(fonts.bold, 32 * s, ImVec2(r0.x + 18 * s, r0.y + (rowH - 40 * s) / 2),
+		            e.folder || e.up ? colour::kAmber : colour::kGood, icon);
+		ld->AddText(e.folder || e.up ? fonts.bold : fonts.regular, 30 * s, ImVec2(r0.x + 64 * s, r0.y + (rowH - 38 * s) / 2),
+		            actionable ? colour::kText : colour::kFaint, e.label.c_str());
+		if (!e.detail.empty()) {
+			const ImVec2 ds = textSize(fonts.regular, 27 * s, e.detail.c_str());
+			ld->AddText(fonts.regular, 27 * s, ImVec2(r0.x + rowW - 24 * s - ds.x, r0.y + (rowH - ds.y) / 2),
+			            colour::kMuted, e.detail.c_str());
+		}
+		if (clicked) {
+			if (e.up || e.folder)
+				open = e.path;
+			else
+				install = e.path;
+		}
+		ImGui::PopID();
+	}
+	ImGui::EndChild();
+	ImGui::PopStyleColor();
+
+	ImGui::SetCursorScreenPos(ImVec2(p1.x - pad - 320 * s, p1.y - pad - bh));
+	const bool closeFocused = navShown && dialogSel == closeSel;
+	if (tvButton("close", "Close", ImVec2(320 * s, bh), fonts.bold, 30 * s, colour::kCardHover, IM_COL32(70, 62, 82, 255),
+	             colour::kText, int(webos::RemoteKey::Blue), true, closeFocused, closeFocused && keyOk))
+		browsing = false;
+	ImGui::End();
+
+	if (open) {
+		browseDir = *open;
+		dialogSel = 0;
+	}
+	if (install) {
+		browsing = false;
+		startImport(install->string(), nullptr);
+	}
+}
+
+// Removing an imported game: asked first.
+void LibraryScreen::State::drawTvRemove(float s, Nav key) {
+	ImGuiIO &io = ImGui::GetIO();
+	const Tile &t = *removing;
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(io.DisplaySize);
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, vec(IM_COL32(0, 0, 0, 170)));
+	ImGui::Begin("##remove", nullptr,
+	             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+	ImGui::PopStyleColor();
+	const ImVec2 size(1040 * s, 400 * s);
+	const ImVec2 p0(std::round((io.DisplaySize.x - size.x) / 2), std::round((io.DisplaySize.y - size.y) / 2));
+	const ImVec2 p1(p0.x + size.x, p0.y + size.y);
+	ImDrawList *dl = ImGui::GetWindowDrawList();
+	dl->AddRectFilled(p0, p1, colour::kBackground, 20 * s);
+	dl->AddRect(p0, p1, colour::kBorder, 20 * s, 0, 1.5f);
+	const float pad = 44 * s, x = p0.x + pad;
+	const std::string q = std::string("Remove ") + t.game->title + "?";
+	dl->AddText(fonts.bold, 44 * s, ImVec2(x, p0.y + 40 * s), colour::kText, q.c_str());
+	const std::string what = "Its files (" + megabytes(t.bytes) +
+	                         ") are deleted from this TV. Your saves and settings stay: install it again from the USB "
+	                         "stick to play on.";
+	dl->AddText(fonts.regular, 29 * s, ImVec2(x, p0.y + 112 * s), colour::kMuted, what.c_str(), nullptr, size.x - 2 * pad);
+	// Left and right choose the button ("Keep it" first), OK presses it.
+	if (key == Nav::Left)
+		dialogSel = 0;
+	else if (key == Nav::Right)
+		dialogSel = 1;
+	if (key != Nav::None)
+		navShown = true;
+	const bool keyOk = key == Nav::Ok;
+	const float bw = 290 * s, bh = 76 * s, by = p1.y - pad - bh;
+	ImGui::SetCursorScreenPos(ImVec2(p1.x - pad - 2 * bw - 24 * s, by));
+	const bool f0 = navShown && dialogSel == 0, f1 = navShown && dialogSel == 1;
+	const bool remove = tvButton("remove", "Remove", ImVec2(bw, bh), fonts.bold, 30 * s, IM_COL32(196, 82, 70, 255),
+	                             IM_COL32(214, 100, 88, 255), IM_COL32_WHITE, -1, true, f0, f0 && keyOk);
+	ImGui::SetCursorScreenPos(ImVec2(p1.x - pad - bw, by));
+	const bool keep = tvButton("keep", "Keep it", ImVec2(bw, bh), fonts.bold, 30 * s, colour::kCardHover,
+	                           IM_COL32(70, 62, 82, 255), colour::kText, -1, true, f1, f1 && keyOk);
+	ImGui::End();
+	if (remove) {
+		const Tile *gone = std::exchange(removing, nullptr);
+		removeGame(*gone);
+	} else if (keep)
+		removing = nullptr;
+}
+#endif
 
 void LibraryScreen::State::shutdown() {
 	if (import) {
