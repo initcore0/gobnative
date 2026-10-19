@@ -89,6 +89,7 @@ bool Settings::load(const std::string &path) {
 			speed = std::clamp(d, kMinSpeed, kMaxSpeed);
 	turboSpeed = std::clamp(_ini.getInt("game", "turbo_speed", turboSpeed), kMinTurbo, kMaxTurbo);
 	cutscenesAtNormalSpeed = _ini.getBool("game", "cutscenes_normal_speed", cutscenesAtNormalSpeed);
+	showSpots = _ini.getBool("hints", "spots", showSpots);
 	return true;
 }
 
@@ -134,6 +135,7 @@ bool Settings::save(const std::string &path) {
 	_ini.set("game", "speed", buf);
 	_ini.setInt("game", "turbo_speed", turboSpeed);
 	_ini.setBool("game", "cutscenes_normal_speed", cutscenesAtNormalSpeed);
+	_ini.setBool("hints", "spots", showSpots);
 	return _ini.save(path);
 }
 

@@ -467,8 +467,10 @@ pauses while it is open, and `` ` `` or Escape resumes it. Tabs:
   Goblins Quest 3 the speech volume and "Speech on"); sound effects quality
   (enhanced or original); replacement music (see below).
 - **Gameplay**: game language (English US/UK, French, German, Spanish,
-  Italian; applied by restarting from the intro), restart, back to the
-  game library, quit.
+  Italian; applied by restarting from the intro); "Show clickable spots"
+  (off by default), a soft pulsing glow over everything in the room the
+  goblins can act on (in Gobliiins the items on the level's map, in the
+  other games the room's hotspots); restart, back to the game library, quit.
 - **Speed**: game speed 1x, 1.2x, 1.5x or 2x; turbo speed (2x-8x, default
   4x) used while Tab is held; "Cutscenes at normal speed" (on by default);
   "Skip cutscene" (enabled while there is something to skip).

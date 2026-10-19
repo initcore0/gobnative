@@ -8,19 +8,26 @@
 # (reached by the plant the wizard grows), the other two in the giant's
 # hand, which the fighter brings down with a blow on its finger.
 room AVT005
+hint plant
 goblin 2
 act 258 153     # the wizard makes the plant on the right grow into a rope
+hint finger
 goblin 1
 act 198 87      # the fighter climbs it to the ledge and hits the finger: the hand comes down
+hint ghoul
 goblin 0
 walk 198 153    # the picker waits on the hand
 goblin 2
 act 18 33       # the wizard wakes the ghoul in the coffin...
 walk 186 153    # ...and hurries down onto the hand beside the picker
+hint lift
 goblin 1
 act 198 87      # the hand lifts them up out of the ghoul's way
+hint lower
 untilvar 331 2  # the ghoul has done its round and is back in the coffin
 act 198 87      # the hand puts them down again
+hint take
 goblin 0
 walk 294 153    # the picker takes the magic object the troll left behind
+hint end
 exit

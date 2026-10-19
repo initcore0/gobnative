@@ -1,5 +1,7 @@
 # gob2native - Gobliiins walkthrough, level 3 (AVT002)
 # SPDX-License-Identifier: GPL-3.0-or-later
 room AVT002
+hint use
 use 240 78      # the picker uses the item he carries on item 3: the exit sign shows
+hint end
 exit

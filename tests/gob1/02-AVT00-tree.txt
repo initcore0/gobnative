@@ -2,20 +2,27 @@
 # fruits and the broken bridge
 # SPDX-License-Identifier: GPL-3.0-or-later
 room AVT00
+hint right-fruit
 goblin 2
 act 303 32      # the wizard climbs the tree and enchants the right fruit
 goblin 1
 act 303 32      # the fighter knocks it down onto the ledge
+hint left-fruit
 goblin 2
 act 154 31      # the same with the left fruit
 goblin 1
 act 154 31
+hint plank
 goblin 0
 pick 303 75     # the picker picks up the first fruit (dropping the pickaxe)
 pick 175 152    # throws it into the gap: a plank
+hint bridge
 pick 155 40     # picks up the second fruit
 pick 175 152    # throws it: the bridge is mended
+hint stone
 pick 302 78     # picks the pickaxe up again
 use 32 31       # crosses, climbs the left ladder and knocks the stone down
+hint take-stone
 pick 65 89      # picks the stone up: the exit sign shows
+hint end
 exit

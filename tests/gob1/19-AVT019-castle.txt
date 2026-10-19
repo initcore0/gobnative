@@ -11,17 +11,24 @@
 # wizard is moved first because the banana lands at his feet, and a click on
 # a goblin selects it.
 room AVT019
+hint banana
 goblin 1
 walk 252 39     # the fighter climbs to the upper ledge
 act 282 15      # and kicks the lever: a banana drops to the bottom right
+hint gate
 goblin 2
 act 162 51      # the wizard opens the castle gate
+hint gift1
 goblin 0
 pick 294 129    # the picker takes the banana
 use 42 63       # and gives it to the creature
+hint gift2
 pick 210 33     # the false nose on the upper ledge (he leaves the banana there)
 use 42 63       # second gift
+hint gift3
 pick 294 63     # the soap on the middle ledge
 use 42 63       # third gift: the creature puts down the Witchcraft book
+hint book
 pick 42 87      # the picker takes it: the exit shows
+hint end
 exit

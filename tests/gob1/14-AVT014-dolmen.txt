@@ -9,26 +9,37 @@
 # and hit by the fighter, drops a key; the middle plant, enchanted, becomes
 # a door the key opens: the exit.
 room AVT014
+hint steps
 goblin 2
 act 90 63       # the wizard's spell on the stone: steps appear up the dolmen
+hint stick
 goblin 0
 pick 270 99     # the picker takes the stick on the right
+hint knock
 walk 222 27     # he climbs onto the dolmen
 use 234 27      # he knocks the watering can loose with the stick
+hint can
 pick 126 9      # he swaps the stick for the watering can
+hint water
 use 126 129     # he waters the middle sprout: it grows
 use 18 117      # and the sprout on the left
 walk 102 147    # he steps aside
+hint grow
 goblin 2
 act 126 129     # the wizard's spell on the middle plant
 act 18 117      # and on the left one
 walk 162 153    # he steps aside
+hint key
 goblin 1
 act 18 117      # the fighter hits the left plant: it drops a key
 walk 186 153    # he steps aside
+hint take-key
 goblin 0
 pick 42 135     # the picker swaps the watering can for the key
+hint door
 use 126 129     # he opens the door in the middle plant with it
+hint leave
 pick 186 147    # he puts the key down: with an empty pocket the exit ends the level at once
+hint end
 walk 210 147
 exit

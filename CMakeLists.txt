@@ -94,6 +94,7 @@ add_library(gobcore STATIC
 	src/engine/mult_v1.cpp
 	src/engine/goblins.cpp
 	src/engine/goblins_v1.cpp
+	src/engine/hints.cpp
 	src/engine/saves.cpp
 	src/engine/saves_v3.cpp
 	src/engine/levels.cpp
@@ -181,6 +182,9 @@ add_test(NAME imd COMMAND test_imd)
 add_executable(test_install tests/test_install.cpp)
 target_link_libraries(test_install PRIVATE gobcore)
 add_test(NAME install COMMAND test_install)
+add_executable(test_hints tests/test_hints.cpp)
+target_link_libraries(test_hints PRIVATE gobcore)
+add_test(NAME hints COMMAND test_hints ${CMAKE_SOURCE_DIR}/assets/hints/gob1.txt)
 add_executable(test_prefs tests/test_prefs.cpp src/frontend/prefs.cpp src/frontend/ini.cpp)
 target_include_directories(test_prefs PRIVATE src)
 add_test(NAME prefs COMMAND test_prefs)
@@ -252,6 +256,7 @@ add_executable(gobnative
 	${GOB_EMBEDDED}
 	src/frontend/appicon.cpp
 	src/frontend/gl.cpp
+	src/frontend/hints.cpp
 	src/frontend/ini.cpp
 	src/frontend/overlay.cpp
 	src/frontend/overlay_tabs.cpp
@@ -373,7 +378,7 @@ if(WIN32)
 
 	foreach(t IN ITEMS stktool resdump gobexport gobview gobinstall gobvideo gobdis gobrun gobnative
 			test_expression test_png test_hdpack test_hdrender test_mixer test_detect test_avo test_imd
-			test_install test_prefs)
+			test_install test_prefs test_hints)
 		gob_windows_program(${t})
 	endforeach()
 endif()

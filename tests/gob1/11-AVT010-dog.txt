@@ -9,14 +9,18 @@
 # to play with, and then the wizard's spell puts it to sleep (without the
 # bird the dog bites the wizard). The fighter can then walk past it.
 room AVT010
+hint bird
 goblin 0
 walk 150 141    # the picker walks left along the bottom, well below the dog
 walk 30 141     # on to the left edge of the scene
 use 186 99      # he gives the bird to the dog, from its left end
+hint sleep
 goblin 2
 walk 150 141    # the wizard goes the same long way round
 walk 30 141
 act 186 99      # his spell puts the dog, busy with the bird, to sleep
+hint knock
 goblin 1
 act 162 75      # the fighter walks past the sleeping dog and knocks on the door: the exit shows
+hint end
 exit

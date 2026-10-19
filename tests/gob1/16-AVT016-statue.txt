@@ -10,20 +10,27 @@
 # in the ground in front of the island show the exit. Nothing in this
 # level costs energy.
 room AVT016
+hint stone
 goblin 0
 pick 210 159    # the picker puts the pendulum down out of the way
 pick 42 153     # takes the stone
 pick 258 153    # and puts it down under the island's right edge
+hint ladder
 goblin 2
 act 258 153     # the wizard's spell on the stone...
 act 258 153     # ...and a second one: the stones pile up into a ladder
+hint rock
 act 66 87       # he climbs up and casts on the rock at the left edge
+hint pickaxe
 goblin 1
 act 66 87       # the fighter follows and hits it: a pickaxe drops
+hint take
 goblin 0
 pick 54 159     # the picker takes the pickaxe
+hint dig
 use 138 153     # and digs in front of the island, four times
 use 138 153
 use 138 153
 use 138 153
+hint end
 exit

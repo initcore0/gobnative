@@ -1994,6 +1994,7 @@ int openGame(Startup &st, std::vector<std::string> argStrings, std::unique_ptr<G
 	if (!app.overlay.init(app.window, app.glContext))
 		std::fprintf(stderr, "overlay: ImGui initialisation failed\n");
 	addSettingsTabs(app.overlay, app);
+	addHints(app.overlay, app); // (its layer under the Tools tab's outlines)
 	addToolsTab(app.overlay, app);
 	app.overlay.setTouchLayer([&r](ImDrawList &dl) { r.drawTouchBar(dl); });
 #ifdef GOB_WEBOS

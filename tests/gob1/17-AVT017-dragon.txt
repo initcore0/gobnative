@@ -18,14 +18,18 @@
 # (v[60] 64 + goblin), which comes every 121 ticks: the next one can't
 # then delay anything.
 room AVT017
+hint log
 goblin 1
 act 66 15            # the fighter knocks a log down onto the middle ledge
+hint jam
 goblin 0
 pick 54 75           # the picker takes it
 use 114 81           # and jams the spring trap with it
+hint deodorant
 pick 126 33          # he puts it down on the top ledge
 goblin 2
 act 126 33           # the wizard turns it into deodorant
+hint bag
 walk 42 93           # and goes down to the middle ledge
 untilvar 60 66       # (his boredom animation)
 idle
@@ -37,6 +41,7 @@ untilvar 285 0       # ...which falls open
 untilvar 60 18 19
 click 42 93          # and he hurries away
 idle
+hint sow
 goblin 0
 walk 42 147          # the picker waits at the foot of the ladder
 untilvar 60 64       # (his boredom animation)
@@ -54,8 +59,10 @@ untilvar 60 64       # (his boredom animation)
 idle
 use 78 33            # he sows the seeds: a foot grows out of the ground
 untilvar 492 3
+hint foot
 pick 126 33          # he swaps the bag for the deodorant
 use 30 33            # and sprays the foot: it comes loose
+hint roast
 pick 30 33           # he takes the foot
 walk 42 147          # down to the foot of the ladder
 untilvar 60 64       # (his boredom animation)
@@ -68,6 +75,7 @@ untilvar 60 18 19
 click 71 129         # ...and steps away
 idle
 untilvar 503 1       # the dragon's breath has made it a roast
+hint table
 walk 42 147
 untilvar 60 64       # (his boredom animation)
 idle
@@ -80,7 +88,9 @@ click 71 129         # ...steps away, putting it down
 idle
 pick 78 141          # and takes it again
 use 138 81           # he gives it to the table: it's safe to cross now
+hint dagger
 pick 306 63          # he takes the dagger at the far end
+hint breathe
 walk 42 147          # and brings it down
 untilvar 60 64       # (his boredom animation)
 idle
@@ -92,6 +102,7 @@ untilvar 60 18 19
 click 71 129         # ...and steps away
 idle
 untilvar 491 1       # the dragon has breathed on it
+hint take
 walk 42 147
 untilvar 60 64       # (his boredom animation)
 idle
@@ -103,4 +114,5 @@ untilvar 60 18 19
 click 71 129         # ...steps away, putting it down
 idle
 pick 78 141          # and takes it again: the exit shows
+hint end
 exit

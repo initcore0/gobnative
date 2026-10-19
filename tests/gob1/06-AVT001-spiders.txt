@@ -11,6 +11,7 @@
 # the spider onto the pillow, which uncovers a magic object for the
 # picker: the exit shows. The script reads the thread from v[307].
 room AVT001
+hint thread
 goblin 1
 walk 174 93     # the fighter goes to the foot of the rope
 walk 174 45     # and climbs it to the top ledge
@@ -18,18 +19,26 @@ ifvar 307 1
 act 150 27      # he pulls the right-hand thread if v[307] = 1...
 ifvar 307 0
 act 102 27      # ...the left-hand one if v[307] = 0: the spider goes up
+hint pistol
 goblin 0
 walk 174 129    # the picker crosses the mended bridge
 pick 288 129    # and takes the pistol
+hint big-spider
 use 288 60      # he shoots at the big spider, which flees up its thread
+hint small-spider
 walk 174 129    # back over the bridge
 walk 54 87      # to the foot of the ladder
 use 54 69       # he shoots at the small spider: the ladder is mended
+hint pillow-take
 pick 54 39      # he climbs up and swaps the pistol for its pillow
+hint pillow-place
 pick 174 135    # he lays the pillow on the bridge under the spider's thread
+hint drop
 goblin 2
 act 174 81      # the wizard's spell drops the spider onto the pillow
+hint take
 goblin 0
 walk 150 135    # the picker steps back
 walk 174 129    # and takes the magic object it uncovered: exit shows
+hint end
 exit

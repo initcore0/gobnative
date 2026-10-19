@@ -12,28 +12,37 @@
 # it with the windsock while it is still in flight. (The short cut on the
 # left branch, cell 8,9, is a fall that costs energy.)
 room AVT008
+hint meat
 goblin 0
 use 102 141     # the picker drops the meat into the hole in the roots: safe to cross now
+hint windsock
 pick 42 75      # he takes the windsock from the left branch
+hint branch
 goblin 2
 act 198 75      # the wizard's spell on the broken branch closes the gap in the path
+hint picker-up
 goblin 0
 walk 282 69     # the picker goes to the end of the right branch
 goblin 1
 act 294 93      # the fighter's blow on the branch catapults him up to the top
+hint cork
 goblin 2
 walk 282 69     # the wizard goes to the end of the branch too
 goblin 1
 act 294 93      # and is catapulted up as well
 goblin 2
 act 6 15        # the wizard's spell frees the cork in the top left branch
+hint plug
 goblin 0
 pick 6 15       # the picker takes the cork (leaving the windsock there)
 use 174 27      # and plugs the left hole at the top with it
+hint ready
 pick 6 15       # he takes the windsock again
 walk 210 33     # and waits beside the right hole
+hint bird
 goblin 1
 act 234 117     # the fighter scares the bird away: it flies up to the right hole
 goblin 0
 use 222 27      # the picker catches it in flight with the windsock: the exit shows
+hint end
 exit

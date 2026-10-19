@@ -466,6 +466,9 @@ void gameplayTab(OverlayHost &host) {
 		if (confirmButton("Restart game to apply", "Restart from the intro? Unsaved progress is lost."))
 			host.restartGame();
 	}
+	if (ImGui::Checkbox("Show clickable spots", &s.showSpots))
+		host.settingsChanged();
+	ImGui::SetItemTooltip("A soft glow over everything in the room the goblins can act on.");
 	ImGui::Separator();
 	if (confirmButton("Restart game", "Restart from the intro? Unsaved progress is lost."))
 		host.restartGame();

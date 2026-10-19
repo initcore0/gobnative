@@ -104,13 +104,18 @@
 //   objects         trace the goblins' positions, cells and states
 //   hotspots        trace the hotspots on the screen (id, rectangle)
 //   inventory       Goblins 3: trace the items owned
-//   items           Gobliiins: trace the items on the map (id, the cells'
-//                   bounding box and count, the object it stands for, and
-//                   per row y the cells as a bit mask, y:mask)
+//   hint ID         once the room is idle, check that the step the hints
+//                   (--hints FILE, engine/hints.h) give is ID (end: every
+//                   step is done) within 5 seconds; fail otherwise
+//   spots           trace the clickable spots the hints show
+//                   (Interpreter::clickSpots: id, bounding box, rectangles,
+//                   Gobliiins' object)
 //   end             end the run (a script whose game ends while only waits,
 //                   keys and `end` are left counts as finished)
 // A step that waits more than 300 simulated seconds fails the run (exit
-// code 1). --log-text traces the text on the screen whenever it changes.
+// code 1). --state-diff (Gobliiins) traces after each step what it changed:
+// the level objects' state and type, the pocket, the items on the map and
+// the variables. --log-text traces the text on the screen whenever it changes.
 //
 // HD packs (docs/hdpacks.md): --hd-pack DIR runs the HD compositor with the
 // pack in DIR, as gobnative shows it; --hd-dump-at T PREFIX (repeatable)
@@ -129,6 +134,7 @@
 #include "engine/game.h"
 #include "engine/goblins_v1.h"
 #include "engine/hdrender.h"
+#include "engine/hints.h"
 #include "engine/interpreter.h"
 #include "gfx/bmp.h"
 #include "gfx/hdpack.h"
@@ -148,6 +154,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -363,6 +370,8 @@ public:
 	bool failed() const { return _failed; }
 	bool ended() const { return _ended; }
 	std::string snapDir;
+	HintBook hints; // --hints FILE, for `hint`
+	bool stateDiff = false; // --state-diff: trace what each step changed
 
 	// Runs the steps that can run now (before the engine frame at host.now).
 	void step(Interpreter &interp, HeadlessHost &host) {
@@ -389,6 +398,8 @@ public:
 			}
 			if (!run(st, interp, host))
 				return;
+			if (stateDiff)
+				traceStateDiff(st, interp, host);
 			_pos++;
 			_started = false;
 			if (_pos == _steps.size())
@@ -402,6 +413,55 @@ private:
 	size_t _pos = 0;
 	bool _started = false, _failed = false, _ended = false;
 	uint32_t _startedAt = 0, _idleSince = UINT32_MAX, _until = 0;
+
+	// --state-diff (Gobliiins): after each step, what it changed in the
+	// level's objects (state, type), the pocket, the items on the map
+	// (cells holding each id) and the variables (the goblin record at slots
+	// 59-114 aside, which follows the current goblin), as `key old>new`;
+	// the facts the hints' `done` conditions are made of (engine/hints.h).
+	std::map<std::string, int32_t> _lastState;
+	std::string _lastLevel;
+	void traceStateDiff(const Step &st, Interpreter &interp, HeadlessHost &host) {
+		const GoblinsV1 *g = interp.goblinsV1();
+		if (!g || !g->loaded())
+			return;
+		std::map<std::string, int32_t> now;
+		for (int i = 0; i < GoblinsV1::kObjects; i++)
+			if (const GoblinsV1::Object *o = g->object(i)) {
+				now["obj" + std::to_string(i) + ".state"] = o->state;
+				now["obj" + std::to_string(i) + ".type"] = o->type;
+			}
+		now["pocket"] = g->itemIdInPocket();
+		for (const GoblinsV1::ItemSpot &sp : g->itemSpots()) {
+			int cells = 0;
+			for (uint32_t r : sp.rows)
+				cells += std::popcount(r);
+			now["item" + std::to_string(sp.id)] = cells;
+		}
+		const Variables &v = interp.variables();
+		for (uint32_t i = 0; i < v.size() / 4; i++)
+			if ((i < 59 || i > 114) && v.slot(i) != 0)
+				now["v" + std::to_string(i)] = int32_t(v.slot(i));
+		const std::string level = interp.currentLevel();
+		if (level == _lastLevel) {
+			std::string out;
+			auto note = [&](const std::string &k, int32_t a, int32_t b) {
+				out += " " + k + " " + std::to_string(a) + ">" + std::to_string(b);
+			};
+			for (const auto &[k, val] : now)
+				if (auto it = _lastState.find(k); it == _lastState.end() || it->second != val)
+					note(k, it == _lastState.end() ? 0 : it->second, val);
+			for (const auto &[k, val] : _lastState)
+				if (!now.count(k))
+					note(k, val, 0);
+			std::string cmd = st.cmd;
+			for (const std::string &a : st.args)
+				cmd += " " + a;
+			std::printf("%8.3fs  (changed by line %d, %s)%s\n", host.now / 1000.0, st.line, cmd.c_str(), out.c_str());
+		}
+		_lastState = std::move(now);
+		_lastLevel = level;
+	}
 
 	void fail(HeadlessHost &host, const std::string &why) {
 		const Step &st = _steps[_pos];
@@ -670,19 +730,38 @@ private:
 					            o.pathExistence, o.isBusy);
 			return true;
 		}
-		if (c == "items") {
-			if (const GoblinsV1 *g = interp.goblinsV1())
-				for (const GoblinsV1::ItemSpot &s : g->itemSpots()) {
-					int cells = 0;
-					for (uint32_t r : s.rows)
-						cells += std::popcount(r);
-					std::string rows;
-					for (size_t y = 0; y < s.rows.size(); y++)
-						if (s.rows[y])
-							rows += " " + std::to_string(y) + ":" + std::to_string(s.rows[y]);
-					std::printf("%8.3fs  (item %d) %d,%d-%d,%d cells %d object %d rows%s\n", host.now / 1000.0, s.id,
-					            s.left, s.top, s.right, s.bottom, cells, s.object, rows.c_str());
+		if (c == "hint") { // once idle: the step hinted is ID (end: all are done)
+			if (!idleFor(interp, host, 100))
+				return false;
+			const HintLevel *l = hints.level(interp.currentLevel());
+			if (!l) {
+				fail(host, "no hints for level " + interp.currentLevel());
+				return false;
+			}
+			const size_t cur = HintBook::current(*l, interp);
+			const std::string id = cur < l->steps.size() ? l->steps[cur].id : "end";
+			const std::string want = st.args.empty() ? std::string() : st.args[0];
+			if (id != want && host.now - _startedAt < 5000)
+				return false; // what the last action set off may still be happening
+			std::printf("%8.3fs  (hint %s %s)\n", host.now / 1000.0, l->level.c_str(), id.c_str());
+			if (id != want) {
+				fail(host, "the hint is " + id);
+				return false;
+			}
+			return true;
+		}
+		if (c == "spots") {
+			for (const Interpreter::ClickSpot &sp : interp.clickSpots()) {
+				int l = 999, t = 999, r = -1, b = -1;
+				for (const auto &rc : sp.rects) {
+					l = std::min(l, rc.left);
+					t = std::min(t, rc.top);
+					r = std::max(r, rc.right);
+					b = std::max(b, rc.bottom);
 				}
+				std::printf("%8.3fs  (spot %d) %d,%d-%d,%d rects %zu object %d\n", host.now / 1000.0, sp.id, l, t, r, b,
+				            sp.rects.size(), sp.object);
+			}
 			return true;
 		}
 		if (c == "end") {
@@ -1252,6 +1331,17 @@ int main(int argc, char **argv) {
 			skips.push_back(uint32_t(std::atof(argv[++i]) * 1000));
 		else if (!std::strcmp(argv[i], "--watch-skip"))
 			watchSkip = true;
+		else if (!std::strcmp(argv[i], "--hints") && i + 1 < argc) {
+			std::ifstream f(argv[++i], std::ios::binary);
+			std::stringstream text;
+			text << f.rdbuf();
+			std::string error;
+			if (!f || !script.hints.parse(text.str(), error)) {
+				std::fprintf(stderr, "%s: %s\n", argv[i], f ? error.c_str() : "cannot read");
+				return 2;
+			}
+		} else if (!std::strcmp(argv[i], "--state-diff"))
+			script.stateDiff = true;
 		else if (!std::strcmp(argv[i], "--script") && i + 1 < argc) {
 			if (!script.load(argv[++i])) {
 				std::fprintf(stderr, "cannot read %s\n", argv[i]);
