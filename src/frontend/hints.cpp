@@ -400,7 +400,8 @@ private:
 		int chosen = -1;
 		for (int i = 0; i < 3; i++) {
 			ImGui::SetCursorScreenPos(ImVec2(x, by));
-			if (button(labels[i], ImVec2(widths[i], bh), fonts.bold, 30 * k, i == 1, _overlay.dialogFocus == i))
+			if (button(labels[i], ImVec2(widths[i], bh), fonts.bold, 30 * k, i == 1,
+			           _overlay.dialogArrows && _overlay.dialogFocus == i))
 				chosen = i;
 			x += widths[i] + gap;
 		}

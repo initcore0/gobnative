@@ -165,10 +165,12 @@ public:
 	}
 	bool dialogOpen() const { return bool(_dialog); }
 	// The open dialog's buttons for the arrow keys (a TV remote's): the
-	// one focused (the dialog sets the first and how many there are) and
-	// OK pressed on it (the dialog clears it each frame).
+	// one focused (the dialog sets the first and how many there are), OK
+	// pressed on it (the dialog clears it each frame), and whether the
+	// arrow keys rather than the pointer were used last (the focus ring is
+	// only drawn then).
 	int dialogFocus = 0, dialogButtons = 0;
-	bool dialogPress = false;
+	bool dialogPress = false, dialogArrows = false;
 
 	// True while a popup is open, which should get Escape instead of the
 	// overlay closing.

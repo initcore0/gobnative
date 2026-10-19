@@ -245,12 +245,15 @@ constexpr SDL_Scancode kTurboKey = SDL_SCANCODE_TAB;
 
 #ifdef GOB_WEBOS
 // A TV remote has no keyboard: its colour keys stand in for the desktop's
-// keys, rewritten before anything looks at the event, and the tips bar
-// under the picture names them (GameRun::drawTvBar). Red is Escape (skips
-// the intro and cutscenes, leaves the game's menus; held, leaves the
-// game), green the overlay key. Yellow shows and hides the tips, blue
-// switches fast (turbo, held Tab on a keyboard) on and off; both in
-// GameRun::handleEvents. Quick save and quick load are in the overlay.
+// keys, rewritten before the game or the overlay looks at the event (an
+// open dialog sees them first), and the tips bar under the picture names
+// them (GameRun::drawTvBar). Red is Escape (skips the intro and cutscenes,
+// leaves the game's menus; held, leaves the game), green the overlay key.
+// Yellow is the hint key while hints are on and a level with hints is
+// played (frontend/hints.cpp; the tips can then be hidden in the Video
+// tab), else it shows and hides the tips; blue switches fast (turbo, held
+// Tab on a keyboard) on and off; both in GameRun::handleEvents. Quick save
+// and quick load are in the overlay.
 void remapRemoteKey(SDL_Keysym &k) {
 	switch (int(k.scancode)) {
 	case SDL_SCANCODE_WEBOS_RED: k = {SDL_SCANCODE_ESCAPE, SDLK_ESCAPE, KMOD_NONE, 0}; break;
@@ -1084,6 +1087,11 @@ struct GameRun {
 	TouchMouse touch;
 	std::vector<TouchBarButton> touchBar;
 	std::shared_ptr<HintsControl> hints; // the hint key's (frontend/hints.cpp)
+#ifdef GOB_WEBOS
+	bool pointerShown = false; // the pointer, not the arrow keys, was used last (a TV starts with the arrows)
+#else
+	bool pointerShown = true;
+#endif
 	SDL_FingerID barFinger = 0;
 	bool barFingerDown = false;
 	int touchRelease = 0;
@@ -1214,20 +1222,35 @@ void GameRun::handleEvents() {
 		touchRelease = 0;
 	}
 	SDL_Event ev;
+	// A dialog opened during this frame never takes this frame's OK (the
+	// press that opened it).
+	const bool dialogWasOpen = app.overlay.dialogOpen();
 	while (SDL_PollEvent(&ev)) {
 		const bool open = app.overlay.isOpen();
+		// The pointer or the arrow keys were used last (a Magic Remote's OK
+		// sends Enter with its click: with the pointer, the click chooses).
+		if (ev.type == SDL_MOUSEMOTION || ev.type == SDL_MOUSEBUTTONDOWN)
+			pointerShown = true;
+		else if (ev.type == SDL_KEYDOWN && (ev.key.keysym.scancode == SDL_SCANCODE_LEFT ||
+		                                    ev.key.keysym.scancode == SDL_SCANCODE_RIGHT))
+			pointerShown = false;
+		app.overlay.dialogArrows = !pointerShown;
 		// A dialog (the TV's Leave, the hints' first question): the arrow
-		// keys move between its buttons, OK or Enter presses one, Escape
-		// (red) closes it.
+		// keys move between its buttons, OK or Enter presses the focused one
+		// (unless the pointer was used last), Escape, red or Back closes it.
 		if (app.overlay.dialogOpen() && (ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP)) {
 			Overlay &o = app.overlay;
 			if (ev.type == SDL_KEYDOWN)
 				switch (int(ev.key.keysym.scancode)) {
 				case SDL_SCANCODE_LEFT: o.dialogFocus = std::max(0, o.dialogFocus - 1); break;
 				case SDL_SCANCODE_RIGHT: o.dialogFocus = std::min(o.dialogButtons - 1, o.dialogFocus + 1); break;
-				case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER: o.dialogPress = true; break;
+				case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER:
+					if (dialogWasOpen && !pointerShown && !ev.key.repeat)
+						o.dialogPress = true;
+					break;
 #ifdef GOB_WEBOS
-				case SDL_SCANCODE_WEBOS_RED:
+				case SDL_SCANCODE_WEBOS_RED: // (not yet Escape: remapRemoteKey comes below)
+				case SDL_SCANCODE_WEBOS_BACK:
 #endif
 				case SDL_SCANCODE_ESCAPE: o.setOpen(false); break;
 				default: break;
@@ -1546,7 +1569,7 @@ void GameRun::askLeave() {
 		int chosen = -1;
 		for (int i = 0; i < 3; i++) {
 			ImGui::SetCursorScreenPos(ImVec2(p1.x - pad - float(3 - i) * bw - float(2 - i) * gap, by));
-			const bool focused = app.overlay.dialogFocus == i;
+			const bool focused = app.overlay.dialogArrows && app.overlay.dialogFocus == i;
 			const ImU32 base = i == 0 ? colour::kGreen : colour::kCardHover;
 			const ImU32 hover = i == 0 ? colour::kGreenHover : IM_COL32(70, 62, 82, 255);
 			if (webos::tvButton(labels[i], labels[i], ImVec2(bw, bh), fonts.bold, 30 * s, base, hover,
