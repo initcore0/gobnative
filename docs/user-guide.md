@@ -252,6 +252,23 @@ stick** opens a list of the stick's folders and installers, for files with
 other names. A tile's **Remove** deletes an installed game; your saves and
 settings stay.
 
+**No USB stick? Send the games over the network** (a rooted TV with SSH):
+
+    scripts/send-to-tv.sh root@192.168.1.50 "setup_gobliins_2_-_the_prince_buffoon_1.02_(20270).exe"
+
+Start gobnative on the TV once first (it makes its data folder). The
+script copies each installer, or a game's folder already installed on a
+computer, into `data/Installers/` on the TV. The library finds them there
+as it finds a stick's, within a few seconds, even while it's open: the
+tile says "Copied to this TV" and **Install** installs it.
+
+- An installer is removed after installing, to free the TV's storage.
+- A game folder is moved into place at once.
+- Copies arrive under a hidden name and are renamed when complete, so a
+  half-sent file is never offered.
+- They're given to the app's own user, since the app runs as one.
+
+
 **The remote:**
 
 | | In the library | In a game |

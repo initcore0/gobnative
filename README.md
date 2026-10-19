@@ -1,3 +1,15 @@
+<p align="center">
+  <img src="docs/images/banner.jpg" alt="gobnative: Coktel Vision's Goblins trilogy on a new native engine, on macOS, Windows, the web and LG webOS TVs" width="100%">
+</p>
+
+<p align="center">
+  <a href="https://games.encrypted-cat.com/other-projects/gobnative/"><img src="https://img.shields.io/badge/%E2%96%B6%20play-in%20your%20browser-f2a846" alt="Play in your browser"></a>
+  <a href="https://github.com/initcore0/gobnative/actions/workflows/windows.yml"><img src="https://github.com/initcore0/gobnative/actions/workflows/windows.yml/badge.svg?branch=main" alt="Build"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licence-GPL--3.0-blue" alt="Licence: GPL-3.0"></a>
+  <img src="https://img.shields.io/badge/C%2B%2B-20-00599C?logo=cplusplus&logoColor=white" alt="C++20">
+  <img src="https://img.shields.io/badge/platforms-macOS%20%C2%B7%20Windows%20%C2%B7%20Web%20%C2%B7%20LG%20webOS-555" alt="Platforms: macOS, Windows, Web, LG webOS">
+</p>
+
 # gobnative
 
 **Play Coktel Vision's Goblins trilogy natively on macOS, Windows, LG webOS
@@ -16,7 +28,40 @@ well; gobnative is a separate project that adds things on top.
 > [GOG](https://www.gog.com/); gobnative installs them straight from the GOG
 > installer.
 
-<!-- Demo: before/after video of remastered rooms (link to the hosted video here). -->
+## Screenshots
+
+Gobliins 2's first room, as the game draws it and with an HD pack made by the
+remaster scripts below:
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/gob2-original.jpg" alt="Gobliins 2's village, original pixels"></td>
+    <td width="50%"><img src="docs/images/gob2-hd.jpg" alt="The same room with an HD pack"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Original pixels (sharp bilinear filter)</sub></td>
+    <td align="center"><sub>HD pack (room backgrounds; the goblins stay original)</sub></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/gobliiins.jpg" alt="Gobliiins, the first level"></td>
+    <td width="50%"><img src="docs/images/menu-levels.jpg" alt="The in-game menu with level select over the HD room"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Gobliiins, the first level</sub></td>
+    <td align="center"><sub>The in-game menu: level select, quick save, filters, HD packs</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/tv-library.jpg" alt="The library on an LG TV, games installed from a USB stick"></td>
+    <td width="50%"><img src="docs/images/tv-goblins3.jpg" alt="Goblins Quest 3 on an LG TV, with the remote's key tips"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>On an LG TV: the library, games installed from a USB stick</sub></td>
+    <td align="center"><sub>Goblins Quest 3 on the TV, with the remote's key tips</sub></td>
+  </tr>
+</table>
 
 ## What it adds
 
@@ -88,7 +133,10 @@ open build/Gobnative.app
 CI run (Actions → Build → Artifacts), unpack it and run `gobnative.exe`.
 Or build it with Visual Studio or MinGW-w64; see the user guide.
 
-**Web:** build with the Emscripten SDK and serve the folder locally:
+**Web:** play it at
+[games.encrypted-cat.com/other-projects/gobnative](https://games.encrypted-cat.com/other-projects/gobnative/),
+with your own installers (they stay in your browser). Or build it with the
+Emscripten SDK and serve the folder locally:
 
 ```bash
 scripts/build-web.sh --serve 8080
@@ -105,7 +153,9 @@ should work the same way, but hasn't been tried):
    for example with the webOS CLI's `ares-install`. The user guide shows
    other ways.
 2. Copy the GOG installers onto a USB stick (any folder) and plug it into
-   the TV. Start gobnative: each game shows **Install from USB**.
+   the TV, or send them over the network with `scripts/send-to-tv.sh
+   root@<TV address> setup_….exe`. Start gobnative: each game shows
+   **Install**.
 3. Play with the Magic Remote's pointer:
    - **Back** is the right click;
    - the colour keys skip (red), open the menu (green), show or hide their
@@ -158,8 +208,10 @@ small, thin details often need touch-ups or are best left original. See
   workarounds. Thank you to the ScummVM team; their `gob` engine made this
   possible. gobnative is not affiliated with or endorsed by ScummVM.
 - **Gobliiins, Gobliins 2 and Goblins Quest 3** are © Coktel Vision, now
-  owned by Microïds. This project contains none of their data and is not
-  affiliated with them.
+  owned by Microïds. This project contains none of their game data and is not
+  affiliated with them. The screenshots in `docs/images` (and the banner) show
+  the games running in gobnative, to illustrate it; the HD room in them is
+  from a pack made with the remaster scripts, which isn't distributed.
 - **Third-party code and fonts:**
   - [SDL2](https://www.libsdl.org/) (zlib licence, linked);
   - `third_party/dr_mp3` (David Reid, public domain / MIT-0);

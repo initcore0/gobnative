@@ -2294,7 +2294,7 @@ on it; nothing on the TV is changed outside the app's own folder):
   - **Manifest:** the script also writes
     `dist/io.github.initcore0.gobnative.manifest.json`, in the Homebrew
     Channel's format (as its own release has it): id, version, type,
-    title, appDescription, iconUri (`webos/icon130.png` on main),
+    title, appDescription, iconUri (`webos/gob-icon-130.png` on main),
     sourceUrl, `rootRequired: false`, `ipkUrl` (the package's name: it
     sits next to the manifest in a release), `ipkHash.sha256` and
     `ipkSize`.
@@ -2325,6 +2325,43 @@ on it; nothing on the TV is changed outside the app's own folder):
 
 ## 7. Open issues
 
+- **webOS: games over the network (after T5, user: "what if someone
+  has no USB stick but a rooted TV?").** The library also scans
+  `<pref root>/Installers` (`installersFolder()`): it is made at start
+  (so the app owns it), and rescanned when the names, sizes or times in
+  it change, not only when drives come and go. There:
+  - installers work as on a stick; the TV's copy is preferred, and is
+    deleted after a successful install (`finishImport`);
+  - top-level folders that hold a game are offered too, and Install
+    moves them into `Games/<game>` (`installFolder`, one rename).
+
+  The tiles say "Copied to this TV"; the card counts them; the browser
+  lists the folder as "This TV". `scripts/send-to-tv.sh root@TV
+  items...` streams each with tar over SSH into
+  `Installers/.incoming/`, gives it to the owner of `data/` (the jail's
+  `prisoner`, uid 6071 on the C1, which exists only inside the jail) and
+  renames it into place. A root-owned folder couldn't be moved by the
+  app, and a hidden name keeps half copies out.
+  - **Checked on the C1:** a 71 MB installer took 35 s over the
+    network; it was found, installed in 5.9 s and removed. A 52 MB game
+    folder was found ("Copied to this TV · 52 MB").
+  - **Not checked:** the folder's Install (needs the remote).
+- **webOS: the icon (user's photos of the home screen).** webOS draws an
+  app's icon inset on a tile of `iconColor`. The store's apps fill their
+  tiles because the icon's edge is one colour equal to `iconColor` (IPTV
+  max: #131b2e on both; Netflix: white). The package's icons are now white
+  "GOB" (with its shadow) on flat #EC8030, `iconColor` the same, in 80,
+  115, 130 and 192 px (`icon`, `mediumLargeIcon`, `largeIcon`,
+  `extraLargeIcon`), made by `scripts/make-icon.py --webos`.
+  - Steps that didn't help: dropping the Mac icon's margin and rounded
+    corners; adding the large sizes; a version bump. The TV caches icons
+    by file name, so each change got new names (now `gob-icon-*.png`).
+- **webOS: OK in the dialogs.** The Magic Remote's OK sends Enter with its
+  click, and the C1 sends no pointer-hidden event (seen in a key log).
+  - Enter is OK only in arrow mode: after an arrow key, until the pointer
+    moves or clicks.
+  - A dialog takes keys only once open: the OK that pressed Remove or
+    Browse also pressed the dialog's focused button, so it closed at once.
 - **webOS: the overlay without the pointer.** The library and the TV
   dialogs move a focus ring with the arrow keys, but the in-game overlay
   (ImGui) has no visible focus on a TV yet: it needs the pointer.

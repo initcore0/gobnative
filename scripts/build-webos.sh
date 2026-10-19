@@ -105,7 +105,7 @@ echo "$ipk"
 # The Homebrew Channel's manifest (webosbrew's format): the package next to
 # it in a GitHub release (ipkUrl is relative), its hash and size.
 source_url=${GOB_SOURCE_URL:-https://github.com/initcore0/gobnative}
-icon_url=$(printf '%s' "$source_url" | sed 's|//github.com/|//raw.githubusercontent.com/|')/main/webos/icon130.png
+icon_url=$(printf '%s' "$source_url" | sed 's|//github.com/|//raw.githubusercontent.com/|')/main/webos/gob-icon-130.png
 sha=$( (command -v sha256sum >/dev/null && sha256sum "$ipk" || shasum -a 256 "$ipk") | cut -d' ' -f1)
 size=$(wc -c < "$ipk" | tr -d ' ')
 cat > "$repo/dist/$id.manifest.json" <<EOF

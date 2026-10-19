@@ -727,8 +727,16 @@ struct LibraryScreen::State {
 		if (in.done()) {
 			remember(import->dest.string(), *import->game);
 			refresh();
-			say(std::string(import->game->title) + " is installed. Press Play to start!", false,
-			    import->dest.string() + (import->note.empty() ? "" : " (" + import->note + ")"));
+			std::string done = std::string(import->game->title) + " is installed. Press Play to start!";
+#ifdef GOB_WEBOS
+			// An installer sent to the TV: removed, the TV's storage is small.
+			std::error_code ec;
+			if (fs::equivalent(import->setup.parent_path(), installersFolder(), ec) && fs::remove(import->setup, ec)) {
+				done += " Its installer was removed from the TV to free the space.";
+				usbCheckedAt = 0;
+			}
+#endif
+			say(done, false, import->dest.string() + (import->note.empty() ? "" : " (" + import->note + ")"));
 #ifdef __EMSCRIPTEN__
 			web::requestPersistentStorage(); // something worth keeping now
 #endif
@@ -948,8 +956,18 @@ struct LibraryScreen::State {
 	struct UsbFile {
 		fs::path path;
 		const GameInfo *game = nullptr;
-		uint64_t bytes = 0; // what it installs
+		uint64_t bytes = 0;  // what it installs
+		bool folder = false; // a game's folder (moved into place), not an installer
+		bool local = false;  // in the TV's Installers folder (sent over the network), not on USB
 	};
+	// On a rooted TV, installers and game folders can also be copied over
+	// SSH into <pref root>/Installers (scripts/send-to-tv.sh): scanned with
+	// the USB drives, and again when what is in it changes (localSig).
+	fs::path installersFolder() const { return ctx.prefRoot / "Installers"; }
+	std::string localSig;
+	bool localAny = false; // something is in the Installers folder
+	std::vector<std::string> browseRoots() const;
+	void installFolder(const UsbFile &f);
 	std::vector<std::string> usbDrives;
 	std::vector<UsbFile> usbFiles;
 	std::jthread usbScan;
@@ -969,6 +987,10 @@ struct LibraryScreen::State {
 	// hides it. The dialogs keep their own selection (dialogSel).
 	enum class Nav { None, Up, Down, Left, Right, Ok };
 	Nav navKey = Nav::None;
+	// The Magic Remote's OK sends Enter along with its click, so Enter is OK
+	// only in arrow mode: after an arrow key, until the pointer moves or
+	// clicks (the TV sends no event when it hides the pointer: seen on a C1).
+	bool pointerShown = true;
 	bool navShown = false, navOk = false;
 	int navRow = 0, navCol = 0, dialogSel = 0;
 	int navSeen[2] = {0, 0}, navNext[2] = {0, 0}; // focusable buttons per row: last frame, this frame
@@ -978,7 +1000,7 @@ struct LibraryScreen::State {
 		const int col = navNext[row]++;
 		return navShown && row == navRow && col == navCol;
 	}
-	static std::vector<UsbFile> findInstallers(const std::vector<std::string> &roots);
+	static std::vector<UsbFile> findInstallers(const std::vector<std::string> &roots, const fs::path &local);
 	void pollUsb();
 	const UsbFile *usbInstaller(const GameInfo *g) const;
 	void tvPrimary(Tile &t);
@@ -1134,15 +1156,20 @@ bool LibraryScreen::State::frame() {
 				case SDL_SCANCODE_WEBOS_BLUE: tvKey = int(webos::RemoteKey::Blue); break;
 				case SDL_SCANCODE_WEBOS_BACK: tvKey = int(webos::RemoteKey::Back); break;
 				case SDL_SCANCODE_WEBOS_EXIT: tvKey = kExitKey; break;
-				case SDL_SCANCODE_UP: navKey = Nav::Up; break;
-				case SDL_SCANCODE_DOWN: navKey = Nav::Down; break;
-				case SDL_SCANCODE_LEFT: navKey = Nav::Left; break;
-				case SDL_SCANCODE_RIGHT: navKey = Nav::Right; break;
-				case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER: navKey = Nav::Ok; break;
+				case SDL_SCANCODE_UP: navKey = Nav::Up; pointerShown = false; break;
+				case SDL_SCANCODE_DOWN: navKey = Nav::Down; pointerShown = false; break;
+				case SDL_SCANCODE_LEFT: navKey = Nav::Left; pointerShown = false; break;
+				case SDL_SCANCODE_RIGHT: navKey = Nav::Right; pointerShown = false; break;
+				case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER:
+					if (!pointerShown)
+						navKey = Nav::Ok;
+					break;
 				default: break;
 				}
-			} else if (ev.type == SDL_MOUSEMOTION)
-				navShown = false; // the pointer again
+			} else if (ev.type == SDL_MOUSEMOTION || ev.type == SDL_MOUSEBUTTONDOWN) {
+				navShown = ev.type == SDL_MOUSEMOTION ? false : navShown; // the pointer again
+				pointerShown = true;
+			}
 #endif
 		} while (SDL_PollEvent(&ev));
 	}
@@ -1908,9 +1935,31 @@ using webos::tvButton;
 // The GOG installers of the three games on the USB drives (a few folders
 // deep; the TV's own folders skipped), each opened to check which game it
 // holds. Runs on a worker thread.
-std::vector<LibraryScreen::State::UsbFile> LibraryScreen::State::findInstallers(const std::vector<std::string> &roots) {
+std::vector<LibraryScreen::State::UsbFile> LibraryScreen::State::findInstallers(const std::vector<std::string> &usb,
+                                                                               const fs::path &local) {
 	std::vector<UsbFile> found;
+	std::vector<std::string> roots = usb;
+	std::error_code lec;
+	if (fs::is_directory(local, lec)) {
+		roots.push_back(local.string());
+		// Game folders sent whole (a game installed on a computer).
+		for (const auto &e : fs::directory_iterator(local, lec)) {
+			const std::string name = e.path().filename().string();
+			if (name.empty() || name[0] == '.' || !e.is_directory(lec))
+				continue;
+			const Detection d = detectGame(e.path());
+			if (!d.game)
+				continue;
+			UsbFile f{e.path(), &gameInfo(*d.game), 0, true, true};
+			for (auto it = fs::recursive_directory_iterator(e.path(), lec); !lec && it != fs::recursive_directory_iterator();
+			     it.increment(lec))
+				if (it->is_regular_file(lec))
+					f.bytes += it->file_size(lec);
+			found.push_back(f);
+		}
+	}
 	for (const std::string &root : roots) {
+		const bool isLocal = root == local.string();
 		std::error_code ec;
 		for (auto it = fs::recursive_directory_iterator(root, fs::directory_options::skip_permission_denied, ec);
 		     !ec && it != fs::recursive_directory_iterator(); it.increment(ec)) {
@@ -1927,7 +1976,7 @@ std::vector<LibraryScreen::State::UsbFile> LibraryScreen::State::findInstallers(
 				continue;
 			GameInstaller in;
 			if (in.open(it->path()) && in.plan().game)
-				found.push_back({it->path(), in.plan().game, in.plan().bytes});
+				found.push_back({it->path(), in.plan().game, in.plan().bytes, false, isLocal});
 			else
 				std::fprintf(stderr, "game library: %s is not an installer of the games (%s)\n", it->path().c_str(),
 				             in.error().c_str());
@@ -1942,7 +1991,8 @@ void LibraryScreen::State::pollUsb() {
 		usbFiles = std::move(usbFound);
 		usbScanning = false;
 		for (const UsbFile &f : usbFiles)
-			std::fprintf(stderr, "game library: on USB: %s (%s)\n", f.path.c_str(), f.game->title);
+			std::fprintf(stderr, "game library: %s: %s (%s)\n", f.local ? "on the TV" : "on USB", f.path.c_str(),
+			             f.game->title);
 	}
 	const uint32_t now = SDL_GetTicks();
 	if (usbCheckedAt && now - usbCheckedAt < 3000)
@@ -1950,30 +2000,79 @@ void LibraryScreen::State::pollUsb() {
 	usbCheckedAt = now ? now : 1;
 	if (usbScanning)
 		return;
+	// What is in the Installers folder (made here, so that it is the app's
+	// to write): names, sizes and times, to see a copy arrive.
+	const fs::path local = installersFolder();
+	std::error_code ec;
+	fs::create_directories(local, ec);
+	std::string sig;
+	for (const auto &e : fs::directory_iterator(local, ec)) {
+		const std::string name = e.path().filename().string();
+		if (name.empty() || name[0] == '.')
+			continue;
+		std::error_code fec;
+		sig += name + "|" + std::to_string(e.is_regular_file(fec) ? e.file_size(fec) : 0) + "|" +
+		       std::to_string(e.last_write_time(fec).time_since_epoch().count()) + "\n";
+	}
 	std::vector<std::string> drives = webos::usbDrives();
-	if (drives == usbDrives)
+	if (drives == usbDrives && sig == localSig)
 		return;
-	std::fprintf(stderr, "game library: USB storage: %zu drive(s)\n", drives.size());
+	std::fprintf(stderr, "game library: USB storage: %zu drive(s), Installers folder %s\n", drives.size(),
+	             sig.empty() ? "empty" : "changed");
 	usbDrives = drives;
+	localSig = sig;
+	localAny = !sig.empty();
 	usbFiles.clear();
 	if (browsing && !browseDir.empty()) {
 		bool still = false;
-		for (const std::string &d : usbDrives)
+		for (const std::string &d : browseRoots())
 			still |= browseDir.string().rfind(d, 0) == 0;
 		if (!still)
 			browseDir.clear();
 	}
-	if (drives.empty())
+	if (drives.empty() && !localAny)
 		return;
 	usbScanning = true;
 	usbScanDone = false;
-	usbScan = std::jthread([this, drives] {
-		usbFound = findInstallers(drives);
+	usbScan = std::jthread([this, drives, local] {
+		usbFound = findInstallers(drives, local);
 		usbScanDone = true;
 	});
 }
 
+std::vector<std::string> LibraryScreen::State::browseRoots() const {
+	std::vector<std::string> roots = usbDrives;
+	if (localAny)
+		roots.push_back(installersFolder().string());
+	return roots;
+}
+
+// A game's folder sent over the network: moved into the Games folder (the
+// same file system, so at once).
+void LibraryScreen::State::installFolder(const UsbFile &f) {
+	const fs::path dest = libraryGameFolder(ctx.prefRoot, f.game->prefFolder);
+	std::string note;
+	if (!moveAside(dest, note))
+		return;
+	std::error_code ec;
+	fs::create_directories(dest.parent_path(), ec);
+	fs::rename(f.path, dest, ec);
+	if (ec) {
+		say(std::string("Couldn't move ") + f.game->title + " into place.", true,
+		    f.path.string() + ": " + ec.message() + " (scripts/send-to-tv.sh makes the app its owner)");
+		return;
+	}
+	remember(dest.string(), *f.game);
+	refresh();
+	say(std::string(f.game->title) + " is installed. Press Play to start!", false, dest.string());
+	usbCheckedAt = 0; // look again at once
+}
+
 const LibraryScreen::State::UsbFile *LibraryScreen::State::usbInstaller(const GameInfo *g) const {
+	// The TV's own copy first: installing from it frees its space again.
+	for (const UsbFile &f : usbFiles)
+		if (f.game == g && f.local)
+			return &f;
 	for (const UsbFile &f : usbFiles)
 		if (f.game == g)
 			return &f;
@@ -1987,9 +2086,12 @@ void LibraryScreen::State::tvPrimary(Tile &t) {
 		return;
 	if (!t.folder.empty())
 		play(t.folder);
-	else if (const UsbFile *f = usbInstaller(t.game))
-		startImport(f->path.string(), t.game);
-	else if (usbDrives.empty())
+	else if (const UsbFile *f = usbInstaller(t.game)) {
+		if (f->folder)
+			installFolder(*f);
+		else
+			startImport(f->path.string(), t.game);
+	} else if (usbDrives.empty())
 		say(std::string("To install ") + t.game->title +
 		        ", copy its GOG installer (setup_...exe) onto a USB stick and plug it into this TV.",
 		    true);
@@ -2021,20 +2123,25 @@ void LibraryScreen::State::drawTv(bool busy) {
 
 	// The arrow keys and OK, on the main screen (the dialogs below take them
 	// while open): moved over last frame's buttons.
-	const Nav nav = std::exchange(navKey, Nav::None);
+	// The first press only shows where the ring is (here and in the dialogs).
+	// A dialog takes keys only once it is open: the OK that opened it is not
+	// its own (it pressed the dialog's focused button at once).
+	const bool dialogOpen = browsing || removing || leaving;
+	Nav nav = std::exchange(navKey, Nav::None);
+	if (nav != Nav::None && !navShown) {
+		navShown = true;
+		nav = Nav::None;
+	}
 	navOk = false;
 	if (!browsing && !removing && !leaving && nav != Nav::None) {
-		if (!navShown)
-			navShown = true; // the first press shows where the ring is
-		else
-			switch (nav) {
-			case Nav::Left: navCol--; break;
-			case Nav::Right: navCol++; break;
-			case Nav::Up: navRow = 0; break;
-			case Nav::Down: navRow = 1; break;
-			case Nav::Ok: navOk = true; break;
-			case Nav::None: break;
-			}
+		switch (nav) {
+		case Nav::Left: navCol--; break;
+		case Nav::Right: navCol++; break;
+		case Nav::Up: navRow = 0; break;
+		case Nav::Down: navRow = 1; break;
+		case Nav::Ok: navOk = true; break;
+		case Nav::None: break;
+		}
 	}
 	if (navSeen[navRow] == 0 && navSeen[1 - navRow] > 0)
 		navRow = 1 - navRow;
@@ -2081,7 +2188,7 @@ void LibraryScreen::State::drawTv(bool busy) {
 		tips.push_back({webos::RemoteKey(i), std::string(t.folder.empty() ? "Install " : "Play ") + shortName[i],
 		                can && !busy && allowed(t.game)});
 	}
-	tips.push_back({webos::RemoteKey::Blue, "Browse USB", !usbDrives.empty() && !busy});
+	tips.push_back({webos::RemoteKey::Blue, "Browse USB", !browseRoots().empty() && !busy});
 	tips.push_back({webos::RemoteKey::Back, "Leave"});
 	dl->AddRectFilled(ImVec2(0, H - tipsH), ImVec2(W, H), IM_COL32(18, 15, 22, 255));
 	webos::drawKeyTips(*dl, fonts.bold, tips, 0, W, H - tipsH, tipsH);
@@ -2098,7 +2205,7 @@ void LibraryScreen::State::drawTv(bool busy) {
 		if (closeKey)
 			leaving = false;
 		else
-			drawTvLeave(s, nav);
+			drawTvLeave(s, dialogOpen ? nav : Nav::None);
 	} else if (key == kExitKey) {
 		browsing = false;
 		removing = nullptr;
@@ -2108,12 +2215,12 @@ void LibraryScreen::State::drawTv(bool busy) {
 		if (closeKey)
 			browsing = false;
 		else
-			drawTvBrowser(s, nav);
+			drawTvBrowser(s, dialogOpen ? nav : Nav::None);
 	} else if (removing) {
 		if (closeKey)
 			removing = nullptr;
 		else
-			drawTvRemove(s, nav);
+			drawTvRemove(s, dialogOpen ? nav : Nav::None);
 	} else if (key == int(webos::RemoteKey::Back)) {
 		if (import)
 			import->cancel = true; // (a second Back leaves)
@@ -2122,7 +2229,7 @@ void LibraryScreen::State::drawTv(bool busy) {
 	} else if (key >= 0 && !busy) {
 		if (key < 3 && key < n)
 			tvPrimary(tiles[size_t(key)]);
-		else if (key == int(webos::RemoteKey::Blue) && !usbDrives.empty()) {
+		else if (key == int(webos::RemoteKey::Blue) && !browseRoots().empty()) {
 			browsing = true;
 			browseDir.clear();
 			dialogSel = 0;
@@ -2187,7 +2294,8 @@ void LibraryScreen::State::drawTvTile(Tile &t, int index, ImVec2 p0, float w, fl
 		status = "Installed  \xC2\xB7  " + megabytes(t.bytes); // ·
 		dot = colour::kGood;
 	} else if (onUsb) {
-		status = "On the USB stick  \xC2\xB7  " + megabytes(onUsb->bytes);
+		status = std::string(onUsb->local ? "Copied to this TV" : "On the USB stick") + "  \xC2\xB7  " +
+		         megabytes(onUsb->bytes);
 		dot = colour::kAmber;
 	} else
 		status = usable ? "Not installed" : "Not available";
@@ -2233,7 +2341,8 @@ void LibraryScreen::State::drawTvTile(Tile &t, int index, ImVec2 p0, float w, fl
 		}
 	} else if (onUsb) {
 		const bool canInstall = usable && !busy, f = navFocus(0, canInstall);
-		if (tvButton("install", "Install from USB", ImVec2(innerW, bh), fonts.bold, 32 * s, colour::kAmber,
+		if (tvButton("install", onUsb->local ? "Install" : "Install from USB", ImVec2(innerW, bh), fonts.bold, 32 * s,
+		             colour::kAmber,
 		             colour::kAmberHover, colour::kOnAmber, key, canInstall, f, f && navOk))
 			tvPrimary(t);
 	} else
@@ -2253,18 +2362,28 @@ void LibraryScreen::State::drawTvUsb(ImVec2 p0, ImVec2 p1, float s, bool busy) {
 
 	std::string heading;
 	ImU32 dot = colour::kFaint;
-	if (usbDrives.empty())
+	int localCount = 0;
+	for (const UsbFile &f : usbFiles)
+		localCount += f.local;
+	if (usbDrives.empty() && localCount)
+		heading = std::to_string(localCount) + (localCount == 1 ? " game copied to this TV" : " games copied to this TV");
+	else if (usbDrives.empty())
 		heading = "No USB stick plugged in";
 	else if (usbScanning) {
 		heading = "USB stick found  \xC2\xB7  looking for game installers...";
 		dot = colour::kAmber;
 	} else {
+		const size_t onUsb = usbFiles.size() - size_t(localCount);
 		heading = "USB stick found  \xC2\xB7  ";
-		heading += usbFiles.empty()       ? std::string("no game installers on it")
-		           : usbFiles.size() == 1 ? std::string("1 game installer on it")
-		                                  : std::to_string(usbFiles.size()) + " game installers on it";
+		heading += onUsb == 0   ? std::string("no game installers on it")
+		           : onUsb == 1 ? std::string("1 game installer on it")
+		                        : std::to_string(onUsb) + " game installers on it";
+		if (localCount)
+			heading += "  \xC2\xB7  " + std::to_string(localCount) + " copied to this TV";
 		dot = usbFiles.empty() ? colour::kBad : colour::kGood;
 	}
+	if (usbDrives.empty() && localCount)
+		dot = colour::kGood;
 	dl->AddCircleFilled(ImVec2(x + 9 * s, y + 20 * s), 9 * s, dot, 20);
 	dl->AddText(fonts.bold, 34 * s, ImVec2(x + 32 * s, y), colour::kText, heading.c_str());
 	y += 60 * s;
@@ -2272,7 +2391,8 @@ void LibraryScreen::State::drawTvUsb(ImVec2 p0, ImVec2 p1, float s, bool busy) {
 	// How to get the games onto the TV: always there, short.
 	const char *const steps[] = {
 	    "On a computer, open your GOG library and download each game's offline backup installer (setup_...exe).",
-	    "Copy the files onto a USB stick, into any folder, and plug it into this TV.",
+	    "Copy them onto a USB stick and plug it into this TV, or send them over the network (rooted TVs: "
+	    "scripts/send-to-tv.sh).",
 	    "The games show up here by themselves: press Install from USB, or the game's colour key.",
 	};
 	const float browseW = 420 * s, textW = p1.x - x - pad - browseW - 40 * s;
@@ -2290,7 +2410,7 @@ void LibraryScreen::State::drawTvUsb(ImVec2 p0, ImVec2 p1, float s, bool busy) {
 	// The file browser, for installers with other names or deeper folders.
 	const float bh = 76 * s;
 	ImGui::SetCursorScreenPos(ImVec2(p1.x - pad - browseW, p0.y + 84 * s + (p1.y - p0.y - 84 * s - bh) / 2));
-	const bool canBrowse = !usbDrives.empty() && !busy, f = navFocus(1, canBrowse);
+	const bool canBrowse = !browseRoots().empty() && !busy, f = navFocus(1, canBrowse);
 	if (tvButton("browse", "Browse the USB stick", ImVec2(browseW, bh), fonts.bold, 30 * s, IM_COL32(41, 98, 145, 255),
 	             IM_COL32(52, 118, 170, 255), IM_COL32_WHITE, int(webos::RemoteKey::Blue), canBrowse, f, f && navOk)) {
 		browsing = true;
@@ -2319,12 +2439,18 @@ void LibraryScreen::State::drawTvBrowser(float s, Nav key) {
 	dl->AddRect(p0, p1, colour::kBorder, 20 * s, 0, 1.5f);
 	const float pad = 40 * s, x = p0.x + pad, innerW = size.x - 2 * pad;
 
-	// Where we are.
+	// Where we are: a USB stick, or the TV's Installers folder.
+	const std::vector<std::string> roots = browseRoots();
+	const std::string local = installersFolder().string();
+	auto rootName = [&](const std::string &d) {
+		return d == local ? std::string("This TV (sent over the network)")
+		                  : "USB stick (" + fs::path(d).filename().string() + ")";
+	};
 	std::string where = "Your USB storage";
-	for (const std::string &d : usbDrives)
+	for (const std::string &d : roots)
 		if (!browseDir.empty() && browseDir.string().rfind(d, 0) == 0) {
 			const std::string rel = browseDir.string().substr(d.size());
-			where = "USB stick (" + fs::path(d).filename().string() + ")" + (rel.empty() ? std::string("/") : rel);
+			where = rootName(d) + (rel.empty() ? std::string("/") : rel);
 		}
 	dl->AddText(fonts.bold, 42 * s, ImVec2(x, p0.y + 32 * s), colour::kText, "Choose a game installer");
 	dl->AddText(fonts.regular, 27 * s, ImVec2(x, p0.y + 88 * s), colour::kMuted, where.c_str());
@@ -2336,13 +2462,13 @@ void LibraryScreen::State::drawTvBrowser(float s, Nav key) {
 		bool folder = false, up = false;
 	};
 	std::vector<Entry> entries;
-	if (browseDir.empty() && usbDrives.size() == 1)
-		browseDir = usbDrives.front(); // one stick: its top
+	if (browseDir.empty() && roots.size() == 1)
+		browseDir = roots.front(); // one place: its top
 	if (!browseDir.empty()) {
 		bool root = false;
-		for (const std::string &d : usbDrives)
+		for (const std::string &d : roots)
 			root |= browseDir == fs::path(d);
-		if (!(root && usbDrives.size() == 1))
+		if (!(root && roots.size() == 1))
 			entries.push_back({"Up", "", root ? fs::path() : browseDir.parent_path(), true, true});
 		std::vector<Entry> folders, files;
 		std::error_code ec;
@@ -2372,8 +2498,8 @@ void LibraryScreen::State::drawTvBrowser(float s, Nav key) {
 			                       " not shown (only installers, setup_...exe)",
 			                   "", {}, false, false});
 	} else
-		for (const std::string &d : usbDrives)
-			entries.push_back({"USB stick (" + fs::path(d).filename().string() + ")", "", d, true, false});
+		for (const std::string &d : roots)
+			entries.push_back({rootName(d), "", d, true, false});
 
 	// The arrow keys: up and down choose a row (Close after the last), OK
 	// opens it, left goes up a folder.
@@ -2391,8 +2517,6 @@ void LibraryScreen::State::drawTvBrowser(float s, Nav key) {
 		break;
 	default: break;
 	}
-	if (key != Nav::None)
-		navShown = true;
 	dialogSel = std::clamp(dialogSel, 0, closeSel);
 	while (dialogSel < closeSel && !(entries[size_t(dialogSel)].up || !entries[size_t(dialogSel)].path.empty()))
 		dialogSel += key == Nav::Up && dialogSel > 0 ? -1 : 1; // (the "other files" line can't be chosen)
@@ -2485,8 +2609,6 @@ void LibraryScreen::State::drawTvRemove(float s, Nav key) {
 		dialogSel = 0;
 	else if (key == Nav::Right)
 		dialogSel = 1;
-	if (key != Nav::None)
-		navShown = true;
 	const bool keyOk = key == Nav::Ok;
 	const float bw = 290 * s, bh = 76 * s, by = p1.y - pad - bh;
 	ImGui::SetCursorScreenPos(ImVec2(p1.x - pad - 2 * bw - 24 * s, by));

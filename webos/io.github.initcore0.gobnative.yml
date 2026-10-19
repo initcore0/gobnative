@@ -1,5 +1,5 @@
 title: gobnative
-iconUri: https://raw.githubusercontent.com/initcore0/gobnative/main/webos/icon130.png
+iconUri: https://raw.githubusercontent.com/initcore0/gobnative/main/webos/gob-icon-130.png
 manifestUrl: https://github.com/initcore0/gobnative/releases/latest/download/io.github.initcore0.gobnative.manifest.json
 category: game
 pool: main
