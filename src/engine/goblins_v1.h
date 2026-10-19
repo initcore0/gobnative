@@ -107,6 +107,21 @@ public:
 	// The current goblin walks to a target or is about to act there.
 	bool goingSomewhere() const { return _pathExistence != 0 || _goesAtTarget != 0 || _readyToAct != 0; }
 
+	// The items on the map, i.e. what a click acts on (section 4 of
+	// docs/goblins-v1.md): every item id in either byte of a cell, with the
+	// cells holding it and the level object it stands for, if any.
+	struct ItemSpot {
+		int16_t id = 0;
+		int object = -1;                         // index in object(), -1: a fixed spot of the room
+		int left = 0, top = 0, right = 0, bottom = 0; // the cells' bounding box, inclusive screen pixels
+		std::array<uint32_t, kMapHeight> rows{}; // bit x of row y: cell (x, y) holds the id
+		bool has(int x, int y) const {
+			return x >= 0 && x < kMapWidth && y >= 0 && y < kMapHeight && (rows[size_t(y)] >> x & 1);
+		}
+	};
+	static constexpr int kCellW = 12, kCellH = 6;
+	std::vector<ItemSpot> itemSpots() const;
+
 private:
 	// --- map (Map + Map_v1)
 	enum Direction : int16_t {

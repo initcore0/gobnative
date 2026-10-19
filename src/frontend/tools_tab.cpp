@@ -662,7 +662,7 @@ private:
 void addToolsTab(Overlay &overlay, OverlayHost &host) {
 	auto tab = std::make_shared<ToolsTab>(overlay, host);
 	overlay.addTab("Tools", [tab] { tab->draw(); });
-	overlay.setGameLayer([tab] { return tab->layerActive(); }, [tab](ImDrawList &dl) { tab->drawLayer(dl); });
+	overlay.addGameLayer([tab] { return tab->layerActive(); }, [tab](ImDrawList &dl) { tab->drawLayer(dl); });
 }
 
 } // namespace gob

@@ -111,7 +111,15 @@ void Overlay::drawToasts() {
 }
 
 void Overlay::render() {
-	const bool layer = _layerActive && _layerActive();
+	std::vector<const Layer *> layers;
+	for (const Layer &l : _layers)
+		if (l.active())
+			layers.push_back(&l);
+	const bool layer = !layers.empty();
+	auto drawLayers = [&] {
+		for (const Layer *l : layers)
+			l->draw(*ImGui::GetBackgroundDrawList());
+	};
 	const bool touchLayer = touchMode && _touchDraw;
 	const bool barLayer = bool(_barDraw);
 	if (!_initialized || (!_open && _toasts.empty() && !layer && !touchLayer && !barLayer))
@@ -127,8 +135,7 @@ void Overlay::render() {
 	ImGui_ImplSDL2_NewFrame();
 	ImGui::NewFrame();
 	if (!_open) {
-		if (layer)
-			_layerDraw(*ImGui::GetBackgroundDrawList());
+		drawLayers();
 		if (touchLayer)
 			_touchDraw(*ImGui::GetForegroundDrawList());
 		if (barLayer)
@@ -143,8 +150,7 @@ void Overlay::render() {
 	const ImVec2 display = ImGui::GetIO().DisplaySize;
 	if (dimGame)
 		ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0, 0), display, IM_COL32(0, 0, 0, 110));
-	if (layer)
-		_layerDraw(*ImGui::GetBackgroundDrawList());
+	drawLayers();
 
 	if (_dialog) {
 		if (!_dialog(display.y / 1080.0f)) {
