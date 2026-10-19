@@ -10,6 +10,13 @@
 #include <cstddef>
 #include <cstdint>
 
+// OpenGL ES 3.0 instead of 3.2 core: WebGL 2 in a browser, the GPU of an
+// LG webOS TV. The shaders are the same (GLSL ES 3.00 with another first
+// line, presenter.cpp).
+#if defined(__EMSCRIPTEN__) || defined(GOB_WEBOS)
+#define GOB_GLES 1
+#endif
+
 #if defined(_WIN32)
 #define GOB_GLAPI __stdcall
 #else

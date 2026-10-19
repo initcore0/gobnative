@@ -34,6 +34,12 @@ if(EMSCRIPTEN)
 	                      INTERFACE_LINK_OPTIONS "-sUSE_SDL=2")
 endif()
 
+if(WEBOS)
+	# The LG webOS TV build (cmake/webos.cmake, scripts/build-webos.sh):
+	# __WEBOS__ turns on SDL-webOS's own API in its headers.
+	add_compile_definitions(GOB_WEBOS __WEBOS__)
+endif()
+
 if(WIN32)
 	enable_language(RC)
 	# The C++ runtime linked in statically (MinGW's and MSVC's): the
@@ -207,8 +213,11 @@ add_library(imgui STATIC
 target_include_directories(imgui SYSTEM PUBLIC third_party/imgui third_party/imgui/backends)
 target_link_libraries(imgui PUBLIC SDL2::SDL2 ${CMAKE_DL_LIBS}) # its GL loader dlopens on Linux
 target_compile_options(imgui PRIVATE ${GOB_NO_WARNINGS})
-if(EMSCRIPTEN)
-	target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_ES3) # WebGL 2
+if(EMSCRIPTEN OR WEBOS)
+	target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_ES3) # WebGL 2, the TV's GPU
+endif()
+if(WEBOS)
+	target_link_libraries(imgui PUBLIC GLESv2)
 endif()
 if(APPLE)
 	target_link_libraries(imgui PUBLIC "-framework OpenGL")
@@ -271,6 +280,29 @@ if(EMSCRIPTEN)
 		-sFORCE_FILESYSTEM=1 -lidbfs.js -sENVIRONMENT=web
 		--js-library ${CMAKE_SOURCE_DIR}/web/library_gobnative.js)
 	set_property(TARGET gobnative APPEND PROPERTY LINK_DEPENDS ${CMAKE_SOURCE_DIR}/web/library_gobnative.js)
+endif()
+if(WEBOS)
+	# The package (cmake --install build-webos --prefix <folder>, then
+	# ares-package; scripts/build-webos.sh): gobnative with SDL-webOS's
+	# libSDL2 in lib/ (the TVs' own SDL2 is too old), appinfo.json, icons
+	# and the licences.
+	target_sources(gobnative PRIVATE src/frontend/webos.cpp)
+	set_target_properties(gobnative PROPERTIES BUILD_RPATH "$ORIGIN/lib" INSTALL_RPATH "$ORIGIN/lib")
+	install(TARGETS gobnative RUNTIME DESTINATION .)
+	get_target_property(_sdl2_lib SDL2::SDL2 IMPORTED_LOCATION_RELEASE)
+	if(NOT _sdl2_lib)
+		get_target_property(_sdl2_lib SDL2::SDL2 IMPORTED_LOCATION)
+	endif()
+	install(FILES ${_sdl2_lib} DESTINATION lib RENAME libSDL2-2.0.so.0)
+	install(FILES webos/appinfo.json webos/icon80.png webos/icon130.png DESTINATION .)
+	install(FILES LICENSE DESTINATION .)
+	install(FILES third_party/imgui/LICENSE.txt DESTINATION licences RENAME imgui.txt)
+	install(FILES third_party/fonts/nunito/OFL.txt DESTINATION licences RENAME Nunito-OFL.txt)
+	find_file(GOB_SDL2_LICENSE LICENSE.txt PATHS ${SDL2_DIR}/../../../share/licenses/SDL2 NO_DEFAULT_PATH
+	          NO_CMAKE_FIND_ROOT_PATH)
+	if(GOB_SDL2_LICENSE)
+		install(FILES ${GOB_SDL2_LICENSE} DESTINATION licences RENAME SDL2.txt)
+	endif()
 endif()
 if(WIN32)
 	# A GUI program (no console window); the file dialogs need COM.

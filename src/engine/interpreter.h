@@ -157,6 +157,9 @@ public:
 	bool skipping() const { return _ffSkip || _skipCutscene; }
 	// Skips whatever canSkip() reports; a no-op otherwise.
 	void skipCutscene();
+	// The game is in a text field (Gobliins 2's save name) and takes typed
+	// text: a TV shows its on-screen keyboard meanwhile.
+	bool editingText() const { return _editingText; }
 	// Wall-clock time runFrame() may spend per host frame while
 	// fast-forwarding (0: no limit, only a frame count; deterministic, for
 	// headless runs).
@@ -879,6 +882,7 @@ private:
 	bool _jumpWithoutStateV3 = false; // the jump's room starts from the first room's variables
 	std::string _jumpStateRoomV3; // the jump's room, its recorded state applied again when MENU starts it
 	Random _random;
+	bool _editingText = false; // in handleInputs()
 	std::optional<SnapshotV1> _pendingSnapshot; // Gobliiins: a quick load waiting for its level to be idle
 	bool _skipAllMults = false; // a skip ends every animation of the cutscene, not just the current one
 	std::array<int16_t, 40> _cursorResources = filled<40>(-1); // resource loaded into each cursor slot

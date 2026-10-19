@@ -1971,9 +1971,9 @@ file, an `appinfo.json`, a build script and `#if` branches in
 **Decisions (T0):** libstdc++ and libgcc are linked statically (one
 binary, as the MinGW build); the programs need only glibc (2.12 symbols
 or older, `GLIBC_2.6` at most) and, for `gobnative`, `libSDL2-2.0.so.0`.
-SDL2: the SDK's sysroot has 2.24 (webOS build), the TV 2.0.10; T1 bundles
-the SDK's `libSDL2` in the package's `lib/` as RetroArch does, or guards
-what 2.0.10 lacks, whichever runs on the TV.
+SDL2 (T1): the package bundles webosbrew's SDL-webOS 2.30.12 in its
+`lib/`, as RetroArch does. The SDK's sysroot SDL2 (2.24) is only for
+linking (no Wayland driver) and the TV's own (2.0.10) is too old.
 
 Milestones (each fits one session; T1 needs the TV, the rest are tested
 on it; nothing on the TV is changed outside the app's own folder):
@@ -2006,14 +2006,65 @@ on it; nothing on the TV is changed outside the app's own folder):
     libc's there, so click-script runs aren't comparable across
     platforms (Windows neither) unless the engine gets its own random
     generator. The scratch folder was removed afterwards.
-- [ ] **T1. First pixels.** `gobnative` for webOS: a fullscreen window
-  sized from the panel (check what SDL reports: 1920x1080 UI plane or
-  4K), the ES 3.0 context and `IMGUI_IMPL_OPENGL_ES3` shared with the web
-  build (a `GOB_GLES` switch instead of `__EMSCRIPTEN__` for the GL
-  bits); the pref root in the app's writable folder; audio through SDL.
-  `webos/appinfo.json` and icons, an `.ipk` made with `ares-package`,
-  installed with `ares-install`. Done when: the library shows on the TV
-  and the Magic Remote moves and clicks in it.
+- [x] **T1. First pixels.** Done. Results:
+  - **SDL2:** webosbrew's SDL-webOS, release `2.30.12-webos.5` (the
+    plain `SDL2-2.30.12-webos.tar.gz`; the `-abi` one is for apps built
+    against LG's own headers), unpacked in
+    `../tools/sdl2-webos/SDL2-2.30.12-webos.5` (`SDL2_WEBOS`). It loads
+    Wayland, EGL, PulseAudio at run time (needs only glibc), has the
+    webOS hints and scancodes; `__WEBOS__` is defined so its headers
+    show them. `gobnative` finds it through `RPATH $ORIGIN/lib`.
+  - **GL:** `GOB_GLES` (`frontend/gl.h`; Emscripten or `GOB_WEBOS`)
+    replaces `__EMSCRIPTEN__` for the ES 3.0 context, the GLSL ES
+    shaders, ImGui's `#version 300 es` and `IMGUI_IMPL_OPENGL_ES3`
+    (linked to the TV's `libGLESv2`), RGBA reads and the RGB8 title
+    textures. The presenter's shaders compile and run on the Mali-G51.
+  - **Window:** `frontend/webos.cpp`: SDL reports 1920x1080 (the UI
+    plane; the panel is 3840x2160, `SDL_webOSGetPanelResolution`); the
+    library's and the game's windows are created fullscreen at that size;
+    `applyVideo` does nothing and the Fullscreen and Window scale options
+    are hidden on webOS.
+  - **The jail:** the launcher starts native apps through `jailer`
+    (`/etc/jail_native_devmode.conf`) as user `prisoner`, with HOME =
+    the app's folder and the launch parameters as JSON in `argv[1]`
+    (`{"@system_native_app":true,...}`; skipped, it was read as the game
+    folder). Writable: the app's folder and `/tmp`; `/media/internal` is
+    read-only. Inside the jail `/proc/self/exe` names the folder as seen
+    from outside (`/var/palm/jail/<id>/...`), so `SDL_GetBasePath` is no
+    use; SDL-webOS's `SDL_GetPrefPath` is the app's folder itself. The
+    pref root is `data/` next to the program (`webos::dataFolder(argv0)`).
+    Installing an update replaces the package's files and keeps others,
+    so `data/` stays (checked: games, settings.ini and a game's settings
+    folder kept across reinstalls).
+    The launcher keeps no output: stderr goes to `data/gobnative.log`
+    when it isn't a terminal.
+  - **Package:** `webos/appinfo.json` (id `io.github.initcore0.gobnative`,
+    version 0.1.0, `useAllMouseButtons`/`useAllKeyboardKeys`), icons
+    80/130 from `assets/icon/icon-512.png`; `cmake --install` lays out
+    `dist/webos/` (gobnative stripped, `lib/libSDL2-2.0.so.0`, licences);
+    `ares-package` from `@webos-tools/cli` 3.2.6 (in
+    `../tools/webos-cli`) makes `dist/io.github.initcore0.gobnative_0.1.0_arm.ipk`
+    (2.2 MB). `scripts/build-webos.sh --install root@TV` copies it to
+    `/tmp` and calls `com.webos.appInstallService/dev/install` (as the
+    Homebrew Channel does), then launches it. `luna-send` answers only
+    on a terminal, hence `ssh -tt`. `--test root@TV` (was `--tv`) runs
+    the unit tests.
+  - **On the C1:** installed; launched from the launcher the library
+    shows (screen captured with `com.webos.service.capture/executeOneShot`,
+    which leaves out the pointer's plane). Gobliins 2 (its folder
+    copied into `data/Games/Gobliins2`, started through `jailer` from
+    SSH) plays its intro with the default filter; PulseAudio has a
+    `gobnative` stream (s16le, 2 ch, 44.1 kHz, playing); ~21% CPU and
+    85 MB resident during the intro.
+  - **User test (Magic Remote):** the pointer and clicks work in the
+    library and in the game; Play starts Gobliins 2, which plays "pretty
+    well". Missing: Escape (the intro can't be skipped) and typing (the
+    save name field showed no on-screen keyboard); both in T3.
+  - **Still open:** small text from a sofa (the library and overlay are
+    laid out for a desktop window).
+  - **Build note:** the macOS-hosted GCC 12 crashed once (internal
+    compiler error, segfault, in `overlay_tabs.cpp`) in a parallel build
+    and built it on a rerun.
 - [ ] **T2. Games onto the TV.** The library lists GOG installers and
   game folders found on USB storage (`/tmp/usb/*/*`), instead of the
   file dialog or drag-and-drop, and imports them as on desktop;
@@ -2030,6 +2081,48 @@ on it; nothing on the TV is changed outside the app's own folder):
   The app going to the background (Home, another input) writes a quick
   save and pauses audio. Done when: each game is played through its
   first room with the remote only.
+  - **Colour keys (after T1's user test; user-tested):** the colour keys
+    stand in for the keyboard. `remapRemoteKey` in `tools/gobnative.cpp`
+    rewrites the event before anything reads it:
+    - red = Escape (skips the intro and cutscenes, leaves the game's
+      menus; held 1 s leaves the game, as on desktop);
+    - green = the overlay key.
+
+    The overlay names them ("Press the green or red key").
+  - **On-screen keyboard (user-tested):** `Interpreter::editingText()`
+    is true while `handleInputs()` runs (the save name). On webOS the
+    front end then calls `SDL_StartTextInput()`, and SDL-webOS shows the
+    TV's keyboard; otherwise `SDL_StopTextInput()` (also at start: SDL
+    starts with text input on). The keyboard's text (`SDL_TEXTINPUT`)
+    goes to the game as keys; printable key presses are dropped
+    meanwhile so a letter isn't typed twice.
+  - **Second round (user):** there aren't enough buttons for Escape,
+    turbo, overlay, quick save and quick load.
+    - Blue now switches fast on and off (`App::fastOn`, the overlay's
+      turbo speed), a toggle because holding a remote button is
+      awkward; a toast says "Fast on/off".
+    - Quick load is only in the overlay (Levels tab), where a stray
+      press can't lose progress.
+    - Yellow was quick save for a round. Third round (user): quick save
+      moved to the overlay too (Levels tab, next to quick load), and
+      yellow shows and hides the tips bar. That's `Settings::keyTips`,
+      `key_tips` in settings.ini (written on webOS only), also a Video
+      tab checkbox; a toast says how to bring the tips back.
+  - **Key tips bar:** under the picture
+    (`[red] Skip  [green] Menu  [yellow] Hide tips  [blue] Fast`).
+    `App::viewport` lays the picture out above a strip 7% of the screen
+    high (`tvBarHeight`), so pointer coordinates follow; with the tips
+    hidden the picture takes the whole height.
+    `GameRun::drawTvBar` draws on a new overlay layer (`setBarLayer`,
+    drawn while the overlay is closed): rounded keys in the remote's
+    colours and bold labels. Skip is dimmed when there's nothing to
+    skip; Fast reads "Fast: on" and is outlined while on. Checked by TV
+    screen captures during Gobliins 2's intro, with `key_tips` on and
+    off.
+  - **Still to do in T3:** Back (still the TV's: it opens the launcher
+    strip), arrows/OK for the library and overlay without the pointer,
+    larger text from a sofa, gamepad, pausing when sent to the
+    background.
 - [ ] **T4. Speed and memory on the TV.** Frame time of every display
   filter at the TV's output size; HD packs (decode time, memory against
   the ~660 MB); prefetch threads; a default video setting that holds 60

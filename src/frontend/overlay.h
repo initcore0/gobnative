@@ -144,6 +144,9 @@ public:
 	// over everything.
 	bool touchMode = false;
 	void setTouchLayer(std::function<void(ImDrawList &)> draw) { _touchDraw = std::move(draw); }
+	// Drawn over the game while the overlay is closed, always (a TV's key
+	// tips under the picture).
+	void setBarLayer(std::function<void(ImDrawList &)> draw) { _barDraw = std::move(draw); }
 
 	// True while a popup is open, which should get Escape instead of the
 	// overlay closing.
@@ -180,7 +183,7 @@ private:
 	std::vector<Toast> _toasts;
 	std::string _selectTab, _selectSub;
 	std::function<bool()> _layerActive;
-	std::function<void(ImDrawList &)> _layerDraw, _touchDraw;
+	std::function<void(ImDrawList &)> _layerDraw, _touchDraw, _barDraw;
 	bool _open = false, _initialized = false;
 	bool _tapBeside = false; // touchMode: the finger down went down beside the window
 	UiFonts _fonts;

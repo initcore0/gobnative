@@ -22,6 +22,7 @@ struct Settings {
 	int windowScale = 3;        // 2..6, window size in multiples of the (aspect-corrected) image
 	bool integerScaling = true; // only whole multiples of the image size
 	bool aspectCorrection = true; // show 320x200 as 4:3 (pixels 6:5 tall)
+	bool keyTips = true;          // a TV's colour key tips under the picture (key_tips; webOS only)
 	FilterSettings filters;       // post-processing filter and its parameters
 	bool sharpText = true;        // the game's text drawn at window resolution (sharp_text)
 	std::string hdPack;           // HD pack folder name in HDPacks/, empty = none (hd_pack)

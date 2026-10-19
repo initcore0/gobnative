@@ -15,6 +15,9 @@
 #ifdef _WIN32
 #include "frontend/win32.h"
 #endif
+#ifdef GOB_WEBOS
+#include "frontend/webos.h"
+#endif
 #include "gfx/image.h"
 #include "gfx/png.h"
 #include "install/gameinstall.h"
@@ -285,7 +288,15 @@ void writeScreenshot(SDL_Window *window, const std::string &file) {
 	std::vector<uint8_t> rgb(size_t(dw) * size_t(dh) * 3);
 	gl::ReadBuffer(gl::BACK);
 	gl::PixelStorei(gl::PACK_ALIGNMENT, 1);
+#ifdef GOB_GLES
+	// OpenGL ES only promises RGBA reads.
+	std::vector<uint8_t> rgba(size_t(dw) * size_t(dh) * 4);
+	gl::ReadPixels(0, 0, dw, dh, gl::RGBA, gl::UNSIGNED_BYTE, rgba.data());
+	for (size_t i = 0; i < size_t(dw) * size_t(dh); i++)
+		std::copy_n(&rgba[i * 4], 3, &rgb[i * 3]);
+#else
 	gl::ReadPixels(0, 0, dw, dh, gl::RGB, gl::UNSIGNED_BYTE, rgb.data());
+#endif
 	std::vector<uint8_t> flipped(rgb.size());
 	for (int y = 0; y < dh; y++)
 		std::memcpy(&flipped[size_t(y) * dw * 3], &rgb[size_t(dh - 1 - y) * dw * 3], size_t(dw) * 3);
@@ -541,8 +552,8 @@ struct LibraryScreen::State {
 						gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE);
 						gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE);
 						gl::PixelStorei(gl::UNPACK_ALIGNMENT, 1);
-#ifdef __EMSCRIPTEN__
-						// WebGL 2 wants the sized format that matches RGB data.
+#ifdef GOB_GLES
+						// OpenGL ES 3 wants the sized format that matches RGB data.
 						gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB8, w, h, 0, gl::RGB, gl::UNSIGNED_BYTE, rgb->data());
 #else
 						gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA8, w, h, 0, gl::RGB, gl::UNSIGNED_BYTE, rgb->data());
@@ -928,7 +939,7 @@ struct LibraryScreen::State {
 };
 
 bool LibraryScreen::State::openWindow() {
-#ifdef __EMSCRIPTEN__
+#ifdef GOB_GLES
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
@@ -941,8 +952,14 @@ bool LibraryScreen::State::openWindow() {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 #endif
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+#ifdef GOB_WEBOS
+	int w, h;
+	webos::screenSize(w, h);
+	window = SDL_CreateWindow("gobnative", 0, 0, w, h, SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN);
+#else
 	window = SDL_CreateWindow("gobnative", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 940, 680,
 	                          SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
+#endif
 	setWindowIcon(window);
 	context = window ? SDL_GL_CreateContext(window) : nullptr;
 	if (!context || gl::load(SDL_GL_GetProcAddress)) {
@@ -966,7 +983,7 @@ bool LibraryScreen::State::openWindow() {
 	fonts = addUiFonts(*io.Fonts);
 	applyStyle(ImGui::GetStyle());
 	ImGui_ImplSDL2_InitForOpenGL(window, context);
-#ifdef __EMSCRIPTEN__
+#ifdef GOB_GLES
 	ImGui_ImplOpenGL3_Init("#version 300 es");
 #else
 	ImGui_ImplOpenGL3_Init("#version 150");

@@ -340,8 +340,8 @@ void main() {
 }
 )";
 
-#ifdef __EMSCRIPTEN__
-// WebGL 2 takes the same shaders as GLSL ES 3.00: another first line, and
+#ifdef GOB_GLES
+// OpenGL ES 3.0 (WebGL 2, webOS) takes the same shaders as GLSL ES 3.00: another first line, and
 // high precision (fragment shaders default to medium floats and ints).
 constexpr const char kDesktopVersion[] = "#version 150\n";
 constexpr const char kEsHeader[] = "#version 300 es\nprecision highp float;\nprecision highp int;\n";
@@ -349,7 +349,7 @@ constexpr const char kEsHeader[] = "#version 300 es\nprecision highp float;\npre
 
 unsigned compile(gl::GLenum type, const char *const *srcs, int count, std::string &error) {
 	gl::GLuint s = gl::CreateShader(type);
-#ifdef __EMSCRIPTEN__
+#ifdef GOB_GLES
 	std::vector<std::string> es(srcs, srcs + count);
 	std::vector<const char *> esSrcs;
 	for (std::string &src : es) {
@@ -751,8 +751,8 @@ std::vector<uint8_t> GlPresenter::readPixels(const Rect &r, int dh) {
 		return rgb;
 	gl::ReadBuffer(gl::BACK);
 	gl::PixelStorei(gl::PACK_ALIGNMENT, 1);
-#ifdef __EMSCRIPTEN__
-	// WebGL only promises RGBA reads.
+#ifdef GOB_GLES
+	// OpenGL ES only promises RGBA reads.
 	std::vector<uint8_t> rgba(size_t(r.w) * size_t(r.h) * 4);
 	gl::ReadPixels(r.x, dh - r.y - r.h, r.w, r.h, gl::RGBA, gl::UNSIGNED_BYTE, rgba.data());
 	for (size_t i = 0; i < size_t(r.w) * size_t(r.h); i++)
