@@ -2068,3 +2068,25 @@ on it; nothing on the TV is changed outside the app's own folder):
 - **Gob1 save snapshots:** resolved in G1.7 (`docs/levels.md` 9: what is
   serialized, versions, refusal of other files).
 - **Floppy versions** (FDD folders) are not targeted. Detection says so.
+- **Random numbers across platforms:** resolved. `std::rand()` differs
+  between libcs (glibc on Linux/webOS, macOS libc, MSVC), so headless
+  traces and click-script runs drifted apart across platforms (seen on
+  the webOS TV: Gob2's trace matched the Mac's until GOB01's random
+  ambient sounds). `script/random.h` (`gob::Random`) is the Park-Miller
+  "minimal standard" generator (`x = 16807 * x mod 2^31-1`), which is
+  exactly macOS libc's `rand()` (checked over 10^6 draws); it starts at
+  seed 1 as an unseeded `rand()` does, so the Mac traces and every click
+  script recorded with them are unchanged. The Interpreter owns one
+  (`Interpreter::random(n)`): script `rand()`, Gob2/Gob3 goblin boredom
+  (`handleGoblins`) and Gobliiins' boredom, relax timers and speaker
+  pitches (`GoblinsV1`) all draw from it; `std::rand()` is gone from the
+  engine. `gobrun --seed N` picks another sequence (default 1); the GUI
+  uses seed 1 too. Saves and Gobliiins' quick save snapshot don't carry
+  its state: the original's saves didn't, the games don't depend on it,
+  and a loaded game simply continues the session's sequence. Checked:
+  all `test_*` (`test_expression` checks the first values), Gob2
+  `check_quicksave.sh`, `gobdis --all` 0 errors for all three games, the
+  9000-frame run reaches GOB01 with `--seed 1` equal to the default
+  (`--seed 2` differs first at GOB01's ambient sounds), and every
+  Gobliiins and Goblins 3 check passes unchanged, both walkthroughs
+  included; no click script needed changes.

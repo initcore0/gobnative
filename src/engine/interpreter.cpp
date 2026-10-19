@@ -75,7 +75,7 @@ Interpreter::Interpreter(DataFiles &files, Host &host, const GameInfo &game)
 	: _files(files), _host(host), _game(game), _rules(gameRules(game.id)), _ver(game.engineVersion),
 	  _expr(_nullScript, _nullVars) {
 	_envs.push_back(std::make_unique<Env>());
-	_expr.setRandom([](int32_t n) { return n > 0 ? int32_t(std::rand() % n) : 0; });
+	_expr.setRandom([this](int32_t n) { return random(n); });
 	_hostLast = _host.ticks();
 	_draw.scriptName = [this] { return currentTot(); };
 	if (_ver == 1) {

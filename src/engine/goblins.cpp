@@ -772,7 +772,7 @@ void Interpreter::handleGoblins(int noTurn1, int noTurn2, int relax1, int relax2
 			if (!gobBusy[g] && animField(g, kIsStatic) == 0) {
 				uint32_t relax = _vars->slot(uint32_t(relaxVar[g]));
 				if (relax == 0 && animField(g, kState) == 28) {
-					goblinSetState(g, 24 + std::rand() % 3);
+					goblinSetState(g, 24 + random(3));
 					writeVar(uint32_t(relaxVar[g]), 100);
 				} else {
 					writeVar(uint32_t(relaxVar[g]), relax - 1);

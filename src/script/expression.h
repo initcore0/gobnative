@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "script/random.h"
 #include "script/script.h"
 #include "script/variables.h"
 
@@ -111,6 +112,7 @@ private:
 	Variables *_vars;
 	uint16_t _animDataSize = 0;
 	std::function<int32_t(int32_t)> _random;
+	Random _ownRandom; // rand() when no generator is set (tools, tests)
 
 	int32_t _resultInt = 0;
 	std::string _resultStr;

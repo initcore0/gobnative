@@ -19,7 +19,8 @@
 // space at the end of the run. --language NAME (french, german, british,
 // spanish, italian, american) selects the game language. --speed X runs
 // the game clock X times as fast (cutscenes stay at 1x unless
-// --fast-cutscenes is given). --key T CODE presses the key with the
+// --fast-cutscenes is given). --seed N seeds the engine's random numbers
+// (default 1; the same sequence on every platform). --key T CODE presses the key with the
 // BIOS-style CODE (e.g. 0x011B Escape) at time T; --skip-at T requests a
 // cutscene skip at time T. --watch OFFSET (repeatable) traces every change
 // of the variable byte at OFFSET. --level-at T ROOM jumps to room ROOM
@@ -1196,6 +1197,8 @@ int main(int argc, char **argv) {
 			interp.speed = std::atof(argv[++i]);
 		else if (!std::strcmp(argv[i], "--fast-cutscenes"))
 			interp.cutscenesAtNormalSpeed = false;
+		else if (!std::strcmp(argv[i], "--seed") && i + 1 < argc)
+			interp.setRandomSeed(uint32_t(std::strtoul(argv[++i], nullptr, 0)));
 		else if (!std::strcmp(argv[i], "--key") && i + 2 < argc) {
 			host.keys.push_back({uint32_t(std::atof(argv[i + 1]) * 1000), int(std::strtol(argv[i + 2], nullptr, 0))});
 			i += 2;
