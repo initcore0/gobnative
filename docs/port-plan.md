@@ -2346,10 +2346,22 @@ on it; nothing on the TV is changed outside the app's own folder):
     network; it was found, installed in 5.9 s and removed. A 52 MB game
     folder was found ("Copied to this TV · 52 MB").
   - **Not checked:** the folder's Install (needs the remote).
-- **webOS: the icon.** The TV draws its own tile shape around app icons,
-  so the package's icons fill their square (`scripts/make-icon.py
-  --webos`). They used to have the Mac icon's margin and rounded corners,
-  which showed a frame on the home screen (user's photo).
+- **webOS: the icon (user's photos of the home screen).** webOS draws an
+  app's icon inset on a tile of `iconColor`. The store's apps fill their
+  tiles because the icon's edge is one colour equal to `iconColor` (IPTV
+  max: #131b2e on both; Netflix: white). The package's icons are now white
+  "GOB" (with its shadow) on flat #EC8030, `iconColor` the same, in 80,
+  115, 130 and 192 px (`icon`, `mediumLargeIcon`, `largeIcon`,
+  `extraLargeIcon`), made by `scripts/make-icon.py --webos`.
+  - Steps that didn't help: dropping the Mac icon's margin and rounded
+    corners; adding the large sizes; a version bump. The TV caches icons
+    by file name, so each change got new names (now `gob-icon-*.png`).
+- **webOS: OK in the dialogs.** The Magic Remote's OK sends Enter with its
+  click, and the C1 sends no pointer-hidden event (seen in a key log).
+  - Enter is OK only in arrow mode: after an arrow key, until the pointer
+    moves or clicks.
+  - A dialog takes keys only once open: the OK that pressed Remove or
+    Browse also pressed the dialog's focused button, so it closed at once.
 - **webOS: the overlay without the pointer.** The library and the TV
   dialogs move a focus ring with the arrow keys, but the in-game overlay
   (ImGui) has no visible focus on a TV yet: it needs the pointer.
