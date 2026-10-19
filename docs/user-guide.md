@@ -132,7 +132,8 @@ Quest 3's wide rooms; taps there never click. After the first touch a bar
 of buttons shows beside the picture (under it when the screen is
 upright): **Menu** opens the overlay (tap beside it to close it; drag to
 scroll it), **Skip** skips a scene (dimmed when there is none), **Right**
-makes the next tap a right click, **Save** and **Load** quick save and
+makes the next tap a right click, **Hint** (with hints on, in a level)
+shows a hint, **Save** and **Load** quick save and
 quick load (Load asks for a second tap), and **Keys** shows the phone's
 keyboard for typing to the game (Gobliiins' level passwords; tap it
 again to hide it). A mouse click hides the bar again. On a phone the
@@ -281,7 +282,7 @@ tile says "Copied to this TV" and **Install** installs it.
 | Hold Back | asks "Quit gobnative?" | asks "Leave the game?" (keep playing, back to library, quit) |
 | Red | Gobliiins: Play or Install from USB | Escape: skip a cutscene, leave a game menu (held: leave the game) |
 | Green | Gobliins 2: Play or Install | the menu (overlay) |
-| Yellow | Goblins Quest 3: Play or Install | show or hide the key tips under the picture |
+| Yellow | Goblins Quest 3: Play or Install | with hints on, in a Gobliiins level: a hint; else show or hide the key tips under the picture |
 | Blue | browse the USB stick | fast forward on and off |
 | Arrows and OK | move a white ring over the buttons, and press | the game's arrow keys and Enter |
 
@@ -467,10 +468,8 @@ pauses while it is open, and `` ` `` or Escape resumes it. Tabs:
   Goblins Quest 3 the speech volume and "Speech on"); sound effects quality
   (enhanced or original); replacement music (see below).
 - **Gameplay**: game language (English US/UK, French, German, Spanish,
-  Italian; applied by restarting from the intro); "Show clickable spots"
-  (off by default), a soft pulsing glow over everything in the room the
-  goblins can act on (in Gobliiins the items on the level's map, in the
-  other games the room's hotspots); restart, back to the game library, quit.
+  Italian; applied by restarting from the intro), restart, back to the
+  game library, quit.
 - **Speed**: game speed 1x, 1.2x, 1.5x or 2x; turbo speed (2x-8x, default
   4x) used while Tab is held; "Cutscenes at normal speed" (on by default);
   "Skip cutscene" (enabled while there is something to skip).
@@ -479,7 +478,33 @@ pauses while it is open, and `` ` `` or Escape resumes it. Tabs:
   if you had just arrived there (see below). Also quick save / quick load
   buttons. For Gobliiins: its 22 levels in play order with their access
   codes.
+- **Hints**: "Hints when I ask" and "Show clickable spots" (both off by
+  default; see "Hints" below), and how far the level being played has got.
 - **Tools**: the hotspot highlighter's options and a debug panel (see below).
+
+### Hints
+
+gobnative can help with Gobliiins (hints for the other games are still to
+be written). It never does unless you ask: the first time a level is
+played it asks once whether you'd like hints (No thanks, Hints when I ask,
+Hints and clickable spots), and the Hints tab changes the answer later
+(`[hints] on`, `spots` and `asked` in settings.ini).
+
+With hints on, the hint key shows a card in a corner of the picture: first
+a nudge, then (press again) which goblin does what, with the place to click
+glowing green and an arrow over the goblin, then the solution. A fourth
+press hides the card; it also goes away by itself after a while, and when
+the step is done (the next press starts the next step's nudge). The hint
+key is **H** on a keyboard, the **yellow** key on a TV remote (which then
+no longer hides the key tips; the Video tab still does), and the **Hint**
+button of the touch bar. Hints follow the state of the level, so they
+keep up with quick loads, level jumps and steps solved in another order.
+
+"Show clickable spots" makes everything in the room the goblins can act on
+glow softly (in Gobliiins the items on the level's map, in the other games
+the room's hotspots); it works in all three games. The hints are in
+`assets/hints/gob1.txt`; the walkthrough check (`tests/check_gob1_walkthrough.sh`)
+plays the game and checks the hint before every step.
 
 ### Filters
 

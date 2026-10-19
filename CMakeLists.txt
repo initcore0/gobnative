@@ -241,6 +241,14 @@ foreach(pair IN ITEMS "nunitoRegular:Nunito-Regular.ttf" "nunitoBold:Nunito-Bold
 		COMMENT "Embedding ${file}" VERBATIM)
 	list(APPEND GOB_EMBEDDED ${out})
 endforeach()
+# ... the hints (assets/hints, engine/hints.h) ...
+set(out ${CMAKE_BINARY_DIR}/embedded/hintsGob1.cpp)
+add_custom_command(OUTPUT ${out}
+	COMMAND ${CMAKE_COMMAND} -DINPUT=${CMAKE_SOURCE_DIR}/assets/hints/gob1.txt -DOUTPUT=${out}
+	        -DNAME=hintsGob1 -P ${CMAKE_SOURCE_DIR}/cmake/embed.cmake
+	DEPENDS ${CMAKE_SOURCE_DIR}/assets/hints/gob1.txt ${CMAKE_SOURCE_DIR}/cmake/embed.cmake
+	COMMENT "Embedding hints/gob1.txt" VERBATIM)
+list(APPEND GOB_EMBEDDED ${out})
 # ... and the window icon (assets/icon, drawn by scripts/make-icon.py).
 set(out ${CMAKE_BINARY_DIR}/embedded/windowIcon.cpp)
 add_custom_command(OUTPUT ${out}

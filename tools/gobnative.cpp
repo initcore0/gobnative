@@ -47,7 +47,8 @@
 //                               FILE ends in .bmp
 //   --screenshot-dir DIR        save F12 screenshots in DIR instead
 //   --key-at T KEY              press and release KEY (an SDL key name such as
-//                               F12 or Space) at time T, as if typed
+//                               F12 or Space) at time T, as if typed (may be
+//                               given several times)
 //   --filter NAME               use filter NAME (nearest, smooth, sharp,
 //                               scale2x, scale3x, xbr, crt) for this run
 //   --bench-at T N              at time T, time N redraws of the frame with
@@ -260,6 +261,16 @@ void remapRemoteKey(SDL_Keysym &k) {
 
 // The tips bar's height under the picture, in drawable pixels.
 int tvBarHeight(int dh) { return dh * 7 / 100; }
+#endif
+
+// The hint key while hints are on and a level with hints is played
+// (frontend/hints.cpp): H, which Gobliiins' levels never read (their keys
+// are the F-keys, Enter and Escape; access codes are typed between levels);
+// on a TV remote the yellow key (GameRun::handleEvents).
+#ifdef GOB_WEBOS
+const char *const kHintKeyName = "the yellow key";
+#else
+const char *const kHintKeyName = "H";
 #endif
 
 // Held to outline the hotspots. Option/Alt alone never meant anything to the
@@ -1050,7 +1061,8 @@ struct GameRun {
 	double askLeaveAt = -1; // (webOS)
 	double overlayAt = -1, restartAt = -1, libraryAt = -1, screenshotAt = -1, levelAt = -1, quickSaveAt = -1,
 	       quickLoadAt = -1;
-	double keyAt = -1, benchAt = -1;
+	double benchAt = -1;
+	std::vector<std::pair<double, std::string>> keysAt; // --key-at
 	int benchFrames = 0;
 	struct MouseMove { double at; int x, y; bool click; };
 	std::vector<MouseMove> mouseMoves;
@@ -1058,7 +1070,7 @@ struct GameRun {
 	std::vector<HdDump> hdDumps, hdSwitches; // a switch's prefix is the pack name
 	struct HdOption { double at; std::string key, value; };
 	std::vector<HdOption> hdOptions;
-	std::string overlayTab, screenshotFile, levelRoom, keyName;
+	std::string overlayTab, screenshotFile, levelRoom;
 
 	std::vector<uint8_t> rgba = std::vector<uint8_t>(size_t(W) * H * 4);
 	uint32_t startTicks = 0;
@@ -1071,6 +1083,7 @@ struct GameRun {
 	// the buttons once a frame) and when Load was tapped once.
 	TouchMouse touch;
 	std::vector<TouchBarButton> touchBar;
+	std::shared_ptr<HintsControl> hints; // the hint key's (frontend/hints.cpp)
 	SDL_FingerID barFinger = 0;
 	bool barFingerDown = false;
 	int touchRelease = 0;
@@ -1084,8 +1097,6 @@ struct GameRun {
 	// Long Back (the TV's Exit key, claimed in main()) asks whether to keep
 	// playing, go back to the library or quit; the arrow keys choose, OK
 	// answers, Back or red cancels.
-	int leaveChoice = 0; // 0 keep playing, 1 back to library, 2 quit
-	bool leaveOk = false;
 	void askLeave();
 #endif
 	uint32_t loadArmedAt = 0;
@@ -1205,6 +1216,24 @@ void GameRun::handleEvents() {
 	SDL_Event ev;
 	while (SDL_PollEvent(&ev)) {
 		const bool open = app.overlay.isOpen();
+		// A dialog (the TV's Leave, the hints' first question): the arrow
+		// keys move between its buttons, OK or Enter presses one, Escape
+		// (red) closes it.
+		if (app.overlay.dialogOpen() && (ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP)) {
+			Overlay &o = app.overlay;
+			if (ev.type == SDL_KEYDOWN)
+				switch (int(ev.key.keysym.scancode)) {
+				case SDL_SCANCODE_LEFT: o.dialogFocus = std::max(0, o.dialogFocus - 1); break;
+				case SDL_SCANCODE_RIGHT: o.dialogFocus = std::min(o.dialogButtons - 1, o.dialogFocus + 1); break;
+				case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER: o.dialogPress = true; break;
+#ifdef GOB_WEBOS
+				case SDL_SCANCODE_WEBOS_RED:
+#endif
+				case SDL_SCANCODE_ESCAPE: o.setOpen(false); break;
+				default: break;
+				}
+			continue;
+		}
 #ifdef GOB_WEBOS
 		// Back (claimed from the TV in main()): closes the overlay, else a
 		// right click where the pointer is (puts the held item away, as the
@@ -1221,17 +1250,6 @@ void GameRun::handleEvents() {
 		if ((ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP) && ev.key.keysym.scancode == SDL_SCANCODE_WEBOS_EXIT) {
 			if (ev.type == SDL_KEYDOWN && !ev.key.repeat && !app.overlay.dialogOpen())
 				askLeave();
-			continue;
-		}
-		if (app.overlay.dialogOpen() && (ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP)) {
-			if (ev.type == SDL_KEYDOWN)
-				switch (int(ev.key.keysym.scancode)) {
-				case SDL_SCANCODE_LEFT: leaveChoice = std::max(0, leaveChoice - 1); break;
-				case SDL_SCANCODE_RIGHT: leaveChoice = std::min(2, leaveChoice + 1); break;
-				case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER: leaveOk = true; break;
-				case SDL_SCANCODE_WEBOS_RED: case SDL_SCANCODE_ESCAPE: app.overlay.setOpen(false); break;
-				default: break;
-				}
 			continue;
 		}
 		// Home, another app or input in front: the game pauses.
@@ -1257,7 +1275,9 @@ void GameRun::handleEvents() {
 			continue; // never reaches the game
 		}
 		if ((ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP) && ev.key.keysym.scancode == SDL_SCANCODE_WEBOS_YELLOW) {
-			if (ev.type == SDL_KEYDOWN && !ev.key.repeat) {
+			if (ev.type == SDL_KEYDOWN && !ev.key.repeat && !open && hints && hints->available()) {
+				hints->request(); // with hints on, yellow is the hint key while a level is played
+			} else if (ev.type == SDL_KEYDOWN && !ev.key.repeat) {
 				app.config.keyTips = !app.config.keyTips;
 				app.settingsChanged(); // kept in settings.ini
 				if (!app.config.keyTips)
@@ -1284,6 +1304,10 @@ void GameRun::handleEvents() {
 					else
 						app.quickLoad();
 				}
+			} else if (!open && ev.key.keysym.sym == SDLK_h && !(ev.key.keysym.mod & (KMOD_CTRL | KMOD_GUI | KMOD_ALT)) &&
+			           hints && hints->available()) { // the hint key; never reaches the game
+				if (!ev.key.repeat)
+					hints->request();
 			} else if (isOverlayKey(ev.key.keysym)) { // never reaches the game
 				if (!ev.key.repeat)
 					app.overlay.setOpen(!open);
@@ -1469,6 +1493,10 @@ void GameRun::pressTouchButton(TouchButton button) {
 			app.overlay.toast("Tap Load again to load the quick save", 3000);
 		}
 		break;
+	case TouchButton::Hint:
+		if (hints)
+			hints->request();
+		break;
 	case TouchButton::Keyboard:
 		break; // the page shows the phone's keyboard itself (web/library_gobnative.js)
 	}
@@ -1489,8 +1517,6 @@ void GameRun::drawTouchBar(ImDrawList &dl) {
 
 #ifdef GOB_WEBOS
 void GameRun::askLeave() {
-	leaveChoice = 0;
-	leaveOk = false;
 	app->overlay.showDialog([this](float s) {
 		App &app = *this->app;
 		const UiFonts &fonts = app.overlay.fonts();
@@ -1516,17 +1542,19 @@ void GameRun::askLeave() {
 		            "Progress since your last save is lost.");
 		const char *const labels[] = {"Keep playing", "Back to library", "Quit"};
 		const float bw = 340 * s, bh = 76 * s, gap = 24 * s, by = p1.y - pad - bh;
+		app.overlay.dialogButtons = 3;
 		int chosen = -1;
 		for (int i = 0; i < 3; i++) {
 			ImGui::SetCursorScreenPos(ImVec2(p1.x - pad - float(3 - i) * bw - float(2 - i) * gap, by));
-			const bool focused = leaveChoice == i;
+			const bool focused = app.overlay.dialogFocus == i;
 			const ImU32 base = i == 0 ? colour::kGreen : colour::kCardHover;
 			const ImU32 hover = i == 0 ? colour::kGreenHover : IM_COL32(70, 62, 82, 255);
 			if (webos::tvButton(labels[i], labels[i], ImVec2(bw, bh), fonts.bold, 30 * s, base, hover,
-			                    i == 0 ? IM_COL32_WHITE : colour::kText, -1, true, focused, focused && leaveOk))
+			                    i == 0 ? IM_COL32_WHITE : colour::kText, -1, true, focused,
+			                    focused && app.overlay.dialogPress))
 				chosen = i;
 		}
-		leaveOk = false;
+		app.overlay.dialogPress = false;
 		ImGui::End();
 		if (chosen == 1)
 			app.backToLibrary();
@@ -1554,7 +1582,7 @@ void GameRun::drawTvBar(ImDrawList &dl) {
 	const std::vector<KeyTip> tips = {
 		{RemoteKey::Red, "Skip", app.canSkip()},
 		{RemoteKey::Green, "Menu"},
-		{RemoteKey::Yellow, "Hide tips"},
+		{RemoteKey::Yellow, hints && hints->available() ? "Hint" : "Hide tips"},
 		{RemoteKey::Blue, app.fastOn ? "Fast: on" : "Fast", true, app.fastOn},
 		{RemoteKey::Back, "Right click"},
 	};
@@ -1613,7 +1641,10 @@ void GameRun::debugActions() {
 				clickHeld = true;
 			}
 		}
-	if (due(keyAt)) { // through the event queue, like a real key press
+	for (auto &[at, keyName] : keysAt) {
+		if (!due(at))
+			continue;
+		// through the event queue, like a real key press
 		SDL_Event key{};
 		key.type = SDL_KEYDOWN;
 		key.key.state = SDL_PRESSED;
@@ -1687,6 +1718,7 @@ void GameRun::draw() {
 		app.gameRectPoints(gx, gy, gw, gh);
 		TouchBarState state;
 		state.canSkip = app.canSkip();
+		state.hint = hints && hints->available();
 		state.rightArmed = touch.rightNext;
 #ifdef __EMSCRIPTEN__
 		state.keyboard = true;
@@ -1900,8 +1932,8 @@ int openGame(Startup &st, std::vector<std::string> argStrings, std::unique_ptr<G
 		} else if (!std::strcmp(argv[i], "--screenshot-dir") && i + 1 < argc)
 			app.screenshotDir = argv[++i];
 		else if (!std::strcmp(argv[i], "--key-at") && i + 2 < argc) {
-			r.keyAt = std::atof(argv[++i]);
-			r.keyName = argv[++i];
+			const double at = std::atof(argv[++i]);
+			r.keysAt.emplace_back(at, argv[++i]);
 		} else if (!std::strcmp(argv[i], "--filter") && i + 1 < argc)
 			filterArg = argv[++i];
 		else if (!std::strcmp(argv[i], "--sharp-text"))
@@ -1994,7 +2026,7 @@ int openGame(Startup &st, std::vector<std::string> argStrings, std::unique_ptr<G
 	if (!app.overlay.init(app.window, app.glContext))
 		std::fprintf(stderr, "overlay: ImGui initialisation failed\n");
 	addSettingsTabs(app.overlay, app);
-	addHints(app.overlay, app); // (its layer under the Tools tab's outlines)
+	r.hints = addHints(app.overlay, app, kHintKeyName); // (its layer under the Tools tab's outlines)
 	addToolsTab(app.overlay, app);
 	app.overlay.setTouchLayer([&r](ImDrawList &dl) { r.drawTouchBar(dl); });
 #ifdef GOB_WEBOS

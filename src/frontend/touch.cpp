@@ -93,6 +93,8 @@ std::vector<TouchBarButton> layoutTouchBar(float windowW, float windowH, float g
 		{TouchButton::Save, "Save", 0, 0, 0, 0},
 		{TouchButton::Load, "Load", 0, 0, 0, 0},
 	};
+	if (state.hint)
+		bar.insert(bar.begin() + 2, {TouchButton::Hint, "Hint", 0, 0, 0, 0});
 	if (state.keyboard)
 		bar.push_back({TouchButton::Keyboard, "Keys", 0, 0, 0, 0});
 	const float n = float(bar.size()), margin = 8.0f, gap = 8.0f;

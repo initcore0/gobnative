@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -159,8 +160,15 @@ public:
 	void showDialog(std::function<bool(float scale)> draw) {
 		_dialog = std::move(draw);
 		_open = true;
+		dialogFocus = 0;
+		dialogPress = false;
 	}
 	bool dialogOpen() const { return bool(_dialog); }
+	// The open dialog's buttons for the arrow keys (a TV remote's): the
+	// one focused (the dialog sets the first and how many there are) and
+	// OK pressed on it (the dialog clears it each frame).
+	int dialogFocus = 0, dialogButtons = 0;
+	bool dialogPress = false;
 
 	// True while a popup is open, which should get Escape instead of the
 	// overlay closing.
@@ -213,7 +221,21 @@ private:
 void addSettingsTabs(Overlay &overlay, OverlayHost &host);
 // The Tools tab (debug panel) and the hotspot highlighter.
 void addToolsTab(Overlay &overlay, OverlayHost &host);
-// Player help over the game (frontend/hints.cpp): the clickable spots.
-void addHints(Overlay &overlay, OverlayHost &host);
+// The player's help (frontend/hints.cpp): the first-run question, the hint
+// card, the glow on the clickable spots and the hint's target, the Hints
+// tab. What the front end's keys and buttons ask of it:
+class HintsControl {
+public:
+	virtual ~HintsControl() = default;
+	// The hint key does something now: hints are on and a level with hints
+	// is being played.
+	virtual bool available() = 0;
+	// The hint key: shows the card (a nudge), then more of it (who and
+	// where, the target glowing), then the solution, then hides it.
+	virtual void request() = 0;
+};
+// `keyName` names the hint key as the player knows it ("H", "the yellow
+// key"); the touch bar's button is named when the last pointer was a finger.
+std::shared_ptr<HintsControl> addHints(Overlay &overlay, OverlayHost &host, std::string keyName);
 
 } // namespace gob

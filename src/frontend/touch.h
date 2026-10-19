@@ -65,8 +65,9 @@ private:
 // The touch bar: a column of buttons beside the game picture (a row under
 // it when the window is tall), over the picture's edge when there's no
 // room. Always the same buttons in the same places (Skip is dimmed when
-// there's nothing to skip; Keys only in the web build).
-enum class TouchButton { Menu, Skip, Right, Save, Load, Keyboard };
+// there's nothing to skip; Keys only in the web build; Hint while hints are
+// on and a level with hints is played).
+enum class TouchButton { Menu, Skip, Hint, Right, Save, Load, Keyboard };
 
 struct TouchBarButton {
 	TouchButton id;
@@ -79,6 +80,7 @@ struct TouchBarButton {
 
 struct TouchBarState {
 	bool canSkip = false, rightArmed = false, keyboard = false; // keyboard: the web build's text field
+	bool hint = false; // the hint key does something (frontend/hints.cpp)
 };
 
 // `gx..` is the game picture's rectangle; all in window points.
