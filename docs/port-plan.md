@@ -2235,11 +2235,54 @@ on it; nothing on the TV is changed outside the app's own folder):
   - **Still to do in T3:** arrow keys and OK inside the overlay (it's
     ImGui; its keyboard navigation is on but nothing draws the focus on
     a TV yet), gamepad.
-- [ ] **T4. Speed and memory on the TV.** Frame time of every display
-  filter at the TV's output size; HD packs (decode time, memory against
-  the ~660 MB); prefetch threads; a default video setting that holds 60
-  frames per second on the C1. Done when: no dropped frames with the
-  defaults, and the limits written down here.
+- [x] **T4. Speed and memory on the TV.** Done. Results (LG C1, 1920x1080
+  window, the picture 1280x960 with integer scaling; `--bench-at 8 120`,
+  ms per frame with `glFinish` after each):
+
+  | Filter  | Before | After | Change |
+  |---------|-------:|------:|--------|
+  | nearest |    2.7 |   2.4 | |
+  | smooth  |    2.1 |   1.9 | |
+  | sharp   |    2.9 |   2.7 | |
+  | scale2x |    3.0 |   2.8 | |
+  | scale3x |    3.0 |   3.0 | |
+  | xbr     |   98.9 |   5.0 | neighbours fetched where needed |
+  | crt     |   57.3 |  26.2 | glow in a pass of its own |
+
+  - **xBR:** the shader read all 25 neighbours into an array first,
+    indexed with run-time values (Mali keeps such arrays in memory). Now
+    `at()` fetches each neighbour where it is needed, and most pixels
+    leave after E, F and H. Same arithmetic: screenshots on the TV are
+    identical, all 6.2 million channel values.
+  - **CRT:** the glow summed 16 samples per window pixel, each with a
+    gamma conversion and a weight worked out each time. Now `kGlowShader`
+    computes it once per source pixel into `_glow` (srcSize, RGBA8 at
+    gamma 2.4), and the CRT reads it with one bilinear lookup (texture
+    unit 1); no glow pass when bloom is 0. The weights are constants.
+    Against the old output, 91% of channel values are equal, most others
+    differ by 1-2 of 255, the most by 19 (the glow interpolated between
+    source pixels). It looks the same, on the TV and on the Mac (desktop
+    GL draws it too).
+  - **Tried and dropped:** converting CRT's input to linear light once
+    per frame into half floats (27.7 ms, no gain: the Mali's half-float
+    reads cost what the conversions saved). An experiment with no gamma
+    conversion at all still took 17 ms, so CRT can't reach 60 fps on the
+    C1 without changing its look. On webOS its description in the Video
+    tab says so (about 40 frames a second); the other filters keep 60.
+  - **HD pack** (`openai-gob01`, 44 MB, Gobliins 2's first room at 4x,
+    copied to `data/Gobliins2/HDPacks`; `--start GOB01 --hd-pack
+    openai-gob01 --hd-stats`):
+    - 4 HD and 5 original pictures; layers rebuilt in 49 ms;
+    - per frame: engine 0.4 ms mean (p95 2.4), HD compositor 0.7 ms
+      (p95 1.0), upload 2.2 ms (p95 3.8);
+    - 138 MB resident (85 MB without a pack), with 557 MB still
+      available on the TV.
+
+    60 frames a second with any filter but CRT. Prefetch threads stay as
+    they are.
+  - **Defaults:** unchanged (Sharp, 2.7 ms). Integer scaling leaves wide
+    borders on a TV (1280x960 of 1920x1080); the full height without it
+    (1440x1080) is the player's choice in the Video tab.
 - [ ] **T5. Packaging and release.** CI job with the SDK making the
   `.ipk` as an artifact (and in releases); a Homebrew Channel repository
   manifest pointing at the release `.ipk` (publishing it is the user's

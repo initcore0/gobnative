@@ -109,7 +109,7 @@ private:
 		unsigned fbo = 0, texture = 0;
 		int w = 0, h = 0;
 	};
-	enum Program { kNearest, kSmooth, kSharp, kScale2x, kScale3x, kXbr, kCrt, kText, kProgramCount };
+	enum Program { kNearest, kSmooth, kSharp, kScale2x, kScale3x, kXbr, kCrt, kGlow, kText, kProgramCount };
 
 	bool ensureTarget(Target &t, int w, int h);
 	void runPass(Program p, unsigned texture, int srcW, int srcH, int outW, int outH, const FilterSettings &f);
@@ -119,6 +119,7 @@ private:
 	unsigned _texture = 0, _vao = 0;
 	unsigned _programs[kProgramCount] = {};
 	Target _upscaled;
+	Target _glow; // the CRT's glow (kGlow), at the source's size
 
 	void drawTextLayer(const Rect &vp, int dh);
 	unsigned _textMap = 0, _textColors = 0, _textAtlas = 0;
