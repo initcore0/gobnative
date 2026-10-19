@@ -744,9 +744,10 @@ public:
 	// The game pauses while the overlay is open (unless the Tools tab keeps
 	// it running); the system cursor shows while the overlay is open (the
 	// game draws its own).
+	bool backgrounded = false; // a TV: another app or the home screen is in front
 	void updatePause() {
 		const bool open = overlay.isOpen();
-		const bool paused = open && !debug.runBehindOverlay;
+		const bool paused = (open && !debug.runBehindOverlay) || backgrounded;
 		overlay.dimGame = paused;
 		if (open != _cursorShown) {
 			_cursorShown = open;
@@ -1046,6 +1047,7 @@ struct GameRun {
 	std::unique_ptr<DataFiles> files; // before app, which reads through it
 	std::unique_ptr<App> app;
 
+	double askLeaveAt = -1; // (webOS)
 	double overlayAt = -1, restartAt = -1, libraryAt = -1, screenshotAt = -1, levelAt = -1, quickSaveAt = -1,
 	       quickLoadAt = -1;
 	double keyAt = -1, benchAt = -1;
@@ -1072,6 +1074,20 @@ struct GameRun {
 	SDL_FingerID barFinger = 0;
 	bool barFingerDown = false;
 	int touchRelease = 0;
+#ifdef GOB_WEBOS
+	// A click from the remote's keys (Back: the right button).
+	void remoteClick(int bit) {
+		app->host.buttons |= bit;
+		app->host.clicks |= bit;
+		touchRelease |= bit; // released at the next frame's events
+	}
+	// Long Back (the TV's Exit key, claimed in main()) asks whether to keep
+	// playing, go back to the library or quit; the arrow keys choose, OK
+	// answers, Back or red cancels.
+	int leaveChoice = 0; // 0 keep playing, 1 back to library, 2 quit
+	bool leaveOk = false;
+	void askLeave();
+#endif
 	uint32_t loadArmedAt = 0;
 	int exitCode = 0;
 	std::string error; // why the game stopped (an engine error)
@@ -1157,6 +1173,10 @@ bool GameRun::frame() {
 		if (const bool want = app.interp->editingText() && !app.overlay.isOpen(); want != bool(SDL_IsTextInputActive()))
 			want ? SDL_StartTextInput() : SDL_StopTextInput();
 #endif
+#ifdef GOB_WEBOS
+		if (app.backgrounded)
+			SDL_Delay(100); // paused behind another app: little to draw
+#endif
 		draw();
 #ifdef __EMSCRIPTEN__
 		(void)frameStart; // the browser paces the frames
@@ -1186,6 +1206,49 @@ void GameRun::handleEvents() {
 	while (SDL_PollEvent(&ev)) {
 		const bool open = app.overlay.isOpen();
 #ifdef GOB_WEBOS
+		// Back (claimed from the TV in main()): closes the overlay, else a
+		// right click where the pointer is (puts the held item away, as the
+		// mouse's right button does).
+		if ((ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP) && ev.key.keysym.scancode == SDL_SCANCODE_WEBOS_BACK) {
+			if (ev.type == SDL_KEYDOWN && !ev.key.repeat) {
+				if (open)
+					app.overlay.setOpen(false);
+				else
+					remoteClick(2);
+			}
+			continue;
+		}
+		if ((ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP) && ev.key.keysym.scancode == SDL_SCANCODE_WEBOS_EXIT) {
+			if (ev.type == SDL_KEYDOWN && !ev.key.repeat && !app.overlay.dialogOpen())
+				askLeave();
+			continue;
+		}
+		if (app.overlay.dialogOpen() && (ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP)) {
+			if (ev.type == SDL_KEYDOWN)
+				switch (int(ev.key.keysym.scancode)) {
+				case SDL_SCANCODE_LEFT: leaveChoice = std::max(0, leaveChoice - 1); break;
+				case SDL_SCANCODE_RIGHT: leaveChoice = std::min(2, leaveChoice + 1); break;
+				case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER: leaveOk = true; break;
+				case SDL_SCANCODE_WEBOS_RED: case SDL_SCANCODE_ESCAPE: app.overlay.setOpen(false); break;
+				default: break;
+				}
+			continue;
+		}
+		// Home, another app or input in front: the game pauses.
+		if (ev.type == SDL_WINDOWEVENT) {
+			const auto e = ev.window.event;
+			if (e == SDL_WINDOWEVENT_FOCUS_LOST || e == SDL_WINDOWEVENT_HIDDEN || e == SDL_WINDOWEVENT_MINIMIZED)
+				app.backgrounded = true;
+			else if (e == SDL_WINDOWEVENT_FOCUS_GAINED || e == SDL_WINDOWEVENT_SHOWN || e == SDL_WINDOWEVENT_RESTORED)
+				app.backgrounded = false;
+			std::fprintf(stderr, "webos: window event %d, %s\n", int(e), app.backgrounded ? "in the background" : "in front");
+		} else if (ev.type == SDL_APP_WILLENTERBACKGROUND || ev.type == SDL_APP_DIDENTERBACKGROUND) {
+			app.backgrounded = true;
+			std::fprintf(stderr, "webos: app in the background\n");
+		} else if (ev.type == SDL_APP_WILLENTERFOREGROUND || ev.type == SDL_APP_DIDENTERFOREGROUND) {
+			app.backgrounded = false;
+			std::fprintf(stderr, "webos: app in front\n");
+		}
 		if ((ev.type == SDL_KEYDOWN || ev.type == SDL_KEYUP) && ev.key.keysym.scancode == SDL_SCANCODE_WEBOS_BLUE) {
 			if (ev.type == SDL_KEYDOWN && !ev.key.repeat && !open) {
 				app.fastOn = !app.fastOn;
@@ -1425,6 +1488,54 @@ void GameRun::drawTouchBar(ImDrawList &dl) {
 }
 
 #ifdef GOB_WEBOS
+void GameRun::askLeave() {
+	leaveChoice = 0;
+	leaveOk = false;
+	app->overlay.showDialog([this](float s) {
+		App &app = *this->app;
+		const UiFonts &fonts = app.overlay.fonts();
+		ImGuiIO &io = ImGui::GetIO();
+		ImGui::SetNextWindowPos(ImVec2(0, 0));
+		ImGui::SetNextWindowSize(io.DisplaySize);
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, vec(IM_COL32(0, 0, 0, 110)));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+		ImGui::Begin("##leave", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+		                                    ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoNav);
+		ImGui::PopStyleVar(2);
+		ImGui::PopStyleColor();
+		const ImVec2 size(1160 * s, 310 * s);
+		const ImVec2 p0(std::round((io.DisplaySize.x - size.x) / 2), std::round((io.DisplaySize.y - size.y) / 2));
+		const ImVec2 p1(p0.x + size.x, p0.y + size.y);
+		ImDrawList *dl = ImGui::GetWindowDrawList();
+		dl->AddRectFilled(p0, p1, colour::kBackground, 20 * s);
+		dl->AddRect(p0, p1, colour::kBorder, 20 * s, 0, 1.5f);
+		const float pad = 44 * s;
+		dl->AddText(fonts.bold, 44 * s, ImVec2(p0.x + pad, p0.y + 40 * s), colour::kText, "Leave the game?");
+		dl->AddText(fonts.regular, 29 * s, ImVec2(p0.x + pad, p0.y + 110 * s), colour::kMuted,
+		            "Progress since your last save is lost.");
+		const char *const labels[] = {"Keep playing", "Back to library", "Quit"};
+		const float bw = 340 * s, bh = 76 * s, gap = 24 * s, by = p1.y - pad - bh;
+		int chosen = -1;
+		for (int i = 0; i < 3; i++) {
+			ImGui::SetCursorScreenPos(ImVec2(p1.x - pad - float(3 - i) * bw - float(2 - i) * gap, by));
+			const bool focused = leaveChoice == i;
+			const ImU32 base = i == 0 ? colour::kGreen : colour::kCardHover;
+			const ImU32 hover = i == 0 ? colour::kGreenHover : IM_COL32(70, 62, 82, 255);
+			if (webos::tvButton(labels[i], labels[i], ImVec2(bw, bh), fonts.bold, 30 * s, base, hover,
+			                    i == 0 ? IM_COL32_WHITE : colour::kText, -1, true, focused, focused && leaveOk))
+				chosen = i;
+		}
+		leaveOk = false;
+		ImGui::End();
+		if (chosen == 1)
+			app.backToLibrary();
+		else if (chosen == 2)
+			app.quit();
+		return chosen < 0;
+	});
+}
+
 // The TV remote's colour keys and what they do now, as on the remote, in
 // the strip under the picture: [red] Skip  [green] Menu  [yellow] Hide tips
 // [blue] Fast. Skip is dimmed when there is nothing to skip; Fast is lit
@@ -1445,6 +1556,7 @@ void GameRun::drawTvBar(ImDrawList &dl) {
 		{RemoteKey::Green, "Menu"},
 		{RemoteKey::Yellow, "Hide tips"},
 		{RemoteKey::Blue, app.fastOn ? "Fast: on" : "Fast", true, app.fastOn},
+		{RemoteKey::Back, "Right click"},
 	};
 	webos::drawKeyTips(dl, app.overlay.fonts().bold, tips, 0, float(ww), barTop, barH);
 }
@@ -1452,6 +1564,10 @@ void GameRun::drawTvBar(ImDrawList &dl) {
 
 void GameRun::debugActions() {
 	App &app = *this->app;
+#ifdef GOB_WEBOS
+	if (due(askLeaveAt))
+		askLeave();
+#endif
 	if (due(overlayAt)) {
 		app.overlay.setOpen(true);
 		app.overlay.selectTab(overlayTab);
@@ -1754,7 +1870,12 @@ int openGame(Startup &st, std::vector<std::string> argStrings, std::unique_ptr<G
 		else if (!std::strcmp(argv[i], "--overlay-at") && i + 2 < argc) {
 			r.overlayAt = std::atof(argv[++i]);
 			r.overlayTab = argv[++i];
-		} else if (!std::strcmp(argv[i], "--restart-at") && i + 1 < argc)
+		}
+#ifdef GOB_WEBOS
+		else if (!std::strcmp(argv[i], "--ask-leave-at") && i + 1 < argc) // as if Back was held
+			r.askLeaveAt = std::atof(argv[++i]);
+#endif
+		else if (!std::strcmp(argv[i], "--restart-at") && i + 1 < argc)
 			r.restartAt = std::atof(argv[++i]);
 		else if (!std::strcmp(argv[i], "--back-to-library-at") && i + 1 < argc)
 			r.libraryAt = std::atof(argv[++i]);
@@ -2048,6 +2169,15 @@ void relaunchLibrary(const char *self, const std::string &prefRoot, const std::s
 }
 
 int main(int argc, char **argv) {
+#ifdef GOB_WEBOS
+	// Back comes to the app (a right click in the game, closing a dialog,
+	// leaving the library) instead of opening the TV's launcher strip;
+	// held, it is the Exit key (below).
+	SDL_SetHint(SDL_HINT_WEBOS_ACCESS_POLICY_KEYS_BACK, "true");
+	// Held, Back is the Exit key: a dialog asks to leave (GameRun::askLeave,
+	// the library's), instead of the TV closing the app at once.
+	SDL_SetHint(SDL_HINT_WEBOS_ACCESS_POLICY_KEYS_EXIT, "true");
+#endif
 #ifdef _WIN32
 	// The taskbar's large icon from the .exe's own icon (win/icon.rc).
 	SDL_SetHint(SDL_HINT_WINDOWS_INTRESOURCE_ICON, "1");

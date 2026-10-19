@@ -2203,10 +2203,38 @@ on it; nothing on the TV is changed outside the app's own folder):
     skip; Fast reads "Fast: on" and is outlined while on. Checked by TV
     screen captures during Gobliins 2's intro, with `key_tips` on and
     off.
-  - **Still to do in T3:** Back (still the TV's: it opens the launcher
-    strip), arrows/OK for the library and overlay without the pointer,
-    larger text from a sofa, gamepad, pausing when sent to the
-    background.
+  - **Right click (user: no way to put an item away):** Back, at the
+    pointer. Back is claimed from the TV
+    (`SDL_HINT_WEBOS_ACCESS_POLICY_KEYS_BACK`, set in `main()` before
+    `SDL_Init`): in the game it closes the overlay if it is open, else
+    right-clicks. In the library it closes a dialog, cancels an install,
+    or leaves the app. The tips bars show a grey Back chip ("Right
+    click" in the game, "Leave" in the library). Holding OK as a right
+    click was tried and dropped (user: it misfired either way); OK is a
+    plain left click again.
+  - **Leaving (user: Back used to bring up the TV's quit or cancel
+    question):** that question is the TV's own, shown only while the TV
+    keeps Back for itself. Held Back (the TV's Exit key) is now claimed
+    too (`SDL_HINT_WEBOS_ACCESS_POLICY_KEYS_EXIT`) and asks instead:
+    - **in the game,** `GameRun::askLeave` shows "Leave the game?" with
+      Keep playing (focused), Back to library and Quit. It goes through
+      `Overlay::showDialog`, a dialog in place of the overlay's tabs.
+      The arrow keys choose, OK answers, Back or red cancels.
+      `--ask-leave-at T` opens it for tests (captured on the C1).
+    - **in the library,** "Quit gobnative?" offers Stay and Quit.
+    - Home always works.
+  - **Background:** Home or another app in front sends SDL window events
+    7 (minimised) and 13 (focus lost) and `SDL_APP_*ENTERBACKGROUND`,
+    seen in the log on the C1. The game pauses (sound too) and
+    sleeps 100 ms a frame: 5.6% CPU on the C1. Window events 12 and 9 or
+    `*ENTERFOREGROUND` resume it (not seen yet: an app started over SSH
+    can't be brought back to the front by the launcher).
+  - **Overlay from a sofa:** on webOS everything is 1.7 times larger
+    (`style.ScaleAllSizes`, `style.FontScaleMain`, the window's width).
+    Checked by a screen capture of the Video tab.
+  - **Still to do in T3:** arrow keys and OK inside the overlay (it's
+    ImGui; its keyboard navigation is on but nothing draws the focus on
+    a TV yet), gamepad.
 - [ ] **T4. Speed and memory on the TV.** Frame time of every display
   filter at the TV's output size; HD packs (decode time, memory against
   the ~660 MB); prefetch threads; a default video setting that holds 60

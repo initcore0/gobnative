@@ -53,6 +53,7 @@ ImU32 keyColour(RemoteKey key) {
 	case RemoteKey::Green: return IM_COL32(39, 174, 96, 255);
 	case RemoteKey::Yellow: return IM_COL32(241, 196, 15, 255);
 	case RemoteKey::Blue: return IM_COL32(41, 128, 185, 255);
+	case RemoteKey::Back: return IM_COL32(120, 112, 130, 255);
 	}
 	return IM_COL32_WHITE;
 }
@@ -61,6 +62,16 @@ void drawKeyChip(ImDrawList &dl, RemoteKey key, ImVec2 centre, float height, int
 	const float w = height * 1.8f;
 	dl.AddRectFilled(ImVec2(centre.x - w / 2, centre.y - height / 2), ImVec2(centre.x + w / 2, centre.y + height / 2),
 	                 withAlpha(keyColour(key), alpha), height / 2);
+	if (key == RemoteKey::Back) { // the remote's Back key: a grey chip with a hooked arrow
+		const ImU32 ink = withAlpha(colour::kText, alpha);
+		const float r = height * 0.22f, t = std::max(1.5f, height * 0.09f);
+		const ImVec2 c(centre.x + height * 0.12f, centre.y);
+		dl.PathArcTo(c, r, -1.5707963f, 1.5707963f, 12);
+		dl.PathStroke(ink, 0, t);
+		dl.AddLine(ImVec2(c.x, c.y - r), ImVec2(c.x - height * 0.42f, c.y - r), ink, t);
+		dl.AddTriangleFilled(ImVec2(c.x - height * 0.52f, c.y - r), ImVec2(c.x - height * 0.32f, c.y - r - height * 0.16f),
+		                     ImVec2(c.x - height * 0.32f, c.y - r + height * 0.16f), ink);
+	}
 }
 
 void drawKeyTips(ImDrawList &dl, ImFont *font, const std::vector<KeyTip> &tips, float left, float right, float top,
@@ -85,6 +96,37 @@ void drawKeyTips(ImDrawList &dl, ImFont *font, const std::vector<KeyTip> &tips, 
 		           t.lit ? colour::kText : withAlpha(t.enabled ? colour::kText : colour::kFaint, alpha), t.label.c_str());
 		x += ts.x + spacing;
 	}
+}
+
+// A big button drawn in full: rounded, a colour key's chip at the left
+// (when `key` >= 0), the label centred. Disabled: greyed, never clicked.
+// With `focused` (the arrow keys' ring) a thick white ring, and `press`
+// (OK) clicks it.
+bool tvButton(const char *id, const std::string &label, ImVec2 size, ImFont *font, float fontSize, ImU32 base,
+              ImU32 hover, ImU32 text, int key, bool enabled, bool focused, bool press) {
+	ImDrawList *dl = ImGui::GetWindowDrawList();
+	const ImVec2 p = ImGui::GetCursorScreenPos();
+	const bool clicked = (ImGui::InvisibleButton(id, size) || (focused && press)) && enabled;
+	const bool hovered = (ImGui::IsItemHovered() || focused) && enabled;
+	const ImVec2 q(p.x + size.x, p.y + size.y);
+	dl->AddRectFilled(p, q, enabled ? (hovered ? hover : base) : IM_COL32(64, 58, 72, 255), size.y * 0.22f);
+	if (focused) {
+		const float g = std::round(size.y * 0.08f);
+		dl->AddRect(ImVec2(p.x - g, p.y - g), ImVec2(q.x + g, q.y + g), IM_COL32_WHITE, size.y * 0.22f + g, 0,
+		            std::max(3.0f, size.y * 0.05f));
+	} else if (hovered)
+		dl->AddRect(p, q, IM_COL32(255, 255, 255, 150), size.y * 0.22f, 0, 2.0f);
+	const ImVec2 ts = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, label.c_str());
+	float tx = p.x + (size.x - ts.x) / 2;
+	if (key >= 0) {
+		const float chipH = fontSize * 0.8f, chipW = chipH * 1.8f, gap = fontSize * 0.5f;
+		tx = p.x + (size.x - ts.x - chipW - gap) / 2 + chipW + gap;
+		drawKeyChip(*dl, RemoteKey(key), ImVec2(tx - gap - chipW / 2, p.y + size.y / 2), chipH,
+		                   enabled ? 255 : 90);
+	}
+	dl->AddText(font, fontSize, ImVec2(std::round(tx), std::round(p.y + (size.y - ts.y) / 2)),
+	            enabled ? text : colour::kFaint, label.c_str());
+	return clicked;
 }
 
 } // namespace gob::webos

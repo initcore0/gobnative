@@ -35,6 +35,12 @@ bool Overlay::init(SDL_Window *window, void *glContext) {
 	style.FramePadding = ImVec2(8, 4);
 	style.ItemSpacing = ImVec2(8, 6);
 	style.WindowBorderSize = 1;
+#ifdef GOB_WEBOS
+	// Read from a sofa: everything larger.
+	_scale = 1.7f;
+	style.ScaleAllSizes(_scale);
+	style.FontScaleMain = _scale;
+#endif
 #ifdef GOB_GLES
 	const char *glsl = "#version 300 es"; // WebGL 2, webOS
 #else
@@ -140,8 +146,19 @@ void Overlay::render() {
 	if (layer)
 		_layerDraw(*ImGui::GetBackgroundDrawList());
 
+	if (_dialog) {
+		if (!_dialog(display.y / 1080.0f)) {
+			_dialog = nullptr;
+			_open = false;
+		}
+		drawToasts();
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		return;
+	}
+
 	ImGui::SetNextWindowPos(ImVec2(display.x * 0.5f, display.y * 0.5f), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	ImGui::SetNextWindowSize(ImVec2(440, 0), ImGuiCond_Appearing);
+	ImGui::SetNextWindowSize(ImVec2(440 * _scale, 0), ImGuiCond_Appearing);
 	// Tabs differ in height: never taller than the window (the content
 	// scrolls instead), and moved back up when a taller tab runs off it.
 	ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), ImVec2(display.x, std::max(100.0f, display.y - 16.0f)));
