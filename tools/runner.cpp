@@ -104,6 +104,9 @@
 //   objects         trace the goblins' positions, cells and states
 //   hotspots        trace the hotspots on the screen (id, rectangle)
 //   inventory       Goblins 3: trace the items owned
+//   items           Gobliiins: trace the items on the map (id, the cells'
+//                   bounding box and count, the object it stands for, and
+//                   per row y the cells as a bit mask, y:mask)
 //   end             end the run (a script whose game ends while only waits,
 //                   keys and `end` are left counts as finished)
 // A step that waits more than 300 simulated seconds fails the run (exit
@@ -124,6 +127,7 @@
 
 #include "data/datafiles.h"
 #include "engine/game.h"
+#include "engine/goblins_v1.h"
 #include "engine/hdrender.h"
 #include "engine/interpreter.h"
 #include "gfx/bmp.h"
@@ -132,6 +136,7 @@
 #include "roomguide.h"
 
 #include <algorithm>
+#include <bit>
 #include <cctype>
 #include <cmath>
 #include <cstdint>
@@ -663,6 +668,21 @@ private:
 					std::printf("%8.3fs  (goblin %d) pos %d,%d cell %d,%d dest %d,%d state %d path %d busy %d\n",
 					            host.now / 1000.0, o.index, o.x, o.y, o.cellX, o.cellY, o.gobDestX, o.gobDestY, o.state,
 					            o.pathExistence, o.isBusy);
+			return true;
+		}
+		if (c == "items") {
+			if (const GoblinsV1 *g = interp.goblinsV1())
+				for (const GoblinsV1::ItemSpot &s : g->itemSpots()) {
+					int cells = 0;
+					for (uint32_t r : s.rows)
+						cells += std::popcount(r);
+					std::string rows;
+					for (size_t y = 0; y < s.rows.size(); y++)
+						if (s.rows[y])
+							rows += " " + std::to_string(y) + ":" + std::to_string(s.rows[y]);
+					std::printf("%8.3fs  (item %d) %d,%d-%d,%d cells %d object %d rows%s\n", host.now / 1000.0, s.id,
+					            s.left, s.top, s.right, s.bottom, cells, s.object, rows.c_str());
+				}
 			return true;
 		}
 		if (c == "end") {

@@ -401,6 +401,40 @@ int16_t GoblinsV1::itemToObject(int item) const {
 	return item >= 0 && item < int(_itemToObject.size()) ? _itemToObject[size_t(item)] : int16_t(100);
 }
 
+std::vector<GoblinsV1::ItemSpot> GoblinsV1::itemSpots() const {
+	std::vector<ItemSpot> out;
+	auto add = [&](int16_t id, int x, int y) {
+		auto it = std::find_if(out.begin(), out.end(), [id](const ItemSpot &s) { return s.id == id; });
+		if (it == out.end()) {
+			ItemSpot s;
+			s.id = id;
+			const int16_t o = itemToObject(id);
+			s.object = o >= 0 && o < kObjects && _objects[size_t(o)] ? o : -1;
+			s.left = x * kCellW;
+			s.top = y * kCellH;
+			s.right = s.left + kCellW - 1;
+			s.bottom = s.top + kCellH - 1;
+			out.push_back(s);
+			it = out.end() - 1;
+		}
+		it->rows[size_t(y)] |= 1u << x;
+		it->left = std::min(it->left, x * kCellW);
+		it->top = std::min(it->top, y * kCellH);
+		it->right = std::max(it->right, (x + 1) * kCellW - 1);
+		it->bottom = std::max(it->bottom, (y + 1) * kCellH - 1);
+	};
+	for (int y = 0; y < kMapHeight; y++)
+		for (int x = 0; x < kMapWidth; x++) {
+			const int16_t items = getItem(x, y);
+			if (items & 0xFF)
+				add(int16_t(items & 0xFF), x, y);
+			if (items & 0xFF00)
+				add(int16_t((items & 0xFF00) >> 8), x, y);
+		}
+	std::sort(out.begin(), out.end(), [](const ItemSpot &a, const ItemSpot &b) { return a.id < b.id; });
+	return out;
+}
+
 bool GoblinsV1::objPickable(int item) const {
 	const Object *o = object(itemToObject(item));
 	return o && o->pickable == 1;

@@ -162,6 +162,10 @@ jobs:
       WEBOS_SDK_URL: https://github.com/openlgtv/buildroot-nc4/releases/download/2026.08-webos/arm-webos-linux-gnueabi_sdk-buildroot-x86_64.tar.gz
       SDL2_WEBOS_URL: https://github.com/webosbrew/SDL-webOS/releases/download/release-2.30.12-webos.5/SDL2-2.30.12-webos.tar.gz
       WEBOS_CLI_VERSION: 3.2.6
+      # webosbrew's compatibility checker (ipk-verify) and its firmware data:
+      # which webOS releases the package should run on, as apps-repo checks.
+      WEBOSBREW_TOOLBOX: https://github.com/webosbrew/dev-toolbox-cli/releases/download/v20261017-2d5a7b6
+      WEBOSBREW_TOOLBOX_VERSION: 0.10.0-1
     steps:
       - uses: actions/checkout@v5
         with:
@@ -185,12 +189,26 @@ jobs:
           esac
           scripts/build-webos.sh
 
+      - name: Check compatibility (webosbrew's ipk-verify)
+        run: |
+          for tool in fw-symbols ipk-verify; do
+            curl -fsSLo "$RUNNER_TEMP/$tool.deb" "$WEBOSBREW_TOOLBOX/webosbrew-toolbox-${tool}_${WEBOSBREW_TOOLBOX_VERSION}_amd64.deb"
+          done
+          sudo apt-get install -y -qq "$RUNNER_TEMP/fw-symbols.deb" "$RUNNER_TEMP/ipk-verify.deb" >/dev/null
+          # 0: runs on every release it knows; 1: not on some (older) ones,
+          # which the report lists. Anything else is a broken package or check.
+          status=0
+          webosbrew-ipk-verify --format markdown --details --output dist/ipk-verify.md dist/*.ipk || status=$?
+          cat dist/ipk-verify.md >> "$GITHUB_STEP_SUMMARY"
+          [ "$status" -le 1 ]
+
       - uses: actions/upload-artifact@v7
         with:
           name: gobnative-webos
           path: |
             dist/*.ipk
             dist/*.manifest.json
+            dist/ipk-verify.md
           if-no-files-found: error
           retention-days: 30
 

@@ -134,10 +134,10 @@ public:
 
 	// Something drawn over the game image (under the overlay window) every
 	// frame while `active()` returns true, also while the overlay is closed.
-	// Coordinates are ImGui's (window points).
-	void setGameLayer(std::function<bool()> active, std::function<void(ImDrawList &)> draw) {
-		_layerActive = std::move(active);
-		_layerDraw = std::move(draw);
+	// Coordinates are ImGui's (window points). Layers are drawn in the order
+	// they were added.
+	void addGameLayer(std::function<bool()> active, std::function<void(ImDrawList &)> draw) {
+		_layers.push_back({std::move(active), std::move(draw)});
 	}
 	// Dim the game behind the open overlay (off while it keeps running).
 	bool dimGame = true;
@@ -186,6 +186,10 @@ private:
 		std::string name;
 		std::function<void()> draw;
 	};
+	struct Layer {
+		std::function<bool()> active;
+		std::function<void(ImDrawList &)> draw;
+	};
 	struct Toast {
 		std::string text;
 		uint32_t shownAt;
@@ -196,8 +200,8 @@ private:
 	std::vector<Tab> _tabs;
 	std::vector<Toast> _toasts;
 	std::string _selectTab, _selectSub;
-	std::function<bool()> _layerActive;
-	std::function<void(ImDrawList &)> _layerDraw, _touchDraw, _barDraw;
+	std::vector<Layer> _layers;
+	std::function<void(ImDrawList &)> _touchDraw, _barDraw;
 	std::function<bool(float)> _dialog;
 	float _scale = 1.0f; // sizes and fonts (a TV: larger)
 	bool _open = false, _initialized = false;
@@ -209,5 +213,7 @@ private:
 void addSettingsTabs(Overlay &overlay, OverlayHost &host);
 // The Tools tab (debug panel) and the hotspot highlighter.
 void addToolsTab(Overlay &overlay, OverlayHost &host);
+// Player help over the game (frontend/hints.cpp): the clickable spots.
+void addHints(Overlay &overlay, OverlayHost &host);
 
 } // namespace gob
