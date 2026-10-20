@@ -3,32 +3,44 @@
 #
 # The exit shows once the picker holds the catapult. A creature brings it to
 # the right-hand ledge when bait lies there, and gives it up when the picker
-# pours the giant's tears on it. The tears: the wizard's spell on the
-# giant's ear, then the picker reading the book on the statue's platform,
-# make the giant cry; after the first reading the giant's hand
-# no longer grabs goblins on the floor in front of it; the second fills
-# the bowl put down below the platform. The statue's platform is reached by
-# a ladder the fighter knocks into place after the wizard's spell on the
-# statue.
+# pours the giant's tears on it. The tears: the wizard's spell on the plug
+# in the giant's ear, then the picker reading his book into the ear from
+# the statue's platform, make the giant cry; after the first reading the
+# giant's long finger no longer grabs goblins on the floor in front of it;
+# the second fills the bowl put down at the platform's right end. The
+# platform is reached by a stone ladder that appears when the fighter
+# knocks over the pole the wizard's spell grows from a stump in front of
+# it.
 room AVT020
+hint statue
 goblin 2
-act 102 135     # the wizard casts a spell on the statue...
+act 102 135     # the wizard's spell grows the stump in front of the platform into a pole...
+hint ladder
 goblin 1
-act 102 135     # ...and the fighter's blow knocks the ladder to its platform into place
+act 102 135     # ...and the fighter knocks the pole over: a stone ladder appears up the platform
+hint ear
 goblin 2
-act 114 93      # the wizard casts a spell on the giant's ear
+act 114 93      # the wizard casts a spell on the plug in the giant's ear
+hint read
 goblin 0
-use 114 93      # the picker reads the book on the platform: the giant's hand stops grabbing
+use 114 93      # the picker reads the book into the giant's ear: he smiles, lifts his finger off the floor
+hint bait
 pick 78 111     # he puts the book down on the platform
-pick 78 33      # takes the bait on the top left ledge
+pick 78 33      # takes the bait in the doorway of the round tower at the top left
 walk 150 153    # crosses the floor in front of the giant
-pick 210 33     # and swaps the bait for the bowl on the right-hand ledge
-pick 126 153    # puts the bowl down below the platform, where the tears fall
+hint bowl
+pick 210 33     # and swaps the bait for the bowl atop the short ladder right of the giant's head
+hint place-bowl
+pick 126 153    # puts the bowl down at the platform's right end, where the tears fall
+hint tears
 untilvar 405 30 # (the giant is ready to cry again)
 pick 78 111     # takes the book again
 use 114 93      # reads it: the giant cries into the bowl
 pick 126 141    # swaps the book for the bowl full of tears
+hint pour
 untilvar 366 1  # (the creature has come for the bait)
 use 246 27      # pours the tears on the creature, which drops the catapult
+hint catapult
 pick 246 27     # the picker takes the catapult
+hint end
 exit

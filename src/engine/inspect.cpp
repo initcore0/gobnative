@@ -3,7 +3,10 @@
 //
 // Read-only snapshots of the engine's state for debugging tools.
 
+#include "engine/goblins_v1.h"
 #include "engine/interpreter.h"
+
+#include <algorithm>
 
 namespace gob {
 
@@ -121,6 +124,49 @@ std::vector<Interpreter::ObjectInfo> Interpreter::objects() const {
 			info.isBusy = animField(i, kIsBusy);
 		}
 		out.push_back(info);
+	}
+	return out;
+}
+
+std::vector<Interpreter::ClickSpot> Interpreter::clickSpots() const {
+	std::vector<ClickSpot> out;
+	if (!_vars || currentLevel().empty())
+		return out;
+	if (_gobV1) {
+		if (!_gobV1->loaded())
+			return out;
+		constexpr int w = GoblinsV1::kCellW, h = GoblinsV1::kCellH;
+		for (const GoblinsV1::ItemSpot &item : _gobV1->itemSpots()) {
+			ClickSpot spot;
+			spot.id = item.id;
+			spot.object = item.object;
+			for (int y = 0; y < GoblinsV1::kMapHeight; y++)
+				for (int x = 0; x < GoblinsV1::kMapWidth; x++)
+					if (item.has(x, y))
+						spot.rects.push_back({x * w, y * h, x * w + w - 1, y * h + h - 1});
+			out.push_back(std::move(spot));
+		}
+		return out;
+	}
+	if (_hotspotDepth > 1) // a block evaluated inside the room's own (the icon bar)
+		return out;
+	const int vx = _draw.viewX, vy = _draw.viewY;
+	for (const HotspotInfo &h : hotspots()) {
+		if (h.disabled() || h.type() > 2)
+			continue;
+		ClickSpot::Rect r{h.left - vx, h.top - vy, h.right - vx, h.bottom - vy};
+		r.left = std::max(r.left, 0);
+		r.top = std::max(r.top, 0);
+		r.right = std::min(r.right, Draw::kScreenW - 1);
+		r.bottom = std::min(r.bottom, Draw::kScreenH - 1);
+		if (r.right - r.left < 2 || r.bottom - r.top < 2) // off screen, a tick or a strip
+			continue;
+		if (r.left == 0 && r.top == 0 && r.right == Draw::kScreenW - 1 && r.bottom == Draw::kScreenH - 1)
+			continue;
+		ClickSpot spot;
+		spot.id = h.id & 0x7FFF;
+		spot.rects.push_back(r);
+		out.push_back(std::move(spot));
 	}
 	return out;
 }

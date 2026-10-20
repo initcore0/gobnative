@@ -9,10 +9,13 @@
 # up behind the tree. Giving the dog the sugar or the meat, or the wizard's
 # spell on it, also costs energy.
 room AVT009
+hint meat
 goblin 0
 walk 150 141    # the picker walks left along the bottom, well below the dog
 walk 30 141     # on to the left edge of the scene
 walk 30 81      # up behind the tree, away from the dog
 pick 18 63      # he takes the leg of meat by the fence
+hint eat
 use 60 81       # and eats it: the exit shows
+hint end
 exit

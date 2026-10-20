@@ -44,6 +44,11 @@ struct Settings {
 	int turboSpeed = 4;      // speed while the turbo key (Tab) is held
 	bool cutscenesAtNormalSpeed = true; // intro and ending always at 1x
 
+	// [hints] the player's help (frontend/hints.cpp), off unless asked for
+	bool hintsOn = false;    // the hint key shows hints (on)
+	bool showSpots = false;  // the clickable spots glow over the game (spots)
+	bool hintsAsked = false; // the first-run question was asked (asked)
+
 	static constexpr int kMinScale = 2, kMaxScale = 6;
 	static constexpr double kMinSpeed = 0.5, kMaxSpeed = 8.0;
 	static constexpr int kMinTurbo = 2, kMaxTurbo = 8;

@@ -365,3 +365,10 @@ when its type or state changed.
   tables (item ids above 19, object indices from unlinked items), the port
   uses an empty state, no object or a dummy item position; none of this
   happens in the tested levels.
+- A bug of the original (ScummVM has it too) is fixed: in the spiders
+  level (AVT001) the ladder (item 16) is linked to the small spider's
+  pillow (object 1, item 2) so the spider can be shot from below; once the
+  pillow can be taken, a pick on the ladder took it under id 16 (and
+  removed the ladder from the map), and that pillow never caught the flask,
+  so the level could no longer be won. `GameRules::pickAliases` makes such
+  a pick take item 2 (`treatItemPick`); `tests/check_gob1_fixes.sh`.

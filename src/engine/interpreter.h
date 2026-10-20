@@ -65,6 +65,7 @@ public:
 
 	const std::string &currentTot() const;
 	Variables &variables() { return _vars ? *_vars : _nullVars; }
+	const Variables &variables() const { return _vars ? *_vars : _nullVars; }
 
 	// What the player currently sees.
 	const Surface &screen() { return _draw.screenSurface(); }
@@ -261,6 +262,27 @@ public:
 	};
 	// The mult objects of the running room (empty when there are none).
 	std::vector<ObjectInfo> objects() const;
+	// What the player can click on in the running room, for the player's
+	// own help (frontend/hints.cpp). Gobliiins: the items on the level's map,
+	// each as its map cells (docs/goblins-v1.md section 4). The other games:
+	// the room's own hotspots (its hotspot block, not one pushed over it such
+	// as the icon bar), without the entries kept out of the player's way
+	// (parked off screen, full-screen catch-alls, timer ticks, strips at most
+	// 2 pixels thick). Inclusive pixels of the visible screen (a scrolled
+	// room's view offset taken off); empty outside a room.
+	struct ClickSpot {
+		struct Rect {
+			int left = 0, top = 0, right = 0, bottom = 0;
+		};
+		int id = 0;     // Gobliiins: the item id; else the hotspot id's low 15 bits
+		int object = -1; // Gobliiins: the level object the item stands for (-1: none)
+		std::vector<Rect> rects; // Gobliiins: one per map cell
+	};
+	std::vector<ClickSpot> clickSpots() const;
+	// Gobliiins: how many times a level's script file has been loaded, so a
+	// new run of a level (a jump to it, AGAIN, the next level) can be told
+	// from the one before, even of the same level (engine/hints.h).
+	uint32_t levelStarts() const { return _levelStarts; }
 	// Gobliiins' goblins, objects and map (null for the other games).
 	const GoblinsV1 *goblinsV1() const { return _gobV1.get(); }
 	// The loaded scenery animations (an object's `animation` is a slot).
@@ -859,6 +881,7 @@ private:
 	} _ffSample;
 	double _cdClockOffset = 0;    // ms added to the CD timeline by fast-forwards
 	bool _roomLoopReached = false; // the running room has reached its main loop's input wait
+	uint32_t _levelStarts = 0;     // Gobliiins: level script files loaded (levelStarts())
 	double _lastControlMs = 0;    // game clock when the room's main loop last waited for input
 	bool _waitingForPlayer = false; // in an input wait other than the room's main loop
 

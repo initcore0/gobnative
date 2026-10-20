@@ -1,26 +1,34 @@
 # gob2native - Gobliiins walkthrough, level 5 (AVT005): the giant's head
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# The wizard's spell on the coffin wakes a ghoul, which after a while walks
-# the whole path round the head and frightens the troll away from the
-# bottom right corner, uncovering the first magic object. Every goblin it
-# touches costs energy: the fighter waits on the ledge in the giant's face
-# (reached by the plant the wizard grows), the other two in the giant's
-# hand, which the fighter brings down with a blow on its finger.
+# The wizard's spell on the coffin wakes a skeleton, which after a while
+# walks the whole path round the head and frightens the troll away from the
+# bottom right corner, uncovering the first magic object (a mushroom).
+# Every goblin it touches costs energy: the fighter waits on the giant's
+# raised hand beside his eye (reached by the pole the wizard grows), the
+# other two on the giant's tongue, which the fighter's blow on the eye makes
+# him stick out and pull back in.
 room AVT005
+hint pole
 goblin 2
-act 258 153     # the wizard makes the plant on the right grow into a rope
+act 258 153     # the wizard makes a tall pole grow up to the giant's raised hand
+hint eye
 goblin 1
-act 198 87      # the fighter climbs it to the ledge and hits the finger: the hand comes down
+act 198 87      # the fighter climbs it onto the hand and hits the eye: the tongue comes out
+hint skeleton
 goblin 0
-walk 198 153    # the picker waits on the hand
+walk 198 153    # the picker waits on the tongue
 goblin 2
-act 18 33       # the wizard wakes the ghoul in the coffin...
-walk 186 153    # ...and hurries down onto the hand beside the picker
+act 18 33       # the wizard wakes the skeleton in the coffin...
+walk 186 153    # ...and hurries down onto the tongue beside the picker
+hint lift
 goblin 1
-act 198 87      # the hand lifts them up out of the ghoul's way
-untilvar 331 2  # the ghoul has done its round and is back in the coffin
-act 198 87      # the hand puts them down again
+act 198 87      # the tongue lifts them up into the mouth, out of the skeleton's way
+hint lower
+untilvar 331 2  # the skeleton has done its round and is back in the coffin
+act 198 87      # the tongue puts them down again
+hint take
 goblin 0
-walk 294 153    # the picker takes the magic object the troll left behind
+walk 294 153    # the picker takes the mushroom the troll left behind
+hint end
 exit

@@ -4,8 +4,9 @@
 # The level is solved when the picker holds the dagger after the dragon has
 # breathed on it. The dragon also cooks the foot into a roast; whatever
 # lurks in the table on the middle ledge takes the roast and lets goblins
-# cross to the dagger. The spring trap in front of the table is jammed with
-# the log, which the wizard later turns into deodorant. The seeds from the
+# cross to the dagger. The spiked trap in front of the table is set off
+# with the log (which falls from the pile of red logs the fighter hits),
+# and the wizard later turns the log into deodorant. The seeds from the
 # bag sown on the top ledge grow the foot; the deodorant spray on it while
 # it is out (a window of about 1.4 s, here hit in its middle) frees it.
 # Energy is lost by anyone standing in front of the dragon (cell 8,21) for
@@ -18,14 +19,18 @@
 # (v[60] 64 + goblin), which comes every 121 ticks: the next one can't
 # then delay anything.
 room AVT017
+hint log
 goblin 1
-act 66 15            # the fighter knocks a log down onto the middle ledge
+act 66 15            # the fighter hits the pile of red logs: one falls out onto the middle ledge
+hint jam
 goblin 0
 pick 54 75           # the picker takes it
-use 114 81           # and jams the spring trap with it
+use 114 81           # and sets off the spiked trap with it (he keeps the log)
+hint deodorant
 pick 126 33          # he puts it down on the top ledge
 goblin 2
 act 126 33           # the wizard turns it into deodorant
+hint bag
 walk 42 93           # and goes down to the middle ledge
 untilvar 60 66       # (his boredom animation)
 idle
@@ -33,10 +38,11 @@ rclick 42 93         # cursor: act
 click 108 128        # he casts on the bag in front of the dragon...
 untilvar 354 1
 rclick 42 93         # (cursor: walk)
-untilvar 285 0       # ...which falls open
+untilvar 285 0       # ...which jumps up onto the rock shelf
 untilvar 60 18 19
 click 42 93          # and he hurries away
 idle
+hint sow
 goblin 0
 walk 42 147          # the picker waits at the foot of the ladder
 untilvar 60 64       # (his boredom animation)
@@ -52,10 +58,12 @@ pick 78 141          # he takes it again
 walk 78 33           # up on the top ledge
 untilvar 60 64       # (his boredom animation)
 idle
-use 78 33            # he sows the seeds: a foot grows out of the ground
+use 78 33            # he sows the seeds: a foot pops out in the top left corner now and then
 untilvar 492 3
+hint foot
 pick 126 33          # he swaps the bag for the deodorant
-use 30 33            # and sprays the foot: it comes loose
+use 30 33            # and sprays the foot while it is out: it comes loose
+hint roast
 pick 30 33           # he takes the foot
 walk 42 147          # down to the foot of the ladder
 untilvar 60 64       # (his boredom animation)
@@ -68,6 +76,7 @@ untilvar 60 18 19
 click 71 129         # ...and steps away
 idle
 untilvar 503 1       # the dragon's breath has made it a roast
+hint table
 walk 42 147
 untilvar 60 64       # (his boredom animation)
 idle
@@ -80,7 +89,9 @@ click 71 129         # ...steps away, putting it down
 idle
 pick 78 141          # and takes it again
 use 138 81           # he gives it to the table: it's safe to cross now
+hint dagger
 pick 306 63          # he takes the dagger at the far end
+hint breathe
 walk 42 147          # and brings it down
 untilvar 60 64       # (his boredom animation)
 idle
@@ -92,6 +103,7 @@ untilvar 60 18 19
 click 71 129         # ...and steps away
 idle
 untilvar 491 1       # the dragon has breathed on it
+hint take
 walk 42 147
 untilvar 60 64       # (his boredom animation)
 idle
@@ -103,4 +115,5 @@ untilvar 60 18 19
 click 71 129         # ...steps away, putting it down
 idle
 pick 78 141          # and takes it again: the exit shows
+hint end
 exit

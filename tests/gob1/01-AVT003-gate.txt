@@ -8,13 +8,19 @@
 # original does (direct lines, or along the level's way points), so some
 # walks go in steps.
 room AVT003
+hint kick
 goblin 1
 act 186 63      # the fighter kicks the gate: the horn falls
+hint horn
 goblin 0
 pick 163 104    # the picker picks up the horn
+hint blow
 use 99 93       # and blows it: a branch falls
+hint pickaxe
 goblin 2
 act 90 129      # the wizard turns the branch into a pickaxe
+hint take
 goblin 0
 pick 92 130     # the picker swaps the horn for the pickaxe
+hint end
 exit

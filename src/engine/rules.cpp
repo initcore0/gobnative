@@ -31,6 +31,13 @@ const GameRules kGob1Rules{
 	{},
 	nullptr,
 	{},
+	// The spiders (AVT001): the ladder (item 16) leads to the small spider
+	// and its pillow (object 1, item 2) so it can be shot from below; once
+	// the pillow can be taken, a pick on the ladder took it as item 16 (and
+	// removed the ladder from the map), and the pillow laid under the
+	// falling flask then never caught it: the level could no longer be won.
+	// A bug of the original game, ScummVM's too.
+	{{"AVT001", 16, 2}},
 };
 
 const GameRules kGob2Rules{
@@ -45,6 +52,7 @@ const GameRules kGob2Rules{
 	{{"GOB06", -1, 7}},
 	{},
 	nullptr,
+	{},
 	{},
 };
 
@@ -62,6 +70,7 @@ const GameRules kGob3Rules{
 	{"FRGOB3.ITK", "DEGOB3.ITK", "USGOB3.ITK", "ITGOB3.ITK"},
 	"USGOB3.ITK",
 	{{"ECHEQUI1", "ECHIQUI1"}, {"ECHEQUI2", "ECHIQUI2"}},
+	{},
 };
 
 } // namespace
@@ -86,6 +95,13 @@ bool GameRules::ignoresSwitchTotSub(const std::string &tot, int16_t index, int16
 		if (s.index == index && s.function == function && tot == s.tot)
 			return true;
 	return false;
+}
+
+int16_t GameRules::pickedItem(const std::string &tot, int16_t item) const {
+	for (const PickAlias &a : pickAliases)
+		if (a.item == item && tot == a.tot)
+			return a.as;
+	return item;
 }
 
 bool GameRules::isVoiceArchive(const std::string &archive) const {

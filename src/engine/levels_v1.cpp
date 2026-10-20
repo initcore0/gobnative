@@ -147,8 +147,10 @@ std::string Interpreter::currentLevelTotV1() const {
 
 // After a script file has been loaded.
 void Interpreter::noteTotStartV1(const std::string &tot) {
-	if (findLevel(tot))
+	if (findLevel(tot)) {
 		_roomLoopReached = false; // its start runs until then (engine/skip.cpp)
+		_levelStarts++;
+	}
 	if (!_rules.isCutsceneTot(tot))
 		_skipAllMults = false;
 }

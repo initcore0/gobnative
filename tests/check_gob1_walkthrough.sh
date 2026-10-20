@@ -14,6 +14,8 @@
 # energy, each code is the one the overlay's Levels tab lists for the next
 # level (gobrun --list-levels), the script ends without a failed step and no
 # stub or error shows up. The last file watches FINAL to the end of the game.
+# The `hint ID` lines check the hints (assets/hints/gob1.txt) along the way:
+# before each step's actions, the step the hints give is that one.
 
 set -eu
 game=${1:?usage: $0 <gob1 gamedir> [build dir] [last file number]}
@@ -32,7 +34,8 @@ for f in "$here"/gob1/[0-9][0-9]-*.txt; do
 	levels="$levels $(basename "$f" | cut -d- -f2)"
 done
 printf 'wait 30\nend\n' >>"$dir/script.txt"
-"$build/gobrun" "$game" --save-dir "$dir/saves" --script "$dir/script.txt" --frames 2000000 >"$dir/out.txt" 2>&1 ||
+"$build/gobrun" "$game" --save-dir "$dir/saves" --hints "$here/../assets/hints/gob1.txt" \
+	--script "$dir/script.txt" --frames 2000000 >"$dir/out.txt" 2>&1 ||
 	{ grep -- '--' "$dir/out.txt" | tail -3; echo "FAIL: the script didn't finish"; exit 1; }
 if grep -q 'stub\|ERROR' "$dir/out.txt"; then
 	grep 'stub\|ERROR' "$dir/out.txt" | head -3
