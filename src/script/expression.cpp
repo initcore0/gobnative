@@ -17,12 +17,16 @@ bool isOperand(uint8_t op) { return op >= ArrayInt8 && op <= Func; }
 } // namespace
 
 // Reads the dimension indices that follow an array token and folds them into
-// a flat element offset. Each index is clamped to its dimension, as the
-// original does.
+// a flat element offset. An index is kept below its dimension (as ScummVM
+// does), but a negative one is not raised to 0: the original addresses the
+// bytes before the array then. Goblins 2's MENU marks item v[476] as owned
+// after its "empty inventory" banner while v[476] is -1 (0x13BC); the
+// original's write lands in v[792], which nothing reads, where a clamped
+// index gave the goblins the world's first item (the stone).
 int Expression::arrayOffset(const uint8_t *dims, int dimCount) {
 	int offset = 0;
 	for (int d = 0; d < dimCount; d++) {
-		int idx = std::clamp<int>(parseVal(EndMarker), 0, std::max(0, dims[d] - 1));
+		int idx = std::min<int>(parseVal(EndMarker), std::max(0, dims[d] - 1));
 		offset = offset * dims[d] + idx;
 	}
 	return offset;
