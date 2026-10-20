@@ -13,7 +13,10 @@
 # run before left behind for this run's progress (engine/hints.h,
 # HintTracker). Then a step skipped by doing later ones first: in the
 # cannon level, with the cannon aimed and the fire lit but no cannonball
-# knocked off the pile, the hint is the cannonball (HintStep::needs).
+# knocked off the pile, the hint is the cannonball (HintStep::needs). And
+# a trap of the game: in the last level, the fighter short of the far end
+# of the bird's back when the wizard frees the picker can never reach the
+# creature (HintTrap fighter-cut-off).
 
 set -eu
 game=${1:?usage: $0 <gob1 gamedir> [build dir]}
@@ -54,6 +57,20 @@ hint ball
 goblin 1
 act 270 141
 hint load-ball
+level AVT022
+room AVT022
+trap none
+goblin 2
+act 126 129
+goblin 0
+use 42 123
+goblin 1
+walk 126 135
+walk 168 50
+trap none
+goblin 2
+act 42 21
+trap fighter-cut-off
 end
 EOF
 "$build/gobrun" "$game" --save-dir "$dir/saves" --hints "$here/../assets/hints/gob1.txt" \
@@ -64,4 +81,4 @@ if grep -q 'FAILED' "$dir/out.txt"; then
 	echo "FAIL: a hint was wrong"
 	exit 1
 fi
-echo "OK: the hints start again with each level, in every level, and go back for a skipped step"
+echo "OK: the hints start again with each level, in every level, go back for a skipped step and spot a trap"

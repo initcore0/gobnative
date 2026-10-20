@@ -24,9 +24,9 @@ namespace gob {
 class Interpreter;
 
 struct HintCondition {
-	enum class Kind { ObjState, ObjType, Pocket, ItemGone, ItemPresent, ItemCells, Var, Exit };
+	enum class Kind { ObjState, ObjType, Pocket, ItemGone, ItemPresent, ItemCells, Var, Exit, GoblinX, GoblinY };
 	Kind kind = Kind::Exit;
-	int index = 0;           // object, item or variable slot
+	int index = 0;           // object, item, variable slot or goblin
 	int32_t lo = 0, hi = 0;  // the value (lo..hi for Var; cells for ItemCells)
 };
 
@@ -46,10 +46,20 @@ struct HintStep {
 	std::string nudge, pointer, solve;
 };
 
+// A trap of the game itself: a state from which the level can no longer be
+// won (the player has to start it again). Shown to the player, unasked,
+// while it holds.
+struct HintTrap {
+	std::string id;
+	std::vector<std::vector<HintCondition>> when; // holds when every condition of any one line does
+	std::string text;
+};
+
 struct HintLevel {
 	std::string level; // the level's script name (AVT003), as Interpreter::currentLevel()
 	std::string title;
 	std::vector<HintStep> steps;
+	std::vector<HintTrap> traps;
 };
 
 class HintBook {
@@ -69,6 +79,9 @@ public:
 	static size_t current(const HintLevel &level, const Interpreter &in);
 	// What a step's conditions look at, as now (the values they compare).
 	static std::vector<int32_t> facts(const HintStep &step, const Interpreter &in);
+	// The same for any list of condition lines (a step's done, a trap's when).
+	static bool holds(const std::vector<std::vector<HintCondition>> &lines, const Interpreter &in);
+	static std::vector<int32_t> facts(const std::vector<std::vector<HintCondition>> &lines, const Interpreter &in);
 
 private:
 	std::vector<HintLevel> _levels;
@@ -90,9 +103,15 @@ public:
 	// The step to hint: the one after the last step done in this run (or a
 	// step it needs that isn't done).
 	size_t current(const Interpreter &in) const;
+	// The level's trap that holds in this run (as for steps, one that held
+	// when the run began counts once something it looks at has changed), or
+	// null.
+	const HintTrap *trap(const Interpreter &in) const;
 
 private:
 	const HintLevel *_level = nullptr, *_shown = nullptr;
+	std::vector<std::vector<int32_t>> _trapStart;
+	std::vector<char> _trapStale;
 	uint32_t _run = 0;
 	std::vector<std::vector<int32_t>> _start; // per step: facts() when the run began
 	std::vector<char> _stale;                 // per step: done then, and nothing changed since

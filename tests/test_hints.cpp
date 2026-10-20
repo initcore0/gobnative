@@ -66,6 +66,14 @@ void testRefused() {
 	CHECK(book.parse(std::string(kStep) + "step take\n  done exit\n  needs kick\n  nudge n\n  pointer p\n  solve s\n",
 	                 error));
 	CHECK(book.level("AVT003") && book.level("AVT003")->steps[1].needs == std::vector<std::string>{"kick"});
+	HintBook traps;
+	CHECK(traps.parse(std::string(kStep) + "trap stuck\n  when var 332 2, gob 1 x 0 13\n  text Start\n  text again.\n", error));
+	const HintLevel *tl = traps.level("AVT003");
+	CHECK(tl && tl->traps.size() == 1 && tl->traps[0].text == "Start again." && tl->traps[0].when[0].size() == 2);
+	CHECK(tl && tl->traps[0].when[0][1].kind == HintCondition::Kind::GoblinX && tl->traps[0].when[0][1].hi == 13);
+	CHECK(refusal(std::string(kStep) + "trap t\n  text x\n") == "AVT003 trap t: needs when and text");
+	CHECK(refusal(std::string(kStep) + "trap t\n  nudge x\n") == "line 13: 'nudge' in a trap (when and text only)");
+	CHECK(refusal(std::string(kStep) + "  when exit\n") == "line 12: 'when' outside a trap");
 }
 
 void testShipped(const char *path) {

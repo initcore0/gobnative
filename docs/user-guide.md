@@ -501,6 +501,13 @@ button of the touch bar. Hints follow the state of the level, so they
 keep up with quick loads, level jumps, AGAIN after the goblins collapse
 and steps solved in another order.
 
+Some situations in the original game can't be won from (a game trap, not
+a mistake of yours): in the last level, if the fighter isn't at the far
+right end of the bird's back when the wizard frees the picker, he can
+never reach the creature that grabs the wizard. With hints on, such a trap
+shows a red "Game trap" card by itself, saying what happened and to start
+the level again from the Levels tab.
+
 "Show clickable spots" makes everything in the room the goblins can act on
 glow softly (in Gobliiins the items on the level's map, in the other games
 the room's hotspots); it works in all three games. The hints are in

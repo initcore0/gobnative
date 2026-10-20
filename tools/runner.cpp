@@ -107,6 +107,8 @@
 //   hint ID         once the room is idle, check that the step the hints
 //                   (--hints FILE, engine/hints.h) give is ID (end: every
 //                   step is done) within 5 seconds; fail otherwise
+//   trap ID         check that the level's trap that holds (--hints) is ID
+//                   (none: no trap) within 5 seconds; fail otherwise
 //   spots           trace the clickable spots the hints show
 //                   (Interpreter::clickSpots: id, bounding box, rectangles,
 //                   Gobliiins' object)
@@ -749,6 +751,19 @@ private:
 			std::printf("%8.3fs  (hint %s %s)\n", host.now / 1000.0, l->level.c_str(), id.c_str());
 			if (id != want) {
 				fail(host, "the hint is " + id);
+				return false;
+			}
+			return true;
+		}
+		if (c == "trap") { // the level's trap that holds is ID (none: no trap), within 5 seconds
+			const HintTrap *t = hintTracker.level() ? hintTracker.trap(interp) : nullptr;
+			const std::string id = t ? t->id : "none";
+			const std::string want = st.args.empty() ? std::string() : st.args[0];
+			if (id != want && host.now - _startedAt < 5000)
+				return false;
+			std::printf("%8.3fs  (trap %s)\n", host.now / 1000.0, id.c_str());
+			if (id != want) {
+				fail(host, "the trap is " + id);
 				return false;
 			}
 			return true;

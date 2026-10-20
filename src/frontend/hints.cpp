@@ -10,6 +10,9 @@
 //   the goblin), then the solution (engine/hints.h, assets/hints/*.txt);
 //   it goes away by itself after a while, when the step is done, or when
 //   the key is pressed after the solution;
+// - a trap of the game (a state the level can't be won from, HintTrap)
+//   shows its own card unasked, while it holds, saying it is the game's
+//   trap and how to get out;
 // - the clickable spots, a soft pulsing glow over everything in the room
 //   the goblins can act on (Interpreter::clickSpots: Gobliiins' items on
 //   the level map, the other games' room hotspots);
@@ -76,6 +79,11 @@ public:
 			return;
 		const uint32_t now = SDL_GetTicks();
 		_corner = -1; // placed again, where it hides least now
+		if (_trap) { // the trap's card: shown or hidden
+			_shown = !_shown;
+			_shownAt = now;
+			return;
+		}
 		if (!_shown) {
 			_shown = true;
 			_tier = std::max(_tier, 1);
@@ -101,7 +109,16 @@ public:
 			_shown = false;
 			_tier = 0;
 		}
-		if (_shown && SDL_GetTicks() - _shownAt > kCardMs)
+		// A trap of the game: its card shows unasked (hints on) and stays
+		// while the trap holds; when it ends, the card goes with it.
+		const HintTrap *trap = l && in ? _tracker.trap(*in) : nullptr;
+		if (trap != _trap) {
+			_trap = trap;
+			_shown = trap && _host.settings().hintsOn;
+			_shownAt = SDL_GetTicks();
+			_corner = -1;
+		}
+		if (_shown && !_trap && SDL_GetTicks() - _shownAt > kCardMs)
 			_shown = false;
 		maybeAsk(in, l);
 		return in && ((_host.settings().showSpots) || (_shown && l));
@@ -127,7 +144,7 @@ public:
 		if (!_shown || !l)
 			return;
 		const size_t cur = current(*l);
-		if (cur < l->steps.size() && _tier >= 2)
+		if (cur < l->steps.size() && _tier >= 2 && !_trap)
 			drawTarget(dl, *in, l->steps[cur], spots, pulse);
 		// What the card should leave in sight: the goblins and the target.
 		std::vector<ImVec4> avoid;
@@ -165,7 +182,11 @@ public:
 		}
 		const size_t cur = current(*l);
 		ImGui::Text("%s: %zu of %zu steps done", l->title.c_str(), std::min(cur, l->steps.size()), l->steps.size());
-		if (cur >= l->steps.size())
+		if (_trap) {
+			ImGui::PushStyleColor(ImGuiCol_Text, vec(colour::kBad));
+			ImGui::TextWrapped("Game trap: %s", _trap->text.c_str());
+			ImGui::PopStyleColor();
+		} else if (cur >= l->steps.size())
 			ImGui::TextWrapped("Everything here is done: on to the exit.");
 		else if (s.hintsOn && ImGui::Button("Show a hint")) {
 			_overlay.setOpen(false);
@@ -179,6 +200,7 @@ private:
 	const std::string _keyName;
 	HintBook _book;
 	HintTracker _tracker;
+	const HintTrap *_trap = nullptr; // the level's trap that holds, if any
 	bool _shown = false;
 	int _tier = 0; // 1 nudge, 2 also who and where, 3 also the solution
 	uint32_t _shownAt = 0;
@@ -297,31 +319,41 @@ private:
 		std::vector<Line> lines;
 		char head[160];
 		const size_t n = l.steps.size();
-		if (cur < n)
-			std::snprintf(head, sizeof(head), "Hint: %s (step %zu of %zu)", l.title.c_str(), cur + 1, n);
-		else
-			std::snprintf(head, sizeof(head), "Hint: %s", l.title.c_str());
-		lines.push_back({fonts.bold, size * 0.85f, colour::kAmber, head, 0});
-		if (cur >= n) {
-			lines.push_back({fonts.regular, size, colour::kText, "Everything here is done. On to the exit!", size * 0.4f});
+		ImU32 border = withAlpha(colour::kAmber, 150);
+		if (_trap) { // a trap of the game: what happened, how to get out
+			std::snprintf(head, sizeof(head), "Game trap: %s", l.title.c_str());
+			lines.push_back({fonts.bold, size * 0.85f, colour::kBad, head, 0});
+			lines.push_back({fonts.regular, size, colour::kText, _trap->text, size * 0.4f});
+			lines.push_back({fonts.regular, size * 0.8f, colour::kFaint, capitalised(keyName()) + ": hide", size * 0.6f});
+			border = withAlpha(colour::kBad, 200);
 		} else {
-			const HintStep &s = l.steps[cur];
-			lines.push_back({fonts.regular, size, colour::kText, s.nudge, size * 0.4f});
-			if (_tier >= 2) {
-				std::string who = s.goblin >= 0 ? capitalised(kGoblinNames[s.goblin]) : std::string("Anyone");
-				if (s.action != HintStep::Action::None)
-					who += std::string(", ") + hintActionName(s.action);
-				lines.push_back({fonts.bold, size * 0.85f, colour::kGood, who, size * 0.6f});
-				lines.push_back({fonts.regular, size, colour::kText, s.pointer, size * 0.15f});
+			if (cur < n)
+				std::snprintf(head, sizeof(head), "Hint: %s (step %zu of %zu)", l.title.c_str(), cur + 1, n);
+			else
+				std::snprintf(head, sizeof(head), "Hint: %s", l.title.c_str());
+			lines.push_back({fonts.bold, size * 0.85f, colour::kAmber, head, 0});
+			if (cur >= n) {
+				lines.push_back({fonts.regular, size, colour::kText, "Everything here is done. On to the exit!", size * 0.4f});
+			} else {
+				const HintStep &s = l.steps[cur];
+				lines.push_back({fonts.regular, size, colour::kText, s.nudge, size * 0.4f});
+				if (_tier >= 2) {
+					std::string who = s.goblin >= 0 ? capitalised(kGoblinNames[s.goblin]) : std::string("Anyone");
+					if (s.action != HintStep::Action::None)
+						who += std::string(", ") + hintActionName(s.action);
+					lines.push_back({fonts.bold, size * 0.85f, colour::kGood, who, size * 0.6f});
+					lines.push_back({fonts.regular, size, colour::kText, s.pointer, size * 0.15f});
+				}
+				if (_tier >= 3) {
+					lines.push_back({fonts.bold, size * 0.85f, colour::kAmber, "Solution", size * 0.6f});
+					lines.push_back({fonts.regular, size, colour::kText, s.solve, size * 0.15f});
+				}
 			}
-			if (_tier >= 3) {
-				lines.push_back({fonts.bold, size * 0.85f, colour::kAmber, "Solution", size * 0.6f});
-				lines.push_back({fonts.regular, size, colour::kText, s.solve, size * 0.15f});
-			}
+			const bool more = cur < n && _tier < 3;
+			const std::string foot =
+				capitalised(keyName()) + (more ? (_tier == 1 ? ": who and where" : ": the solution") : ": hide");
+			lines.push_back({fonts.regular, size * 0.8f, colour::kFaint, foot, size * 0.6f});
 		}
-		const bool more = cur < n && _tier < 3;
-		const std::string foot = capitalised(keyName()) + (more ? (_tier == 1 ? ": who and where" : ": the solution") : ": hide");
-		lines.push_back({fonts.regular, size * 0.8f, colour::kFaint, foot, size * 0.6f});
 
 		float height = 2 * pad;
 		for (const Line &line : lines)
@@ -348,7 +380,7 @@ private:
 		const ImVec2 p0 = corners[_corner];
 		const ImVec2 p1(p0.x + width, p0.y + height);
 		dl.AddRectFilled(p0, p1, withAlpha(colour::kBackground, 196), size * 0.6f);
-		dl.AddRect(p0, p1, withAlpha(colour::kAmber, 150), size * 0.6f, 0, 1.5f);
+		dl.AddRect(p0, p1, border, size * 0.6f, 0, 1.5f);
 		float y = p0.y + pad;
 		for (const Line &line : lines) {
 			y += line.gap;

@@ -49,7 +49,8 @@ bool number(const std::string &s, int32_t &out) {
 }
 
 // One condition: obj N state S | obj N type T | pocket ID | item ID gone |
-// item ID present | item ID cells N | var SLOT V | var SLOT LO HI | exit.
+// item ID present | item ID cells N | var SLOT V | var SLOT LO HI | exit |
+// gob N x LO HI | gob N y LO HI (goblin N's map cell).
 bool parseCondition(const std::vector<std::string> &w, HintCondition &c) {
 	int32_t a = 0, b = 0, d = 0;
 	if (w.size() == 1 && w[0] == "exit") {
@@ -70,6 +71,14 @@ bool parseCondition(const std::vector<std::string> &w, HintCondition &c) {
 	if (w.size() == 3 && w[0] == "item" && number(w[1], a) && (w[2] == "gone" || w[2] == "present")) {
 		c.kind = w[2] == "gone" ? HintCondition::Kind::ItemGone : HintCondition::Kind::ItemPresent;
 		c.index = a;
+		return true;
+	}
+	if (w.size() == 5 && w[0] == "gob" && number(w[1], a) && a >= 0 && a <= 2 && (w[2] == "x" || w[2] == "y") &&
+	    number(w[3], b) && number(w[4], d)) {
+		c.kind = w[2] == "x" ? HintCondition::Kind::GoblinX : HintCondition::Kind::GoblinY;
+		c.index = a;
+		c.lo = b;
+		c.hi = d;
 		return true;
 	}
 	if (w.size() == 4 && w[0] == "item" && number(w[1], a) && w[2] == "cells" && number(w[3], b)) {
@@ -115,6 +124,13 @@ int32_t fact(const HintCondition &c, const Interpreter &in) {
 		return int32_t(in.variables().slot(uint32_t(c.index)));
 	case HintCondition::Kind::Exit:
 		return int32_t(in.variables().slot(136));
+	case HintCondition::Kind::GoblinX:
+	case HintCondition::Kind::GoblinY: {
+		if (!g)
+			return -1000;
+		const GoblinsV1::Pos p = g->gobPosition(c.index);
+		return c.kind == HintCondition::Kind::GoblinX ? p.x : p.y;
+	}
 	}
 	return 0;
 }
@@ -152,6 +168,11 @@ bool holds(const HintCondition &c, const Interpreter &in) {
 	}
 	case HintCondition::Kind::Exit:
 		return in.variables().slot(136) == 1; // the exit sign shows (engine/levels_v1.cpp)
+	case HintCondition::Kind::GoblinX:
+	case HintCondition::Kind::GoblinY: {
+		const int32_t v = fact(c, in);
+		return v >= c.lo && v <= c.hi;
+	}
 	}
 	return false;
 }
@@ -173,6 +194,7 @@ bool HintBook::parse(const std::string &text, std::string &error) {
 	std::istringstream in(text);
 	std::string raw;
 	int n = 0;
+	bool inTrap = false; // the lines go to the level's last trap (until a step or level)
 	auto fail = [&](const std::string &why) {
 		error = "line " + std::to_string(n) + ": " + why;
 		_levels.clear();
@@ -195,13 +217,49 @@ bool HintBook::parse(const std::string &text, std::string &error) {
 				return fail("level without a name");
 			if (level(l.level))
 				return fail("level " + l.level + " twice");
+			inTrap = false;
 			_levels.push_back(std::move(l));
 			continue;
 		}
 		if (_levels.empty())
 			return fail("'" + key + "' before the first level");
 		HintLevel &l = _levels.back();
+		// A line of conditions (done, when): all of them, comma-separated.
+		auto conditions = [&](std::vector<std::vector<HintCondition>> &lines) {
+			std::vector<HintCondition> all;
+			std::string part;
+			std::istringstream parts(rest);
+			while (std::getline(parts, part, ',')) {
+				HintCondition c;
+				if (!parseCondition(words(part), c))
+					return fail("unknown condition '" + trim(part) + "'");
+				all.push_back(c);
+			}
+			if (all.empty())
+				return fail(key + " without a condition");
+			lines.push_back(std::move(all));
+			return true;
+		};
+		if (key == "trap") {
+			if (rest.empty() || rest.find_first_of(" \t") != std::string::npos)
+				return fail("a trap takes one id");
+			l.traps.push_back({});
+			l.traps.back().id = rest;
+			inTrap = true;
+			continue;
+		}
+		if (key == "when" || (key == "text" && inTrap)) {
+			if (!inTrap)
+				return fail("'" + key + "' outside a trap");
+			HintTrap &t = l.traps.back();
+			if (key == "when" && !conditions(t.when))
+				return false;
+			if (key == "text")
+				t.text += (t.text.empty() ? "" : " ") + rest;
+			continue;
+		}
 		if (key == "step") {
+			inTrap = false;
 			if (rest.empty() || rest.find_first_of(" \t") != std::string::npos)
 				return fail("a step takes one id");
 			for (const HintStep &s : l.steps)
@@ -213,20 +271,12 @@ bool HintBook::parse(const std::string &text, std::string &error) {
 		}
 		if (l.steps.empty())
 			return fail("'" + key + "' before the level's first step");
+		if (inTrap)
+			return fail("'" + key + "' in a trap (when and text only)");
 		HintStep &s = l.steps.back();
 		if (key == "done") {
-			std::vector<HintCondition> all;
-			std::string part;
-			std::istringstream parts(rest);
-			while (std::getline(parts, part, ',')) {
-				HintCondition c;
-				if (!parseCondition(words(part), c))
-					return fail("unknown condition '" + trim(part) + "'");
-				all.push_back(c);
-			}
-			if (all.empty())
-				return fail("done without a condition");
-			s.done.push_back(std::move(all));
+			if (!conditions(s.done))
+				return false;
 		} else if (key == "needs") {
 			const std::vector<std::string> w = words(rest);
 			if (w.size() != 1)
@@ -269,13 +319,20 @@ bool HintBook::parse(const std::string &text, std::string &error) {
 			return fail("unknown keyword '" + key + "'");
 		}
 	}
-	for (const HintLevel &l : _levels)
+	for (const HintLevel &l : _levels) {
 		for (const HintStep &s : l.steps)
 			if (s.done.empty() || s.nudge.empty() || s.pointer.empty() || s.solve.empty()) {
 				error = l.level + " step " + s.id + ": needs done, nudge, pointer and solve";
 				_levels.clear();
 				return false;
 			}
+		for (const HintTrap &t : l.traps)
+			if (t.when.empty() || t.text.empty()) {
+				error = l.level + " trap " + t.id + ": needs when and text";
+				_levels.clear();
+				return false;
+			}
+	}
 	return true;
 }
 
@@ -287,19 +344,27 @@ const HintLevel *HintBook::level(const std::string &name) const {
 	return nullptr;
 }
 
-bool HintBook::done(const HintStep &step, const Interpreter &in) {
-	for (const std::vector<HintCondition> &line : step.done)
-		if (std::all_of(line.begin(), line.end(), [&](const HintCondition &c) { return holds(c, in); }))
+bool HintBook::holds(const std::vector<std::vector<HintCondition>> &lines, const Interpreter &in) {
+	for (const std::vector<HintCondition> &line : lines)
+		if (std::all_of(line.begin(), line.end(), [&](const HintCondition &c) { return gob::holds(c, in); }))
 			return true;
 	return false;
 }
 
-std::vector<int32_t> HintBook::facts(const HintStep &step, const Interpreter &in) {
+std::vector<int32_t> HintBook::facts(const std::vector<std::vector<HintCondition>> &lines, const Interpreter &in) {
 	std::vector<int32_t> out;
-	for (const std::vector<HintCondition> &line : step.done)
+	for (const std::vector<HintCondition> &line : lines)
 		for (const HintCondition &c : line)
 			out.push_back(fact(c, in));
 	return out;
+}
+
+bool HintBook::done(const HintStep &step, const Interpreter &in) {
+	return holds(step.done, in);
+}
+
+std::vector<int32_t> HintBook::facts(const HintStep &step, const Interpreter &in) {
+	return facts(step.done, in);
 }
 
 void HintTracker::update(const HintBook &book, const Interpreter &in) {
@@ -318,11 +383,29 @@ void HintTracker::update(const HintBook &book, const Interpreter &in) {
 			_start.push_back(HintBook::facts(s, in));
 			_stale.push_back(HintBook::done(s, in));
 		}
+		_trapStart.clear();
+		_trapStale.clear();
+		for (const HintTrap &t : _shown->traps) {
+			_trapStart.push_back(HintBook::facts(t.when, in));
+			_trapStale.push_back(HintBook::holds(t.when, in));
+		}
 		return;
 	}
 	for (size_t i = 0; i < steps.size(); i++)
 		if (_stale[i] && HintBook::facts(steps[i], in) != _start[i])
 			_stale[i] = false;
+	for (size_t i = 0; i < _shown->traps.size(); i++)
+		if (_trapStale[i] && HintBook::facts(_shown->traps[i].when, in) != _trapStart[i])
+			_trapStale[i] = false;
+}
+
+const HintTrap *HintTracker::trap(const Interpreter &in) const {
+	if (!_shown)
+		return nullptr;
+	for (size_t i = 0; i < _shown->traps.size(); i++)
+		if (!_trapStale[i] && HintBook::holds(_shown->traps[i].when, in))
+			return &_shown->traps[i];
+	return nullptr;
 }
 
 namespace {

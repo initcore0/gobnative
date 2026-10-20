@@ -26,6 +26,7 @@ walk 210 39     # ...to the far right end of the bird's back (once the creature 
 goblin 2
 act 42 21       # the wizard's spell: the picker is free, the evil wizard takes the wizard
 hint free-wizard
+trap none
 goblin 1
 act 222 51      # the fighter's blow: the wizard is free, the fighter is hung up top right
 hint bag

@@ -19,10 +19,15 @@
 #     pointer TEXT           who, and on what
 #     solve TEXT             exactly what to do
 #
+#   trap ID                  a trap of the game: the level can't be won from
+#     when COND[, COND...]   here (shown to the player, unasked, while it holds)
+#     text TEXT              what happened and how to get out
+#
 # Conditions: obj N state S, obj N type T (0 shown, 1 hidden), pocket ID
 # (the item id the picker carries), item ID gone|present, item ID cells N
 # (the map cells holding it), var SLOT V, var SLOT LO HI, exit (the exit
-# sign shows). Find them with gobrun --state-diff.
+# sign shows), gob N x LO HI, gob N y LO HI (goblin N's map cell, 12 x 6
+# pixels each). Find them with gobrun --state-diff.
 
 level AVT003 The gate
 step kick
@@ -1296,6 +1301,10 @@ step wizard-down
   solve The wizard walks down to the others: the level ends.
 
 level AVT022 The bird's skeleton
+trap fighter-cut-off
+  when var 332 2, gob 1 x 0 13
+  text This is a trap in the game itself, not something you did wrong: the creature holding the wizard landed at the far right end of the bird's back before the fighter got there, and now he can never get past it to hit it. The level can't be finished from here.
+  text Start it again from the Levels tab, and this time walk the fighter to the far right end of the bird's back before the wizard casts.
 step ladder
   done obj 7 state 3
   goblin 2
