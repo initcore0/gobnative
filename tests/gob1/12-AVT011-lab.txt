@@ -44,9 +44,9 @@ hint take-dart
 goblin 0
 pick 126 33     # the picker swaps the flyswatter for the dart
 hint throw
-use 102 63      # he throws it at the picture: the magic object falls onto the table
+use 102 63      # he throws it at the portrait: a little crowned figure drops onto the table by the ladder
 hint object
-walk 210 93     # he takes it
+walk 210 93     # he takes the crowned figure (the magic object)
 hint elixir
 pick 114 93     # he takes the elixir: the exit opens
 hint end

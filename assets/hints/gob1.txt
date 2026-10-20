@@ -30,21 +30,21 @@ step kick
   at 186 63
   nudge Something is perched on top of the gate. Could it be shaken loose?
   pointer The fighter is good at shaking things.
-  solve The fighter kicks the gate: the horn on top falls to the ground.
+  solve The fighter kicks the stone archway in front of the little red door: a horn breaks off the stone head on top of the arch and falls to its foot.
 step horn
   done pocket 2
   goblin 0
   action pick
   at 163 104
   nudge That fell within reach.
-  pointer The picker can carry one thing at a time.
+  pointer The picker can pick up the horn lying at the foot of the stone archway.
   solve The picker picks up the horn.
 step blow
   done var 316 1
   goblin 0
   action use
   at 99 93
-  nudge A horn is for blowing. The old tree on the left looks fragile.
+  nudge A horn is for blowing. Try it near the big bare tree on the left.
   pointer The picker can use what he carries near the tree.
   solve The picker blows the horn by the tree: a branch falls.
 step pickaxe
@@ -54,7 +54,7 @@ step pickaxe
   at 90 129
   nudge A plain branch won't get you far. Magic might improve it.
   pointer The wizard's spells change things.
-  solve The wizard casts a spell on the branch: it becomes a pickaxe.
+  solve The wizard casts a spell on the branch lying on the ground just right of the tree roots: it becomes a pickaxe.
 step take
   done exit
   goblin 0
@@ -72,7 +72,7 @@ step right-fruit
   at 303 32
   nudge The big apples up in the tree are out of reach. Two goblins can work together here.
   pointer The wizard can enchant a big apple; then the fighter can knock it down.
-  solve The wizard casts on the big apple at the top right, then the fighter hits it: it drops onto the ledge.
+  solve The wizard casts on the rightmost apple on the tree's right branch (it swells up), then the fighter hits it: it drops onto the grassy ledge on the right.
 step left-fruit
   done obj 2 state 11
   goblin 2
@@ -80,7 +80,7 @@ step left-fruit
   at 154 31
   nudge There's a second big apple, and it works the same way.
   pointer The wizard and the fighter again, on the other big apple.
-  solve The wizard casts on the big apple at the top left, then the fighter hits it down.
+  solve The wizard casts on the right one of the two apples on the tree's left branch (it swells up), then the fighter hits it: it drops onto the branch below.
 step plank
   done obj 0 state 13
   goblin 0
@@ -88,31 +88,31 @@ step plank
   at 303 75
   nudge The bridge has a gap. Something thrown into it might fill it.
   pointer The picker can carry a big apple to the gap.
-  solve The picker picks up the big apple on the right ledge (dropping the pickaxe), then uses the pick cursor on the gap in the bridge: the apple becomes a plank.
+  solve The picker picks up the big apple on the right ledge (dropping the Pickaxe there), then uses the pick cursor on the gap between the two halves of the wooden bridge at the bottom: the apple drops into the gap.
 step bridge
   done obj 2 state 14
   goblin 0
   action pick
   at 155 40
-  nudge One plank isn't a whole bridge.
+  nudge One apple doesn't fill the gap.
   pointer The picker can do the same with the other big apple.
-  solve The picker picks up the second big apple and throws it into the gap with the pick cursor: the bridge is mended.
+  solve The picker climbs onto the tree's left branch, picks up the second big apple there and throws it into the gap with the pick cursor: it lands on the first apple and fills the gap.
 step stone
   done obj 4 state 4
   goblin 0
   action use
   at 32 31
-  nudge Something up the left ladder needs knocking loose.
+  nudge Something glints in the rock above the wooden platform on the left.
   pointer The picker needs the pickaxe again.
-  solve The picker picks the pickaxe back up, crosses the bridge, climbs the left ladder and uses the pickaxe on the stone: it falls.
+  solve The picker picks the Pickaxe back up from the right ledge, crosses the bridge, climbs the ladder onto the wooden platform at the left and uses the Pickaxe on the glint in the grey rock above it: a Diamond drops to the ground below the platform.
 step take-stone
   done exit
   goblin 0
   action pick
   at 65 89
-  nudge The stone is worth keeping.
-  pointer The picker can pick it up.
-  solve The picker picks up the stone: the exit sign shows.
+  nudge That gem is worth keeping.
+  pointer The picker can pick up the Diamond lying below the wooden platform.
+  solve The picker swaps the Pickaxe for the Diamond: the exit sign shows.
 
 level AVT002 The path
 step use
@@ -120,9 +120,9 @@ step use
   goblin 0
   action use
   at 240 78
-  nudge You arrive carrying something precious. Someone here might want it.
-  pointer The picker can use the Diamond on the door of the house on the right.
-  solve The picker uses the Diamond on the door of the house on the right: the exit sign shows.
+  nudge You arrive carrying something precious. A closed door here might open for it.
+  pointer The picker can use the Diamond on the big red door of the house to the right of the stone archway.
+  solve The picker uses the Diamond on the big red door of the house to the right of the stone archway: the door opens and the exit sign shows.
 
 level AVT004 The eye plants
 step rope
@@ -131,7 +131,7 @@ step rope
   goblin 2
   action act
   at 108 70
-  nudge The eye plants on the table are more than decoration.
+  nudge The eye plants around the table are more than decoration.
   pointer The wizard can make the eye plant at the left of the table grow.
   solve The wizard casts on the eye plant at the left of the table: its stalk grows up to the shelf, and goblins can climb it.
 step swap
@@ -140,8 +140,8 @@ step swap
   action pick
   at 28 83
   nudge The Diamond is not the only thing worth carrying here.
-  pointer The picker can swap the Diamond for Pot1, the small yellow pot by the big jug on the left.
-  solve The picker picks up Pot1, the small yellow pot by the big jug on the left (he puts the Diamond down there).
+  pointer The picker can swap the Diamond for Pot1, the left one of the two small yellow pots in front of the big yellow jug on the left.
+  solve The picker picks up Pot1, the left one of the two small yellow pots in front of the big yellow jug on the left (he puts the Diamond down there).
 step catcher
   done var 321 1
   goblin 0
@@ -156,16 +156,16 @@ step ladder
   action act
   at 285 80
   nudge The way up on the right is missing a step. The big red book on the right looks loose.
-  pointer The fighter can climb the grown plant and hit the book.
-  solve The fighter climbs the grown eye plant and hits the big red book on the right: it falls, and the way up on the right is open.
+  pointer The fighter can climb the grown eye plant and hit the big red book standing upright on the low bench on the right.
+  solve The fighter climbs the grown eye plant and hits the big red book standing upright on the low bench on the right: it topples to the floor in front of the bench and makes a step up.
 step finish
   done exit
   goblin 0
   action use
   at 192 57
-  nudge The sorcerer at the window is holding out his hand.
+  nudge The sorcerer behind the big table, reading a red book, is holding out his hand.
   pointer The picker takes the Diamond back and brings it to him, by the way up on the right.
-  solve The picker swaps Pot1 for the Diamond, walks round along the bottom to the right, climbs up and gives the Diamond to the sorcerer's hand: the exit sign shows.
+  solve The picker swaps Pot1 for the Diamond, walks round along the bottom to the fallen red book on the right, climbs up onto the big table and gives the Diamond to the sorcerer's outstretched hand: the exit sign shows.
 
 level AVT005 The giant's head
 step pole
@@ -222,17 +222,17 @@ step thread
   done var 308 1
   goblin 1
   action act
-  nudge The spider on the bridge hangs from a thread. Where does that thread go?
-  pointer The fighter can climb the rope to the top ledge and pull a thread. Only one of the two is the right one, and it changes from game to game.
-  solve The fighter climbs the rope to the top ledge and pulls the left or the right thread: the right one lifts the spider off the bridge.
+  nudge The orange spider sitting on the bottom path hangs from a long thread. Where does that thread go?
+  pointer The fighter can climb the long white thread the middle spider hangs from up to the top ledge, then pull one of the two short threads hanging from the ceiling to its left. Only one of them works, and which one changes from game to game.
+  solve The fighter climbs the orange spider's long thread to the top ledge and pulls one of the two short threads to its left: the correct one hauls the orange spider up off the bottom path to the tip of the middle ledge.
 step pistol
   done pocket 1
   goblin 0
   action pick
   at 288 129
-  nudge With the bridge clear, there's something worth taking on the right.
-  pointer The picker can cross the bridge.
-  solve The picker crosses the bridge and picks up the pistol.
+  nudge With the path clear, there's something worth taking on the right.
+  pointer The picker can cross the bottom path.
+  solve The picker crosses the bottom path and picks up the pistol lying on the rocks at the bottom right.
 step big-spider
   done var 306 1
   goblin 0
@@ -240,7 +240,7 @@ step big-spider
   at 288 60
   nudge Big spiders don't like being shot at.
   pointer The picker can shoot the big spider above him.
-  solve The picker uses the pistol on the big spider: it flees up its thread.
+  solve The picker uses the pistol on the big red spider hanging at the top right: it flees up its thread.
 step small-spider
   done var 298 1
   goblin 0
@@ -248,7 +248,7 @@ step small-spider
   at 54 69
   nudge The ladder on the left is guarded too.
   pointer The picker can shoot the small spider by the ladder.
-  solve The picker crosses back and uses the pistol on the small spider by the left ladder: the ladder is mended.
+  solve The picker crosses back and uses the pistol on the small spider hanging over the top of the left ladder: it wakes with a start, and the white pillow it was lying on shows.
 step pillow-take
   done pocket 2
   goblin 0
@@ -256,31 +256,31 @@ step pillow-take
   at 54 39
   nudge There's something soft at the top of the ladder.
   pointer The picker can climb up and swap the pistol for it.
-  solve The picker climbs the left ladder and swaps the pistol for the pillow.
+  solve The picker climbs the left ladder and swaps the pistol for the pillow under the small spider: the spider goes away.
 step pillow-place
   done obj 1 state 2, obj 1 type 0
   goblin 0
   action pick
   at 174 135
-  nudge A falling spider would like a soft landing.
-  pointer The picker can put the pillow on the bridge, right under the spider's thread.
-  solve The picker puts the pillow down on the bridge below the spider's thread.
+  nudge Something up there might fall. It would need a soft landing.
+  pointer The picker can put the pillow on the flat stone in the middle of the bottom path, right under the orange spider.
+  solve The picker puts the pillow down on the flat stone in the middle of the bottom path, below the orange spider.
 step drop
   done var 304 1 2
   goblin 2
   action act
   at 174 81
   nudge The spider is still hanging up there.
-  pointer The wizard can bring it down.
-  solve The wizard casts on the spider: it drops onto the pillow.
+  pointer The wizard can cast a spell on the orange spider at the tip of the middle ledge.
+  solve The wizard casts on the orange spider at the tip of the middle ledge: a round red flask lands on the pillow.
 step take
   done exit
   goblin 0
   action walk
   at 174 129
-  nudge The fall uncovered something.
-  pointer The picker can take it.
-  solve The picker steps back, then walks onto the pillow's spot and takes the magic object: the exit sign shows.
+  nudge Something landed on the pillow.
+  pointer The picker can step off the pillow and then walk back onto it to get the red flask.
+  solve The picker steps off the pillow, then walks back onto it and takes the round red flask, a magic object: the exit sign shows.
 
 level AVT007 The scarecrow
 step seeds-down
@@ -288,9 +288,9 @@ step seeds-down
   goblin 2
   action act
   at 22 27
-  nudge There's a bag up in the tree on the left.
-  pointer The wizard can bring it down onto the branch.
-  solve The wizard casts on the bag of seeds: it drops onto the branch.
+  nudge There's a bag at the tip of the branch above the ladder on the left.
+  pointer The wizard can climb up onto that branch and cast on it.
+  solve The wizard climbs onto the branch above the ladder and casts on the bag of seeds at its tip; the picker can then take it from the branch.
 step seeds
   done pocket 1
   goblin 0
@@ -314,7 +314,7 @@ step birds
   at 222 117
   nudge The birds are after the seeds.
   pointer The scarecrow could do with some help from the fighter.
-  solve When the birds come, the fighter hits the scarecrow: they fly off.
+  solve When a bird comes for the seeds (it lands at the bottom right), the fighter hits the scarecrow: it flies off.
 step rain
   done var 355 1 100
   done var 358 1 2
@@ -322,16 +322,16 @@ step rain
   action act
   at 222 21
   nudge Seeds need water to grow.
-  pointer The wizard can do something about that cloud.
-  solve The wizard casts on the cloud: it rains and a plant grows out of the field.
+  pointer The wizard, on the long right branch, can do something about the cloud just beside him.
+  solve The wizard casts on the cloud beside him: it rains and a little white flower sprouts in the field.
 step object
   done var 358 2
   goblin 0
   action walk
   at 186 141
-  nudge The plant has something in it.
-  pointer The picker can take it.
-  solve The picker walks to the plant and takes the magic object.
+  nudge Something has sprouted in the field.
+  pointer The picker can go to the little white flower in the field, left of the scarecrow.
+  solve The picker walks onto the little white flower in the field and takes the magic object from it.
 step bird
   done var 361 14
   goblin 0
@@ -347,9 +347,9 @@ step bone
   goblin 2
   action act
   at 210 99
-  nudge The skeleton is holding on to something.
-  pointer The wizard can make it let go.
-  solve The wizard casts on the skeleton: it drops a bone.
+  nudge The little skeleton on the table is holding on to something.
+  pointer The wizard can make the little skeleton on the table let go.
+  solve The wizard climbs onto the table and casts on the small white skeleton standing on it: it drops a bone.
 step flute
   done obj 3 state 2
   goblin 2
@@ -371,17 +371,17 @@ step play
   goblin 0
   action use
   at 60 129
-  nudge Snake charmers play to baskets.
-  pointer The picker can play the flute at the basket.
-  solve The picker climbs down from the table and plays the flute at the basket: a rope rises out of it.
+  nudge Snake charmers play music to make things rise out of their pots.
+  pointer The picker can play the flute at the small red pot on the floor at the left, between the dark tunnel and the big horned skeleton.
+  solve The picker climbs down from the table and plays the flute at the small red pot on the floor at the left: a rope rises out of it.
 step picker-up
   done var 313 1 2
   goblin 1
   action act
   at 270 75
   nudge The plank on the right works like a seesaw. The picker should put the flute down first.
-  pointer The fighter goes up the rope and along the top; the picker stands on the near end of the plank, and the fighter hits the other end.
-  solve The picker puts the flute down. The fighter climbs the rope, walks up the slope and along the top to the right. The picker stands on the near end of the plank, and the fighter's blow throws him up to the ledge.
+  pointer The fighter goes up the rope and along the top to the dark opening under the big skull at the top right; the picker stands on the left end of the plank on the right of the table; then the fighter strikes from up there.
+  solve The picker puts the flute down. The fighter climbs the rope, walks up the slope and along the top to the dark opening under the big skull at the top right. The picker stands on the left end of the plank on the right of the table, and the fighter's blow throws him up into that opening.
 step wizard-up
   done exit
   goblin 1
@@ -416,8 +416,8 @@ step meat
   action use
   at 102 141
   nudge Something lives in the hole in the roots.
-  pointer The picker can feed it.
-  solve The picker drops the meat into the hole in the roots: it's safe to cross now.
+  pointer The picker can feed whatever lives in the dark hole at the foot of the trunk, left of the bottom ladder.
+  solve The picker drops the meat into the dark hole at the foot of the trunk, left of the bottom ladder: it's safe to cross now.
 step windsock
   done pocket 7
   goblin 0
@@ -431,16 +431,16 @@ step branch
   goblin 2
   action act
   at 198 75
-  nudge The path along the branches has a gap.
-  pointer The wizard can mend the broken branch.
-  solve The wizard casts on the broken branch: the gap closes.
+  nudge One branch on the right of the trunk has been snapped off short.
+  pointer The wizard can mend the broken stub with leaves on the right side of the trunk, above the middle ladder.
+  solve The wizard climbs up and casts on the broken stub on the right of the trunk: it grows into a long thin branch reaching to the right edge.
 step picker-up
   done var 299 1
   goblin 1
   action act
   at 294 93
   nudge The right branch is springy, like a catapult.
-  pointer The picker stands at its end; the fighter hits the branch.
+  pointer The picker stands at the tip of the long branch; the fighter goes to the rocks below the tip and hits it.
   solve The picker walks to the end of the right branch, and the fighter's blow catapults him up to the top.
 step cork
   done var 468 1
@@ -472,8 +472,8 @@ step bird
   action act
   at 234 117
   nudge Time to flush the bird out.
-  pointer The fighter can scare it; the picker catches it.
-  solve The fighter scares the bird: it flies up to the right hole, where the picker catches it with the windsock. The exit sign shows.
+  pointer The fighter can scare the bird out of the hole in the trunk just right of the middle ladder; the picker catches it at the top.
+  solve The fighter goes to the hole in the trunk just right of the middle ladder and scares the bird out: it flies up to the open hole at the top right, where the picker catches it with the windsock. The exit sign shows.
 
 level AVT010 The dog again
 step bird
@@ -481,25 +481,25 @@ step bird
   goblin 0
   action use
   at 186 99
-  nudge The dog is still hungry, and you brought something.
-  pointer The picker can give it the bird, from the dog's left end. Go round along the bottom.
-  solve The picker walks left along the bottom to the left edge, then gives the bird to the dog from its left end.
+  nudge The dog is easily distracted, and you brought something.
+  pointer The picker can let the bird go by the dog's head, which faces left. Go round along the bottom.
+  solve The picker walks left along the bottom to the left edge, then uses the bird on the dog from the left, by its head: the bird flies up and the dog gets up to stare at it.
 step sleep
   done var 378 1
   goblin 2
   action act
   at 186 99
-  nudge A busy dog is a drowsy dog.
+  nudge While the dog is staring at the bird, it's off its guard.
   pointer The wizard can go the same way round and put it to sleep.
-  solve The wizard walks round the same way and casts on the dog: it falls asleep.
+  solve The wizard walks round the same way and casts on the dog while it stares at the bird: the dog is gone from the gateway.
 step knock
   done exit
   goblin 1
   action act
   at 162 75
   nudge Someone should knock.
-  pointer The fighter can walk past the sleeping dog to the door.
-  solve The fighter walks past the dog and knocks on the door: the exit sign shows.
+  pointer With the dog gone, the fighter can walk to the red door under the stone arch.
+  solve The fighter walks to the red door under the stone arch and knocks: it opens and the exit sign shows.
 
 level AVT011 The laboratory
 step toy
@@ -508,8 +508,8 @@ step toy
   action pick
   at 294 87
   nudge The skeleton grabs anyone near the left end of the table. Maybe it's bored.
-  pointer There's a toy on the right the picker can take.
-  solve The picker picks up the cup and ball on the right.
+  pointer There's a toy at the far right, on the chest of drawers below the purple doorway.
+  solve The picker picks up the cup and ball on the chest of drawers at the far right, below the purple doorway.
 step give
   done var 350 1
   goblin 0
@@ -525,7 +525,7 @@ step quill
   at 162 87
   nudge Skeletons can be ticklish.
   pointer There's a quill in the inkwell.
-  solve The picker takes the quill from the inkwell.
+  solve The picker takes the quill (the white feather) from the inkwell in the middle of the table.
 step tickle
   done var 424 1
   goblin 0
@@ -596,9 +596,9 @@ step throw
   goblin 0
   action use
   at 102 63
-  nudge Darts are for throwing. Something sits behind the picture.
-  pointer The picker throws the dart at the picture.
-  solve The picker throws the dart at the picture: the magic object falls onto the table.
+  nudge Darts are for throwing, and the face in that portrait makes a fine target.
+  pointer The picker throws the dart at the portrait of the grey face, just right of the skeleton's raised arm.
+  solve From the shelf, the picker throws the dart at the portrait: it hits the face in the eye, and a little crowned figure (the magic object) drops onto the table by the ladder.
 step object
   done var 437 2
   goblin 0
@@ -606,14 +606,14 @@ step object
   at 210 93
   nudge It landed on the table.
   pointer The picker can take it.
-  solve The picker walks to the magic object on the table and takes it.
+  solve The picker walks along the table to the little crowned figure by the ladder and takes it.
 step elixir
   done exit
   goblin 0
   action pick
   at 114 93
   nudge There's one more thing to take along.
-  pointer The picker takes the elixir.
+  pointer The picker takes the elixir, the small bottle on the left part of the table, just left of the twisted pole's top.
   solve The picker picks up the elixir: the exit sign shows.
 
 level AVT012 The graveyard
@@ -622,9 +622,9 @@ step trunk
   goblin 2
   action act
   at 42 123
-  nudge The old tree trunk hides something.
-  pointer The wizard can open it.
-  solve The wizard casts on the tree trunk: there's a bird call inside.
+  nudge The big tree's roots hide something.
+  pointer The wizard can cast on the curled root at the foot of the big tree on the left.
+  solve The wizard casts on the curled root at the foot of the big tree: it lifts, and a bird call lies under it.
 step call
   done pocket 7
   goblin 0
@@ -647,8 +647,8 @@ step nest
   action act
   at 150 15
   nudge The bird is settling in its nest. The others should be ready on the branch.
-  pointer The fighter and the wizard climb onto the branch; when the bird has settled, the fighter hits the nest.
-  solve The fighter and the wizard climb onto the branch. When the bird has settled in the nest, the fighter hits the nest.
+  pointer The fighter and the wizard climb onto the branch; when the bird has settled on the nest, the fighter hits the big egg that stands on the branch.
+  solve The fighter and the wizard climb onto the branch. When the brown bird has sat on the nest, a big egg on legs stands on the branch next to them: the fighter hits it, and it cracks, showing a chick with wings.
 step ride
   done var 415 1
   goblin 2
@@ -656,7 +656,7 @@ step ride
   at 150 15
   nudge The bird could carry someone across.
   pointer The wizard.
-  solve The wizard acts on the nest: the bird carries him to the cliff on the right.
+  solve The wizard acts on the cracked egg with wings on the branch: the chick flies him to the cliff on the right.
 step spell
   done var 410 1
   goblin 2
@@ -688,7 +688,7 @@ step lay
   at 270 57
   nudge Something would come out for a carrot.
   pointer The picker lays the carrot on the cliff.
-  solve The picker puts the carrot on the cliff: a creature comes for it. Then he steps aside.
+  solve The picker puts the carrot on the cliff: a grey mole-like creature pops up for it. Then he steps aside.
 step vanish
   done var 411 1
   goblin 2
@@ -696,7 +696,7 @@ step vanish
   at 270 57
   nudge Now deal with the creature, with the fighter ready to cross.
   pointer The fighter waits one step before the gate; the wizard casts on the creature.
-  solve The fighter waits one step before the gate. The wizard casts on the creature: the sorcerer vanishes.
+  solve The fighter waits one step before the gate. The wizard casts on the creature: it turns into a blonde woman sitting on the rocks, and the sorcerer stares at her instead of the gate.
 step cross
   done exit
   goblin 1
@@ -713,8 +713,8 @@ step steps
   action act
   at 90 63
   nudge The dolmen is too tall to climb as it is.
-  pointer The wizard can do something with the stone.
-  solve The wizard casts on the stone: steps appear up the dolmen.
+  pointer The wizard can do something with the flat stone lying at the left end of the dolmen.
+  solve The wizard casts on the flat stone at the dolmen's left end: it becomes a stack of steps up the dolmen.
 step stick
   done pocket 8
   goblin 0
@@ -728,9 +728,9 @@ step knock
   goblin 0
   action use
   at 234 27
-  nudge Something hangs up there, out of reach.
-  pointer The picker climbs the dolmen and uses the stick on it.
-  solve The picker climbs onto the dolmen and knocks the watering can loose with the stick.
+  nudge The top of the dolmen has a little hole in it.
+  pointer The picker climbs the dolmen and uses the stick on the small hole at the right end of its top.
+  solve The picker climbs onto the dolmen and pokes the stick into the small hole at the right end of its top: a watering can pops up on the left part of the top.
 step can
   done pocket 11
   goblin 0
@@ -762,7 +762,7 @@ step key
   at 18 117
   nudge The left plant is holding on to something.
   pointer The fighter can shake it loose.
-  solve The wizard steps aside and the fighter hits the left plant: it drops a key.
+  solve The wizard steps aside and the fighter hits the left plant, where a grey long-nosed creature peeks out holding a key: the plant vanishes and leaves the key on the ground.
 step take-key
   done pocket 8, var 423 3
   goblin 0
@@ -796,7 +796,7 @@ step aim-up
   action act
   at 198 75
   nudge The cannon needs ammunition and a better angle.
-  pointer The fighter knocks a cannonball off the pile and aims the cannon upwards.
+  pointer The fighter knocks a cannonball off the pile at the bottom right and aims the cannon upwards.
   solve The wizard climbs down out of the way. The fighter knocks a cannonball off the pile, then hits the cannon: it points upwards.
 step matches
   done pocket 2
@@ -868,25 +868,25 @@ step give
   goblin 0
   action use
   at 114 105
-  nudge Give it to the man.
+  nudge Let the man use it.
   pointer The picker takes the ear trumpet to him.
-  solve The picker picks up the ear trumpet and gives it to the man: he hands out a mallet.
+  solve The picker picks up the ear trumpet and takes it to the man in the armchair: a mallet drops on the floor in front of the chair, and the picker keeps the ear trumpet.
 step mallet
   done pocket 7
   goblin 0
   action pick
   at 90 165
   nudge He gave you something.
-  pointer The picker takes it.
-  solve The picker picks up the mallet.
+  pointer The picker swaps the ear trumpet for it.
+  solve The picker swaps the ear trumpet for the mallet lying on the floor in front of the armchair.
 step pendulum
   done var 394 3
   goblin 0
   action use
   at 102 63
-  nudge The pendulum hanging from the beam is worth having.
-  pointer The picker hits the pendulum with the mallet.
-  solve The picker hits the pendulum hanging from the beam with the mallet: it falls onto the beam.
+  nudge That glowing thing hanging under the beam is worth a closer look.
+  pointer The picker hits the glowing orange oval hanging under the top beam with the mallet.
+  solve The picker hits the glowing orange oval hanging under the top beam with the mallet: a small pendulum flies out and lands on top of the beam, right of the big stalactite.
 step take
   done exit
   goblin 0
@@ -919,17 +919,17 @@ step rock
   goblin 2
   action act
   at 66 87
-  nudge There's a rock at the left edge of the island.
-  pointer The wizard climbs up and casts on it.
-  solve The wizard climbs up and casts on the rock at the left edge.
+  nudge There's a little palm tree at the left edge of the island.
+  pointer The wizard climbs up the stones and casts on the little palm tree.
+  solve The wizard climbs up and casts on the little palm tree at the island's left edge: it turns into a pickaxe stuck in the edge.
 step pickaxe
   done obj 3 state 4
   goblin 1
   action act
   at 66 87
-  nudge The rock looks weaker now.
-  pointer The fighter follows and hits it.
-  solve The fighter climbs up and hits the rock: a pickaxe drops.
+  nudge That pickaxe is stuck up there.
+  pointer The fighter follows and hits the pickaxe.
+  solve The fighter climbs up and hits the pickaxe at the island's left edge: it falls to the ground below.
 step take
   done pocket 4
   goblin 0
@@ -937,7 +937,7 @@ step take
   at 54 159
   nudge Pick it up.
   pointer The picker takes the pickaxe.
-  solve The picker picks up the pickaxe.
+  solve The picker picks up the pickaxe lying on the ground at the bottom left, below the island.
 step dig
   done exit
   goblin 0
@@ -953,17 +953,17 @@ step log
   goblin 1
   action act
   at 66 15
-  nudge There's a log lying up at the top.
-  pointer The fighter can knock it down.
-  solve The fighter knocks the log down onto the middle ledge.
+  nudge The heap of red stones at the top left looks loose.
+  pointer The fighter can hit the heap of red stones at the top left.
+  solve The fighter hits the heap of red stones at the top left: a log falls onto the middle ledge, beside the carved stone.
 step jam
   done obj 4 state 2
   goblin 0
   action use
   at 114 81
-  nudge Watch out for the spring trap.
-  pointer The picker can jam it with the log.
-  solve The picker picks up the log and jams the spring trap with it.
+  nudge Watch out for the spiked trap by the table.
+  pointer The picker can set it off with the log.
+  solve The picker picks up the log and uses it on the spiked trap left of the table: the trap snaps shut, and he keeps the log.
 step deodorant
   done obj 5 state 4
   goblin 2
@@ -971,7 +971,7 @@ step deodorant
   at 126 33
   nudge The log could become something more useful. Something stinks around here.
   pointer The picker puts it on the top ledge; the wizard casts on it.
-  solve The picker puts the log down on the top ledge. The wizard casts on it: it becomes deodorant.
+  solve The picker puts the log down on the top ledge. The wizard casts on it: it becomes a small spray can of deodorant.
 step bag
   done var 354 1
   goblin 2
@@ -979,7 +979,7 @@ step bag
   at 108 128
   nudge There's a bag in front of the dragon. Don't stay near the dragon for long.
   pointer The wizard casts on the bag from the middle ledge, then hurries away.
-  solve The wizard goes down to the middle ledge, casts on the bag in front of the dragon, and walks away at once: the bag falls open.
+  solve The wizard goes down to the middle ledge, casts on the red bag on the cave floor left of the dragon, and walks away at once: the bag jumps up onto the rock shelf nearer the ladder.
 step sow
   done var 492 1 3
   done var 493 1
@@ -1021,7 +1021,7 @@ step dagger
   at 306 63
   nudge There's something at the far end.
   pointer The picker can cross now.
-  solve The picker crosses and picks up the dagger at the far end.
+  solve The picker crosses and picks up the dagger stuck point-down in the ground at the far right end of the middle ledge.
 step breathe
   done var 491 1
   goblin 0
@@ -1045,9 +1045,9 @@ step place
   goblin 0
   action walk
   at 174 39
-  nudge The statue's right hand is open.
-  pointer The picker can leave the magic object in it.
-  solve The picker climbs to the statue's right hand and leaves the magic object in it.
+  nudge The statue's hand on the right of the screen is open.
+  pointer The picker can leave the little crowned figure in it.
+  solve The picker climbs up to the statue's hand on the right of the screen and leaves the little crowned figure in it.
 step disc
   done var 485 8 100
   goblin 0
@@ -1055,15 +1055,15 @@ step disc
   at 150 63
   nudge There's a disc on the statue's chest.
   pointer The picker opens it with the dagger.
-  solve The picker climbs back down onto the lap and uses the dagger on the disc on the chest.
+  solve The picker climbs back down onto the lap and uses the dagger on the white disc in the middle of the chest: a flame lights up in it.
 step key
   done pocket 1
   goblin 0
   action pick
   at 174 33
   nudge Look at the hand again.
-  pointer The object has turned into a key.
-  solve When the object in the hand has turned into a key, the picker takes it (leaving the dagger in the hand).
+  pointer The little crowned figure has turned into a key.
+  solve When the little figure in the hand has turned into a key, the picker takes it (leaving the burning dagger in the hand).
 step ear
   done obj 9 state 1
   goblin 0
@@ -1071,15 +1071,15 @@ step ear
   at 138 21
   nudge Statues hear with their ears.
   pointer The picker puts the key in the ear.
-  solve The picker puts the key in the statue's ear.
+  solve The picker climbs onto the hand on the left and puts the key in the ear on that side of the statue's head.
 step picker-ride
   done var 313 1 3
   goblin 0
   action walk
   at 186 39
-  nudge The right hand will take goblins away now.
+  nudge The hand holding the burning dagger will take goblins away now.
   pointer The picker steps onto it.
-  solve The picker steps onto the right hand and is taken away.
+  solve The picker steps onto the hand with the burning dagger and is taken away.
 step fighter-ride
   done var 313 2 3
   goblin 1
@@ -1087,7 +1087,7 @@ step fighter-ride
   at 186 39
   nudge The others should follow.
   pointer The fighter climbs onto the lap and up to the hand.
-  solve The fighter climbs onto the lap and up to the right hand.
+  solve The fighter climbs onto the lap and up to the hand with the burning dagger.
 step wizard-ride
   done var 313 3
   goblin 2
@@ -1095,7 +1095,7 @@ step wizard-ride
   at 186 39
   nudge One goblin left.
   pointer The wizard goes the same way.
-  solve The wizard climbs onto the lap and up to the right hand: the level ends.
+  solve The wizard climbs onto the lap and up to the hand with the burning dagger: the level ends.
 
 level AVT019 The castle gate
 step banana
@@ -1103,9 +1103,9 @@ step banana
   goblin 1
   action act
   at 282 15
-  nudge There's a lever on the upper ledge.
+  nudge Something hangs from a rope at the right end of the upper ledge, next to a lever.
   pointer The fighter can kick it.
-  solve The fighter climbs to the upper ledge and kicks the lever: a banana drops to the bottom right.
+  solve The fighter climbs to the upper ledge and kicks the lever by the hanging broom at its right end: a banana drops to the bottom right, by the foot of the ladder.
 step gate
   done var 471 1
   goblin 2
@@ -1113,7 +1113,7 @@ step gate
   at 162 51
   nudge The castle gate is shut.
   pointer The wizard can open it.
-  solve The wizard casts on the castle gate: it opens.
+  solve The wizard casts on the barred castle gate at the top of the middle stairs: it opens.
 step gift1
   done var 466 1 3
   goblin 0
@@ -1121,14 +1121,14 @@ step gift1
   at 42 63
   nudge The creature by the gate wants presents.
   pointer The picker can give it the banana.
-  solve The picker picks up the banana and gives it to the creature.
+  solve The picker picks up the banana at the bottom right and gives it to the toothy red creature behind the stall on the left (he keeps the banana).
 step gift2
   done var 466 2 3
   goblin 0
   action use
   at 42 63
   nudge It wants more.
-  pointer There's a false nose on the upper ledge.
+  pointer There's a false nose, a small red ball, at the left end of the upper ledge.
   solve The picker takes the false nose on the upper ledge (leaving the banana there) and gives it to the creature.
 step gift3
   done var 466 3
@@ -1136,8 +1136,8 @@ step gift3
   action use
   at 42 63
   nudge One more present.
-  pointer There's soap on the middle ledge.
-  solve The picker takes the soap on the middle ledge and gives it to the creature: it puts down a book.
+  pointer There's soap, a small orange cube, at the right end of the middle ledge, above the lower ladder.
+  solve The picker takes the soap on the middle ledge (leaving the false nose there) and gives it to the creature: it puts a brown book down on the stall.
 step book
   done exit
   goblin 0
@@ -1154,48 +1154,48 @@ step statue
   action act
   at 102 135
   nudge The ladder to the platform isn't in place.
-  pointer The wizard casts on the statue first.
-  solve The wizard casts on the statue.
+  pointer The wizard casts on the tiny stump in the ground in front of the platform, below the shield carved on it.
+  solve The wizard casts on the tiny stump in the ground in front of the platform, below the carved shield: it grows into a tall pole.
 step ladder
   done var 346 2
   goblin 1
   action act
   at 102 135
   nudge Now give it a knock.
-  pointer The fighter hits the statue.
-  solve The fighter hits the statue: the ladder to the platform falls into place.
+  pointer The fighter hits the pole that grew in front of the platform.
+  solve The fighter hits the pole in front of the platform: it falls over and a stone ladder appears up the front of the platform.
 step ear
   done var 405 1 100
   goblin 2
   action act
   at 114 93
   nudge The giant isn't listening.
-  pointer The wizard casts on the giant's ear.
-  solve The wizard casts on the giant's ear.
+  pointer The wizard casts on the brown plug stuck in the giant's ear.
+  solve The wizard climbs onto the platform and casts on the brown plug stuck in the giant's ear.
 step read
   done obj 2 state 2
   goblin 0
   action use
   at 114 93
   nudge The giant could be told a story.
-  pointer The picker reads the book on the platform.
-  solve The picker climbs to the platform and reads the book: the giant's hand stops grabbing.
+  pointer The picker, standing on the platform, reads his book (Witchcraft) into the giant's ear.
+  solve The picker climbs the ladder onto the platform and reads the book (Witchcraft) into the giant's ear: the giant smiles and lifts the long finger that hung down to the floor.
 step bait
   done pocket 9
   goblin 0
   action pick
   at 78 33
-  nudge There's bait on the top left ledge.
+  nudge There's bait up in the small round tower at the top left.
   pointer The picker puts the book down and takes the bait.
-  solve The picker puts the book down on the platform and picks up the bait on the top left ledge.
+  solve The picker puts the book down on the platform at the top of the ladder, then picks up the bait in the dark doorway of the round tower at the top left.
 step bowl
   done pocket 7
   goblin 0
   action pick
   at 210 33
-  nudge There's a bowl on the right-hand ledge.
+  nudge There's a bowl up beside the giant's head, under the red roof.
   pointer The picker crosses and swaps the bait for it.
-  solve The picker crosses the floor in front of the giant and swaps the bait for the bowl on the right-hand ledge.
+  solve The picker crosses the floor in front of the giant and swaps the bait for the bowl at the top of the short ladder just right of the giant's head, under the red roof.
 step place-bowl
   done var 142 2
   done var 301 1
@@ -1203,8 +1203,8 @@ step place-bowl
   action pick
   at 126 153
   nudge The giant's tears have to land somewhere.
-  pointer The picker puts the bowl below the platform.
-  solve The picker puts the bowl down below the platform, where the tears fall.
+  pointer The picker puts the bowl on the floor at the right end of the platform.
+  solve The picker puts the bowl down on the floor at the right end of the platform, next to the fallen pole, where the tears fall.
 step tears
   done var 301 1
   goblin 0
@@ -1220,7 +1220,7 @@ step pour
   at 246 27
   nudge Something came for the bait.
   pointer The picker pours the tears on it.
-  solve When the creature has come for the bait, the picker pours the tears on it: it drops the catapult.
+  solve When a small brown long-nosed creature has come out under the red roof for the bait, the picker climbs up and pours the tears on it: it vanishes and leaves the catapult.
 step catapult
   done exit
   goblin 0
@@ -1280,15 +1280,15 @@ step ladder
   at 126 129
   nudge The ladder up the bird's ribs is incomplete.
   pointer The wizard can finish it.
-  solve The wizard casts on the ladder: it reaches up the ribs.
+  solve The wizard casts on the short stack of bone steps on the floor between the glowing yellow belly and the red bag: it grows into a ladder up the ribs.
 step shoot
   done var 332 1 3
   goblin 0
   action use
   at 42 123
-  nudge The evil wizard is watching.
+  nudge The evil wizard is busy at his pot.
   pointer The picker can shoot him with the catapult.
-  solve The picker shoots the evil wizard with the catapult: he carries the picker off to the top left.
+  solve The picker shoots the catapult at the evil wizard in black by the pot at the far left: he turns into a grey horned creature and carries the picker up onto the bird's skull at the top left.
 step free-picker
   done var 332 2 3
   goblin 2
@@ -1296,7 +1296,7 @@ step free-picker
   at 42 21
   nudge Get the picker back. The fighter should be up on the bird's back first.
   pointer The fighter climbs up; the wizard casts at the picker.
-  solve The fighter climbs the ladder onto the bird's back. The wizard casts at the top left: the picker is free, but the evil wizard takes the wizard.
+  solve The fighter climbs the ladder onto the bird's back. The wizard casts at the grey creature holding the picker on the bird's skull: the picker is free, but the creature grabs the wizard instead.
 step free-wizard
   done var 332 3
   goblin 1
@@ -1304,7 +1304,7 @@ step free-wizard
   at 222 51
   nudge Now get the wizard back.
   pointer The fighter can hit the evil wizard.
-  solve The fighter hits: the wizard is free, but the fighter is hung up at the top right.
+  solve The fighter hits the creature beside him on the bird's back: the wizard is free, but the fighter ends up wrapped and hanging on a thread at the top right, below a grey spider-like creature.
 step bag
   done obj 9 state 5
   done obj 9 state 24
@@ -1313,7 +1313,7 @@ step bag
   at 294 51
   nudge Set a trap, then free the fighter.
   pointer The picker puts the bag below the tail, then shoots at the hanging fighter.
-  solve The picker swaps the catapult for the bag, puts the bag down below the tail, takes the catapult again and shoots at the hanging fighter, who drops down.
+  solve The picker swaps the catapult for the empty bag (the flat red thing on the floor right of the ladder), puts it down at the bottom right below the hanging fighter, takes the catapult again and shoots at the fighter, who drops down beside the bag.
 step capture
   done obj 9 state 24
   goblin 2
@@ -1321,7 +1321,7 @@ step capture
   at 294 21
   nudge Bring the evil wizard down into the trap.
   pointer The picker waits beside the bag; the wizard climbs up and casts at the evil wizard's head.
-  solve The picker waits beside the bag. The wizard climbs the ladder onto the bird's back and casts at the evil wizard's head: he falls into the bag.
+  solve The picker waits beside the bag. The wizard climbs the ladder onto the bird's back and casts at the head of the grey spider-like creature on the long bone at the top right: it falls into the bag.
 step grab
   done var 371 1
   goblin 0

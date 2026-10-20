@@ -1,26 +1,27 @@
-# gob2native - Gobliiins walkthrough, level 11 (AVT010): the dog at the gate, at night
+# gob2native - Gobliiins walkthrough, level 11 (AVT010): the dog at the gate again
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # The scene of level 9 again; the picker starts with the bird. The fighter
 # has to knock on the door under the arch, but the dog lying in front of it
 # bites (costs energy) any goblin that comes near it (cells 9-13, 14-19),
 # and the way points lead right past it. So the picker and the wizard go
-# the long way round to the dog's left end: the picker gives it the bird
-# to play with, and then the wizard's spell puts it to sleep (without the
-# bird the dog bites the wizard). The fighter can then walk past it.
+# the long way round to the dog's head, at its left end: the picker lets
+# the bird go there and the dog gets up to stare at it, and then the
+# wizard's spell takes the dog away (without the bird the dog bites the
+# wizard). The fighter can then walk to the door.
 room AVT010
 hint bird
 goblin 0
 walk 150 141    # the picker walks left along the bottom, well below the dog
 walk 30 141     # on to the left edge of the scene
-use 186 99      # he gives the bird to the dog, from its left end
+use 186 99      # he lets the bird go by the dog's head: the dog gets up and stares at it
 hint sleep
 goblin 2
 walk 150 141    # the wizard goes the same long way round
 walk 30 141
-act 186 99      # his spell puts the dog, busy with the bird, to sleep
+act 186 99      # his spell on the dog, busy staring at the bird, takes it away
 hint knock
 goblin 1
-act 162 75      # the fighter walks past the sleeping dog and knocks on the door: the exit shows
+act 162 75      # the fighter walks to the door under the arch and knocks: the exit shows
 hint end
 exit

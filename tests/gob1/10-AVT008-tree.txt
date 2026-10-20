@@ -3,9 +3,10 @@
 #
 # The bird perched on the trunk must end up in the picker's pocket. A hole
 # in the roots (cell 8,25) costs energy until the picker puts the meat into
-# it. The wizard's spell on the broken branch closes the gap in the middle
-# path; a blow of the fighter on the branch at the right then catapults the
-# goblin standing at its end up to the top of the tree (one at a time). Up
+# it. The wizard's spell makes the broken stub on the right of the trunk
+# grow into a long springy branch; a blow of the fighter on it then
+# catapults the goblin standing at its tip up to the top of the tree (one
+# at a time). Up
 # there the wizard's spell frees the cork in the top left branch, the
 # picker plugs the left hole at the top with it, so that the bird, when the
 # fighter scares it away, flies to the right hole, where the picker catches
@@ -19,7 +20,7 @@ hint windsock
 pick 42 75      # he takes the windsock from the left branch
 hint branch
 goblin 2
-act 198 75      # the wizard's spell on the broken branch closes the gap in the path
+act 198 75      # the wizard's spell makes the broken stub grow into a long branch to the right
 hint picker-up
 goblin 0
 walk 282 69     # the picker goes to the end of the right branch

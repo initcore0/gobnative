@@ -2,6 +2,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 room AVT002
 hint use
-use 240 78      # the picker uses the item he carries on item 3: the exit sign shows
+use 240 78      # the picker uses the Diamond on the big red door: it opens, the exit sign shows
 hint end
 exit

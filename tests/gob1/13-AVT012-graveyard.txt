@@ -3,19 +3,20 @@
 #
 # A dark sorcerer at his cauldron catches any goblin crossing the bottom
 # path by the gate (energy loss, and the level starts over); the fighter
-# has to reach the cliff on the right. The wizard opens the tree trunk,
-# where the picker finds a bird call; played up in the tree it brings a
-# big bird to the nest, and after the fighter's blow the bird carries the
-# wizard to the cliff. The picker, invisible with his elixir (the spell on
-# the thing at the bottom right lets him pass unseen; the sorcerer still
-# stops him at every cell, so he crosses with quick clicks), fetches the
-# carrot and lays it on the cliff: a creature comes for it, and the
-# wizard's spell on it makes the sorcerer vanish for a moment, long enough
-# for the fighter to cross.
+# has to reach the cliff on the right. The wizard's spell lifts a root of
+# the big tree, uncovering a bird call; played up in the tree it brings a
+# big bird to the nest, and the fighter's blow cracks the egg on legs that
+# stands on the branch: the winged chick carries the wizard to the cliff.
+# The picker, invisible with his elixir (the spell on the bulb horn at the
+# bottom right lets him pass unseen; the sorcerer still stops him at every
+# cell, so he crosses with quick clicks), fetches the carrot and lays it on
+# the cliff: a mole-like creature comes for it, and the wizard's spell
+# turns it into a woman, who holds the sorcerer's eye long enough for the
+# fighter to cross.
 room AVT012
 hint trunk
 goblin 2
-act 42 123      # the wizard opens the tree trunk: a bird call is inside
+act 42 123      # the wizard's spell lifts the root at the tree's foot: a bird call lies under it
 hint call
 goblin 0
 pick 42 123     # the picker swaps his elixir for the bird call
@@ -29,12 +30,12 @@ goblin 2
 walk 54 27      # and the wizard
 untilvar 406 445 446  # the bird has settled in the nest
 goblin 1
-act 150 15      # the fighter hits the nest
+act 150 15      # the fighter hits the egg on legs on the branch: it cracks, a winged chick shows
 hint ride
 goblin 2
-act 150 15      # the bird carries the wizard to the cliff on the right
+act 150 15      # the chick carries the wizard to the cliff on the right
 hint spell
-act 246 147     # his spell on the thing at the bottom right
+act 246 147     # his spell on the bulb horn by the gate at the bottom right
 hint elixir
 goblin 0
 pick 42 123     # the picker takes his elixir back
@@ -55,13 +56,13 @@ click 294 147
 click 294 147
 pick 294 93     # he swaps the elixir for the carrot
 hint lay
-use 270 57      # and lays the carrot on the cliff: a creature comes for it
+use 270 57      # and lays the carrot on the cliff: a mole-like creature pops up for it
 walk 294 75     # he steps aside
 hint vanish
 goblin 1
 walk 210 159    # the fighter waits one step before the gate
 goblin 2
-act 270 57      # the wizard's spell on the creature: the sorcerer vanishes
+act 270 57      # the wizard's spell turns the creature into a woman: the sorcerer stares at her
 hint cross
 goblin 1
 walk 270 93     # the fighter crosses to the cliff: the exit appears

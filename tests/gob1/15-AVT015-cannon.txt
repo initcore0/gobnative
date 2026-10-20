@@ -7,10 +7,10 @@
 # A ball fired upwards brings a carrot down from the ceiling; a carrot
 # fired at the sleeping man wakes him, once the picker's matches have lit
 # the fire under the cauldron. The wizard turns a second carrot into an
-# ear trumpet; the picker gives it to the man for a mallet and knocks the
-# pendulum down from the hanging thing with it. A ball fired at the man, a
-# carrot fired upwards, and the fighter or wizard touching the hanging
-# thing all cost energy.
+# ear trumpet; the man, shown it, drops a mallet, and the picker's blow
+# with it on the glowing oval hanging under the beam knocks the pendulum
+# out onto the beam. A ball fired at the man, a carrot fired upwards, and
+# the fighter or wizard touching the oval all cost energy.
 room AVT015
 hint aim-up
 goblin 2
@@ -65,11 +65,11 @@ act 114 159     # the wizard turns the carrot into an ear trumpet
 hint give
 goblin 0
 pick 114 159    # the picker takes the ear trumpet
-use 114 105     # and gives it to the man, who hands out a mallet
+use 114 105     # and holds it out to the man, who drops a mallet (he keeps the trumpet)
 hint mallet
-pick 90 165     # the picker takes the mallet
+pick 90 165     # the picker swaps the ear trumpet for the mallet
 hint pendulum
-use 102 63      # and hits the hanging thing: the pendulum falls on the beam
+use 102 63      # and hits the glowing oval under the beam: the pendulum flies onto the beam
 hint take
 pick 174 33     # he takes the pendulum
 hint end

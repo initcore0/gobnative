@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # Seven sprouts grow in the field below a dolmen. The wizard's spell on the
-# stone below the dolmen makes steps up to its top, where the picker knocks
-# a watering can loose with the stick he found on the right. Watered, the
+# stone below the dolmen makes steps up to its top, where the picker pokes
+# a watering can out with the stick he found on the right. Watered, the
 # sprouts grow; the wizard's spell on a grown plant turns it into something
 # else (three of them hurt him). The big plant on the left, once enchanted
 # and hit by the fighter, drops a key; the middle plant, enchanted, becomes
@@ -17,7 +17,7 @@ goblin 0
 pick 270 99     # the picker takes the stick on the right
 hint knock
 walk 222 27     # he climbs onto the dolmen
-use 234 27      # he knocks the watering can loose with the stick
+use 234 27      # he pokes the stick into the hole on top: a watering can pops up on the left
 hint can
 pick 126 9      # he swaps the stick for the watering can
 hint water
@@ -31,7 +31,7 @@ act 18 117      # and on the left one
 walk 162 153    # he steps aside
 hint key
 goblin 1
-act 18 117      # the fighter hits the left plant: it drops a key
+act 18 117      # the fighter hits the left plant: it vanishes, leaving its key on the ground
 walk 186 153    # he steps aside
 hint take-key
 goblin 0

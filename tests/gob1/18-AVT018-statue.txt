@@ -15,7 +15,7 @@ untilvar 484 1
 hint disc
 walk 162 87         # back down onto the statue's lap
 use 150 63          # his dagger opens the disc on the chest
-untilvar 485 93 100 # the object in the hand has turned into a key
+untilvar 485 93 100 # the little crowned figure in the hand has turned into a key
 hint key
 pick 174 33         # he takes the key, leaving the dagger in the hand
 hint ear
