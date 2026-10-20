@@ -95,8 +95,8 @@ private:
 class HintTracker {
 public:
 	// Once a frame: follows the level being played (Interpreter::
-	// currentLevel, levelStarts) and, at a new run, notes what each step
-	// looked at then.
+	// currentLevel, levelStarts) and, at a new run (as soon as the level's
+	// script file has loaded), notes what each step looks at then.
 	void update(const HintBook &book, const Interpreter &in);
 	// The level being played, if it has hints (null otherwise).
 	const HintLevel *level() const { return _shown; }
@@ -109,6 +109,7 @@ public:
 	const HintTrap *trap(const Interpreter &in) const;
 
 private:
+	void begin(const HintLevel &level, const Interpreter &in); // a new run: what each step looks at now
 	const HintLevel *_level = nullptr, *_shown = nullptr;
 	std::vector<std::vector<int32_t>> _trapStart;
 	std::vector<char> _trapStale;

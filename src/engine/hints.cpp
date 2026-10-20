@@ -368,35 +368,44 @@ std::vector<int32_t> HintBook::facts(const HintStep &step, const Interpreter &in
 }
 
 void HintTracker::update(const HintBook &book, const Interpreter &in) {
+	// A level's script file has just loaded (a new run of a level): note what
+	// the steps and traps look at now, before the level's start or a quick
+	// load (put in place at its main loop) changes anything.
+	const uint32_t run = in.levelStarts();
+	if (run != _run) {
+		_run = run;
+		if (const HintLevel *l = book.level(in.currentTot()))
+			begin(*l, in);
+	}
 	const std::string name = in.currentLevel();
 	_shown = name.empty() ? nullptr : book.level(name);
 	if (!_shown)
 		return; // (between levels, or a moment the level isn't running: keep the run)
-	const uint32_t run = in.levelStarts();
+	if (_shown != _level) // (a level whose start wasn't seen: from now on)
+		begin(*_shown, in);
 	const std::vector<HintStep> &steps = _shown->steps;
-	if (_shown != _level || run != _run) {
-		_level = _shown;
-		_run = run;
-		_start.clear();
-		_stale.clear();
-		for (const HintStep &s : steps) {
-			_start.push_back(HintBook::facts(s, in));
-			_stale.push_back(HintBook::done(s, in));
-		}
-		_trapStart.clear();
-		_trapStale.clear();
-		for (const HintTrap &t : _shown->traps) {
-			_trapStart.push_back(HintBook::facts(t.when, in));
-			_trapStale.push_back(HintBook::holds(t.when, in));
-		}
-		return;
-	}
 	for (size_t i = 0; i < steps.size(); i++)
 		if (_stale[i] && HintBook::facts(steps[i], in) != _start[i])
 			_stale[i] = false;
 	for (size_t i = 0; i < _shown->traps.size(); i++)
 		if (_trapStale[i] && HintBook::facts(_shown->traps[i].when, in) != _trapStart[i])
 			_trapStale[i] = false;
+}
+
+void HintTracker::begin(const HintLevel &level, const Interpreter &in) {
+	_level = &level;
+	_start.clear();
+	_stale.clear();
+	for (const HintStep &s : level.steps) {
+		_start.push_back(HintBook::facts(s, in));
+		_stale.push_back(HintBook::done(s, in));
+	}
+	_trapStart.clear();
+	_trapStale.clear();
+	for (const HintTrap &t : level.traps) {
+		_trapStart.push_back(HintBook::facts(t.when, in));
+		_trapStale.push_back(HintBook::holds(t.when, in));
+	}
 }
 
 const HintTrap *HintTracker::trap(const Interpreter &in) const {
