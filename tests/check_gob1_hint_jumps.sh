@@ -16,7 +16,8 @@
 # knocked off the pile, the hint is the cannonball (HintStep::needs). And
 # a trap of the game: in the last level, the fighter short of the far end
 # of the bird's back when the wizard frees the picker can never reach the
-# creature (HintTrap fighter-cut-off).
+# creature (HintTrap fighter-cut-off), also after a quick load into it
+# (the run's start is noted before the quick load is put in place).
 
 set -eu
 game=${1:?usage: $0 <gob1 gamedir> [build dir]}
@@ -70,6 +71,12 @@ walk 168 50
 trap none
 goblin 2
 act 42 21
+trap fighter-cut-off
+quicksave
+level AVT003
+room AVT003
+quickload
+room AVT022
 trap fighter-cut-off
 end
 EOF
