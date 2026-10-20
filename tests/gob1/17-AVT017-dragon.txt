@@ -5,7 +5,7 @@
 # breathed on it. The dragon also cooks the foot into a roast; whatever
 # lurks in the table on the middle ledge takes the roast and lets goblins
 # cross to the dagger. The spiked trap in front of the table is set off
-# with the log (which falls from the heap of red stones the fighter hits),
+# with the log (which falls from the pile of red logs the fighter hits),
 # and the wizard later turns the log into deodorant. The seeds from the
 # bag sown on the top ledge grow the foot; the deodorant spray on it while
 # it is out (a window of about 1.4 s, here hit in its middle) frees it.
@@ -21,7 +21,7 @@
 room AVT017
 hint log
 goblin 1
-act 66 15            # the fighter hits the heap of red stones: a log falls onto the middle ledge
+act 66 15            # the fighter hits the pile of red logs: one falls out onto the middle ledge
 hint jam
 goblin 0
 pick 54 75           # the picker takes it

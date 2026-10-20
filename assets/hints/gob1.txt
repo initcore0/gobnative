@@ -974,9 +974,9 @@ step log
   goblin 1
   action act
   at 66 15
-  nudge The heap of red stones at the top left looks loose.
-  pointer The fighter can hit the heap of red stones at the top left.
-  solve The fighter hits the heap of red stones at the top left: a log falls onto the middle ledge, beside the carved stone.
+  nudge The pile of red logs at the top left looks loose.
+  pointer The fighter can hit the pile of red logs at the top left.
+  solve The fighter hits the pile of red logs at the top left: one log falls out onto the middle ledge, beside the carved stone.
 step jam
   done obj 4 state 2
   goblin 0
