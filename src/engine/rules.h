@@ -75,6 +75,18 @@ struct GameRules {
 	// The name of CD track `name` in the track table.
 	std::string cdTrackName(const std::string &name) const;
 
+	// Gobliiins: items a pick takes as another one. The level data links a
+	// second item to a pickable object (to act on it from elsewhere), and a
+	// pick there would put the object in the pocket under that item's id,
+	// which nothing accepts later (engine/goblins_v1.cpp, treatItemPick).
+	struct PickAlias {
+		const char *tot;
+		int16_t item, as;
+	};
+	std::vector<PickAlias> pickAliases;
+	// The item a pick on `item` in script file `tot` takes.
+	int16_t pickedItem(const std::string &tot, int16_t item) const;
+
 	bool isCutsceneTot(const std::string &tot) const;
 	bool isTransitionTot(const std::string &tot) const;
 	bool isCopyProtectionCall(const std::string &tot, uint16_t offset) const;

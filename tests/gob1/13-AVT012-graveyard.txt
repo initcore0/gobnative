@@ -7,9 +7,9 @@
 # the big tree, uncovering a bird call; played up in the tree it brings a
 # big bird to the nest, and the fighter's blow cracks the egg on legs that
 # stands on the branch: the winged chick carries the wizard to the cliff.
-# The picker, invisible with his elixir (the spell on the bulb horn at the
-# bottom right lets him pass unseen; the sorcerer still stops him at every
-# cell, so he crosses with quick clicks), fetches the carrot and lays it on
+# The picker, invisible with his elixir (before that the wizard's spell
+# moves the bulb horn at the bottom right to another place; the sorcerer
+# still stops him at every cell, so he crosses with quick clicks), fetches the carrot and lays it on
 # the cliff: a mole-like creature comes for it, and the wizard's spell
 # turns it into a woman, who holds the sorcerer's eye long enough for the
 # fighter to cross.
@@ -35,7 +35,7 @@ hint ride
 goblin 2
 act 150 15      # the chick carries the wizard to the cliff on the right
 hint spell
-act 246 147     # his spell on the bulb horn by the gate at the bottom right
+act 246 147     # his spell on the bulb horn at the bottom right moves it elsewhere
 hint elixir
 goblin 0
 pick 42 123     # the picker takes his elixir back

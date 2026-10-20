@@ -1507,6 +1507,13 @@ void GoblinsV1::treatItemPick(int16_t itemId) {
 	_readyToAct = 0;
 	_goesAtTarget = 0;
 
+	// A second item of a pickable object picks the object's own (GameRules::
+	// pickAliases; a bug in the level data).
+	if (const int16_t as = _in.rules().pickedItem(_in.currentTot(), itemId);
+	    as != itemId && obj(itemToObject(itemId)) && obj(itemToObject(itemId))->pickable == 1) {
+		trace("pick on item " + std::to_string(itemId) + " takes item " + std::to_string(as));
+		itemId = as;
+	}
 	int16_t itemIndex = itemToObject(itemId);
 	if (itemId != 0 && itemIndex != -1 && !(obj(itemIndex) && obj(itemIndex)->pickable == 1))
 		itemIndex = -1;

@@ -6,9 +6,11 @@
 # The picker sows the seeds in the field; birds come for them, and the
 # fighter's blow on the scarecrow chases them off. The wizard's spell on
 # the cloud then makes it rain, a little white flower sprouts in the field
-# and the picker takes the magic object from it. A bird lands on the stump on the right and, when the
-# picker stands next to it, carries him off: the level ends by itself
-# (there is no exit sign).
+# and the picker takes the magic object from it. A man in black comes to
+# sit on the stump at the top right; when the picker walks up to him, he
+# hands over the magic objects, and the man throws him to the ground and
+# takes the goblins off to his dungeon: the level ends by itself (there is
+# no exit sign).
 room AVT007
 hint seeds-down
 goblin 2
@@ -34,7 +36,7 @@ untilvar 358 1  # a little white flower sprouts in the field
 hint object
 goblin 0
 walk 186 141    # the picker takes the magic object from the flower
-hint bird
-untilvar 361 2  # a bird has landed on the stump
-walk 246 69     # the picker walks up to it and the bird carries him off
+hint stump
+untilvar 361 2  # the man in black sits on the stump
+walk 246 69     # the picker walks up to him and hands over the magic objects
 exit

@@ -3,7 +3,7 @@
 #
 # The creature at the stall on the left gives the Witchcraft book for three
 # different gifts from the picker: the banana (which the fighter's kick on
-# the lever by the hanging broom drops to the bottom right), the false nose
+# the bananas hanging by the lever drops to the bottom right), the false nose
 # on the upper ledge and the soap on the middle ledge. The wizard opens the
 # castle gate; the exit shows once the gate is open and the picker holds the
 # book. Traps: the three other books (using any of them costs energy), and
@@ -14,7 +14,7 @@ room AVT019
 hint banana
 goblin 1
 walk 252 39     # the fighter climbs to the upper ledge
-act 282 15      # and kicks the lever: a banana drops to the bottom right
+act 282 15      # and kicks the hanging bananas: one falls to the bottom right
 hint gate
 goblin 2
 act 162 51      # the wizard opens the castle gate

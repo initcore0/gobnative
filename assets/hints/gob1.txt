@@ -332,14 +332,14 @@ step object
   nudge Something has sprouted in the field.
   pointer The picker can go to the little white flower in the field, left of the scarecrow.
   solve The picker walks onto the little white flower in the field and takes the magic object from it.
-step bird
+step stump
   done var 361 14
   goblin 0
   action walk
   at 246 69
-  nudge How about a ride out of here?
-  pointer Wait for a bird to land on the stump; then the picker walks up to it.
-  solve When a bird has landed on the stump, the picker walks up to it and the bird carries him off.
+  nudge Someone has come to sit on the tree stump at the top right.
+  pointer Once the man in black sits on the stump, the picker walks up to him.
+  solve When the man in black sits on the tree stump at the top right, the picker walks up to him and hands over the magic objects: he throws the picker to the ground and takes the goblins off to his dungeon (the level ends).
 
 level AVT006 The skeleton
 step bone
@@ -664,7 +664,7 @@ step spell
   at 246 147
   nudge From the cliff, the wizard can reach the bulb horn lying at the bottom right.
   pointer The wizard casts on the bulb horn.
-  solve The wizard casts on the bulb horn at the bottom right.
+  solve The wizard casts on the bulb horn at the bottom right: it moves to another place.
 step elixir
   done pocket 8, var 410 1
   goblin 0
@@ -1103,9 +1103,9 @@ step banana
   goblin 1
   action act
   at 282 15
-  nudge Something hangs from a rope at the right end of the upper ledge, next to a lever.
-  pointer The fighter can kick it.
-  solve The fighter climbs to the upper ledge and kicks the lever by the hanging broom at its right end: a banana drops to the bottom right, by the foot of the ladder.
+  nudge A bunch of bananas hangs at the right end of the upper ledge, next to a lever.
+  pointer The fighter can kick the bananas.
+  solve The fighter climbs to the upper ledge and kicks the hanging bananas at its right end: a banana falls to the bottom right, by the foot of the ladder.
 step gate
   done var 471 1
   goblin 2
