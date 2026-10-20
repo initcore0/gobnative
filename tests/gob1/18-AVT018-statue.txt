@@ -22,11 +22,11 @@ hint ear
 use 138 21          # and puts the key in the statue's ear
 hint picker-ride
 walk 186 39         # the picker steps onto the right hand and is taken away
-hint fighter-ride
+hint second-ride
 goblin 1
 walk 162 87         # the fighter climbs onto the lap...
 walk 186 39         # ...and up to the right hand
-hint wizard-ride
+hint last-ride
 goblin 2
 walk 162 87         # the wizard too
 walk 186 39

@@ -1102,22 +1102,20 @@ step picker-ride
   nudge The hand holding the burning dagger will take goblins away now.
   pointer The picker steps onto it.
   solve The picker steps onto the hand with the burning dagger and is taken away.
-step fighter-ride
+step second-ride
   done var 313 2 3
-  goblin 1
   action walk
   at 186 39
-  nudge The others should follow.
-  pointer The fighter climbs onto the lap and up to the hand.
-  solve The fighter climbs onto the lap and up to the hand with the burning dagger.
-step wizard-ride
+  nudge The others should follow, one at a time.
+  pointer The fighter or the wizard (either one) climbs onto the lap and up to the hand.
+  solve The fighter or the wizard climbs onto the statue's lap and up to the hand with the burning dagger, and is taken away too.
+step last-ride
   done var 313 3
-  goblin 2
   action walk
   at 186 39
   nudge One goblin left.
-  pointer The wizard goes the same way.
-  solve The wizard climbs onto the lap and up to the hand with the burning dagger: the level ends.
+  pointer The last goblin goes the same way.
+  solve The last goblin climbs onto the statue's lap and up to the hand with the burning dagger: the level ends.
 
 level AVT019 The castle gate
 step banana
