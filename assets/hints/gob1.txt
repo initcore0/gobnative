@@ -168,54 +168,54 @@ step finish
   solve The picker swaps Pot1 for the Diamond, walks round along the bottom to the right, climbs up and gives the Diamond to the sorcerer's hand: the exit sign shows.
 
 level AVT005 The giant's head
-step plant
+step pole
   done obj 4 state 1
   goblin 2
   action act
   at 258 153
-  nudge Nothing grows here without help.
-  pointer The wizard can make the plant on the right grow.
-  solve The wizard casts on the plant on the right: it grows into a rope.
-step finger
+  nudge The giant's raised hand on the right is too high to reach.
+  pointer The wizard can make something grow from the ground below it.
+  solve The wizard casts on the ground below the giant's raised hand: a tall pole grows up to it.
+step eye
   done var 334 1
   goblin 1
   action act
   at 198 87
-  nudge The giant's hand could carry goblins, if it came down.
-  pointer The fighter can climb the plant to the ledge in the giant's face.
-  solve The fighter climbs to the ledge and hits the giant's finger: the hand comes down.
-step ghoul
+  nudge The giant's tongue could carry goblins, if he stuck it out.
+  pointer The fighter can climb the pole onto the giant's raised hand, right by his eye.
+  solve The fighter climbs the pole onto the giant's raised hand and hits him in the eye: he sticks his tongue out down to the ground.
+step skeleton
   done var 331 1 2
   goblin 2
   action act
   at 18 33
-  nudge The troll in the corner won't move for goblins, but something scarier might frighten it. Whoever is in its way loses energy.
-  pointer Put the picker on the hand first; then the wizard wakes what sleeps in the coffin and hurries onto the hand too.
-  solve The picker walks onto the hand. The wizard casts on the coffin at the top left and quickly walks down onto the hand.
+  nudge The troll crouching at the bottom right won't move for goblins, but something scarier might frighten it. Whoever is in its way loses energy.
+  pointer Put the picker on the giant's tongue first; then the wizard wakes what sleeps in the coffin at the top left and hurries onto the tongue too.
+  solve The picker walks onto the giant's tongue. The wizard casts on the coffin at the top left (a skeleton climbs out) and quickly walks down onto the tongue beside the picker.
 step lift
   done obj 3 state 14
   goblin 1
   action act
   at 198 87
-  nudge The ghoul is coming round. Get the goblins out of its way.
-  pointer The fighter can make the hand lift them.
-  solve The fighter hits the finger again: the hand lifts the picker and the wizard up.
+  nudge The skeleton is coming round the path. Get the goblins out of its way.
+  pointer The fighter can make the giant pull his tongue back in.
+  solve The fighter hits the giant's eye again: the tongue goes back up, lifting the picker and the wizard into his mouth.
 step lower
   done obj 3 state 4
   goblin 1
   action act
   at 198 87
-  nudge Wait until the ghoul has gone back to its coffin.
-  pointer Then the fighter brings the hand down again.
-  solve Once the ghoul is back in the coffin, the fighter hits the finger: the hand comes down.
+  nudge Wait until the skeleton has scared the troll away and gone back to its coffin.
+  pointer Then the fighter makes the giant stick his tongue out again.
+  solve Once the skeleton is back in its coffin, the fighter hits the giant's eye: the tongue comes down again.
 step take
   done exit
   goblin 0
   action walk
   at 294 153
-  nudge The troll left something behind in the corner.
+  nudge The troll left something behind at the bottom right.
   pointer The picker can go and get it.
-  solve The picker walks to the bottom right corner and takes the magic object: the exit sign shows.
+  solve The picker walks to the bottom right corner and takes the mushroom the troll left behind: the exit sign shows.
 
 level AVT001 The spiders
 step thread
