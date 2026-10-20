@@ -859,7 +859,7 @@ step load-carrot
   at 198 75
   nudge The man is fast asleep. Wake him with something.
   pointer The cannon can fire carrots too.
-  solve The fighter knocks off another cannonball. The picker picks up the carrot and loads it into the cannon.
+  solve The picker picks up the carrot (leaving the matches) and loads it into the cannon.
 step shoot-man
   done var 396 5 9
   goblin 0
@@ -874,8 +874,8 @@ step second-carrot
   action use
   at 198 75
   nudge He's awake, but he can't hear a thing. Another carrot could help.
-  pointer Fire a second cannonball upwards, as before.
-  solve The fighter aims the cannon upwards. The picker loads the second cannonball, the fighter aims it up again, and the picker fires with the matches: a second carrot falls.
+  pointer Knock another cannonball off the pile and fire it upwards, as before.
+  solve The fighter knocks another cannonball off the pile at the bottom right and aims the cannon upwards. The picker loads the cannonball (the cannon turns back down), the fighter aims it up again, and the picker fires with the matches: a second carrot falls.
 step trumpet
   done var 397 1
   goblin 2

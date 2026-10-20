@@ -38,7 +38,7 @@ pick 306 135    # the picker takes the matches back
 use 198 75      # and fires: the ball brings down a carrot
 hint load-carrot
 goblin 1
-act 270 141     # the fighter knocks off another ball
+act 270 141     # the fighter knocks off another ball, for the second carrot later
 goblin 0
 pick 114 159    # the picker takes the carrot (leaving the matches)
 use 198 75      # and loads it into the cannon
