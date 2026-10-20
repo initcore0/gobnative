@@ -13,7 +13,7 @@
 # gobnative
 
 **Play Coktel Vision's Goblins trilogy natively on macOS, Windows, LG webOS
-TVs and in the browser, with optional AI-remastered HD art.**
+TVs and in the browser, with optional HD remasters.**
 
 gobnative is a from-scratch reimplementation of the Gob engine that ran
 **Gobliiins** (1991), **Gobliins 2: The Prince Buffoon** (1992) and
