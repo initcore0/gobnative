@@ -11,7 +11,9 @@
 # is its first step. A level's script doesn't clear every variable it uses
 # when it starts again (as after AGAIN), so the hints must not take what the
 # run before left behind for this run's progress (engine/hints.h,
-# HintTracker).
+# HintTracker). Then a step skipped by doing later ones first: in the
+# cannon level, with the cannon aimed and the fire lit but no cannonball
+# knocked off the pile, the hint is the cannonball (HintStep::needs).
 
 set -eu
 game=${1:?usage: $0 <gob1 gamedir> [build dir]}
@@ -35,7 +37,25 @@ for f in "$here"/gob1/[0-9][0-9]-AVT*.txt; do
 			print "hint " first
 		}' "$f" >>"$dir/script.txt"
 done
-echo end >>"$dir/script.txt"
+cat >>"$dir/script.txt" <<'EOF'
+level AVT015
+room AVT015
+goblin 2
+walk 150 147
+goblin 1
+act 198 75
+goblin 0
+pick 294 27
+walk 90 33
+walk 66 27
+walk 54 75
+use 42 135
+hint ball
+goblin 1
+act 270 141
+hint load-ball
+end
+EOF
 "$build/gobrun" "$game" --save-dir "$dir/saves" --hints "$here/../assets/hints/gob1.txt" \
 	--script "$dir/script.txt" --frames 3000000 >"$dir/out.txt" 2>&1 ||
 	{ grep -- '--' "$dir/out.txt" | tail -3; echo "FAIL: the script didn't finish"; exit 1; }
@@ -44,4 +64,4 @@ if grep -q 'FAILED' "$dir/out.txt"; then
 	echo "FAIL: a hint was wrong"
 	exit 1
 fi
-echo "OK: the hints start again with each level, in every level"
+echo "OK: the hints start again with each level, in every level, and go back for a skipped step"

@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 using namespace gob;
 
@@ -59,6 +60,12 @@ void testRefused() {
 	CHECK(refusal(std::string(kStep) + "  goblin 3\n") == "line 12: goblin takes 0, 1 or 2");
 	CHECK(refusal(std::string(kStep) + "step kick\n") == "line 12: step kick twice in AVT003");
 	CHECK(refusal("level A\nstep s\n  done exit\n  nudge n\n") == "A step s: needs done, nudge, pointer and solve");
+	CHECK(refusal(std::string(kStep) + "  needs kick\n") == "line 12: needs kick: no earlier step of that id");
+	HintBook book;
+	std::string error;
+	CHECK(book.parse(std::string(kStep) + "step take\n  done exit\n  needs kick\n  nudge n\n  pointer p\n  solve s\n",
+	                 error));
+	CHECK(book.level("AVT003") && book.level("AVT003")->steps[1].needs == std::vector<std::string>{"kick"});
 }
 
 void testShipped(const char *path) {

@@ -227,6 +227,15 @@ bool HintBook::parse(const std::string &text, std::string &error) {
 			if (all.empty())
 				return fail("done without a condition");
 			s.done.push_back(std::move(all));
+		} else if (key == "needs") {
+			const std::vector<std::string> w = words(rest);
+			if (w.size() != 1)
+				return fail("needs takes one step id");
+			const auto it = std::find_if(l.steps.begin(), l.steps.end() - 1,
+			                             [&](const HintStep &o) { return o.id == w[0]; });
+			if (it == l.steps.end() - 1)
+				return fail("needs " + w[0] + ": no earlier step of that id");
+			s.needs.push_back(w[0]);
 		} else if (key == "goblin") {
 			int32_t v = 0;
 			if (!number(rest, v) || v < 0 || v > 2)
@@ -316,20 +325,42 @@ void HintTracker::update(const HintBook &book, const Interpreter &in) {
 			_stale[i] = false;
 }
 
+namespace {
+
+// The step after the last one `isDone` says is done; then, while that step
+// needs one that isn't done, that one.
+template <class Done>
+size_t stepToHint(const HintLevel &level, Done isDone) {
+	const std::vector<HintStep> &steps = level.steps;
+	size_t cur = 0;
+	for (size_t i = steps.size(); i > 0; i--)
+		if (isDone(i - 1)) {
+			cur = i;
+			break;
+		}
+	for (size_t hops = 0; cur < steps.size() && hops < steps.size(); hops++) {
+		size_t need = cur;
+		for (const std::string &id : steps[cur].needs)
+			for (size_t j = 0; j < cur; j++)
+				if (steps[j].id == id && !isDone(j) && need == cur)
+					need = j;
+		if (need == cur)
+			break;
+		cur = need;
+	}
+	return cur;
+}
+
+} // namespace
+
 size_t HintTracker::current(const Interpreter &in) const {
 	if (!_shown)
 		return 0;
-	for (size_t i = _shown->steps.size(); i > 0; i--)
-		if (!_stale[i - 1] && HintBook::done(_shown->steps[i - 1], in))
-			return i;
-	return 0;
+	return stepToHint(*_shown, [&](size_t i) { return !_stale[i] && HintBook::done(_shown->steps[i], in); });
 }
 
 size_t HintBook::current(const HintLevel &level, const Interpreter &in) {
-	for (size_t i = level.steps.size(); i > 0; i--)
-		if (done(level.steps[i - 1], in))
-			return i;
-	return 0;
+	return stepToHint(level, [&](size_t i) { return done(level.steps[i], in); });
 }
 
 } // namespace gob

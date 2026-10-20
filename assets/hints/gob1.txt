@@ -13,6 +13,8 @@
 #     action walk|act|pick|use
 #     at X Y                 where to click (screen pixels; highlighted)
 #     item ID                or the item on the map to act on (highlighted)
+#     needs ID               an earlier step this one can't be done without
+#                            (hinted instead while it isn't done)
 #     nudge TEXT             a gentle push
 #     pointer TEXT           who, and on what
 #     solve TEXT             exactly what to do
@@ -67,6 +69,8 @@ step take
 level AVT00 The fruit tree
 step right-fruit
   done item 4 cells 2
+  done pocket 4
+  done obj 0 state 13
   goblin 2
   action act
   at 303 32
@@ -75,6 +79,8 @@ step right-fruit
   solve The wizard casts on the rightmost apple on the tree's right branch (it swells up), then the fighter hits it: it drops onto the grassy ledge on the right.
 step left-fruit
   done obj 2 state 11
+  done pocket 3
+  done obj 2 state 14
   goblin 2
   action act
   at 154 31
@@ -83,6 +89,7 @@ step left-fruit
   solve The wizard casts on the right one of the two apples on the tree's left branch (it swells up), then the fighter hits it: it drops onto the branch below.
 step plank
   done obj 0 state 13
+  needs right-fruit
   goblin 0
   action pick
   at 303 75
@@ -91,6 +98,7 @@ step plank
   solve The picker picks up the big apple on the right ledge (dropping the Pickaxe there), then uses the pick cursor on the gap between the two halves of the wooden bridge at the bottom: the apple drops into the gap.
 step bridge
   done obj 2 state 14
+  needs left-fruit
   goblin 0
   action pick
   at 155 40
@@ -152,6 +160,7 @@ step catcher
   solve The picker walks round along the bottom and uses Pot1 on the eye plant at the front of the table: it stops snapping.
 step ladder
   done obj 5 state 2
+  needs rope
   goblin 1
   action act
   at 285 80
@@ -725,6 +734,7 @@ step stick
   solve The picker picks up the stick.
 step knock
   done var 125 1
+  needs steps
   goblin 0
   action use
   at 234 27
@@ -790,14 +800,24 @@ step leave
   solve The picker puts the key down; the exit then ends the level at once.
 
 level AVT015 The cannon
+step ball
+  done obj 9 type 0
+  done pocket 9
+  done var 400 1 2
+  goblin 1
+  action act
+  at 270 141
+  nudge The cannon needs ammunition. There's a pile of cannonballs at the bottom right.
+  pointer The fighter can knock a cannonball off the pile at the bottom right.
+  solve The wizard climbs down out of the way. The fighter hits the pile of cannonballs at the bottom right: one rolls off onto the floor.
 step aim-up
   done obj 1 state 2
   goblin 1
   action act
   at 198 75
-  nudge The cannon needs ammunition and a better angle.
-  pointer The fighter knocks a cannonball off the pile at the bottom right and aims the cannon upwards.
-  solve The wizard climbs down out of the way. The fighter knocks a cannonball off the pile, then hits the cannon: it points upwards.
+  nudge The cannon needs a better angle.
+  pointer The fighter can aim the cannon upwards.
+  solve The fighter hits the cannon: it points upwards.
 step matches
   done pocket 2
   goblin 0
@@ -816,6 +836,7 @@ step fire
   solve The picker walks back along the beam, down the ladder, and lights the fire under the cauldron.
 step load-ball
   done var 400 1
+  needs ball
   goblin 0
   action use
   at 198 75
@@ -991,6 +1012,7 @@ step sow
   solve The picker waits at the foot of the ladder, picks up the bag in front of the dragon and steps away at once (he drops it; pick it up again). On the top ledge he sows the seeds: a foot grows out of the ground.
 step foot
   done var 493 1
+  needs deodorant
   goblin 0
   action use
   at 30 33
@@ -1100,6 +1122,8 @@ step wizard-ride
 level AVT019 The castle gate
 step banana
   done obj 6 type 0
+  done pocket 7
+  done var 466 1 3
   goblin 1
   action act
   at 282 15
@@ -1116,6 +1140,7 @@ step gate
   solve The wizard casts on the barred castle gate at the top of the middle stairs: it opens.
 step gift1
   done var 466 1 3
+  needs banana
   goblin 0
   action use
   at 42 63

@@ -39,6 +39,10 @@ struct HintStep {
 	Action action = Action::None;
 	int item = -1;           // the item on the map to act on (highlighted), -1: none
 	int pointX = -1, pointY = -1; // or a screen point (highlighted), -1: none
+	// Earlier steps this one can't be done without: when it is the step to
+	// hint and one of them isn't done (the player went past it another
+	// way), that one is hinted instead.
+	std::vector<std::string> needs;
 	std::string nudge, pointer, solve;
 };
 
@@ -60,7 +64,8 @@ public:
 	// Whether step `step` of `level` is done in the running game.
 	static bool done(const HintStep &step, const Interpreter &in);
 	// The step to hint in the running game: the one after the last step
-	// that is done (steps.size() when the last one is). See HintTracker.
+	// that is done (steps.size() when the last one is), or the first step it
+	// needs that isn't done. See HintTracker.
 	static size_t current(const HintLevel &level, const Interpreter &in);
 	// What a step's conditions look at, as now (the values they compare).
 	static std::vector<int32_t> facts(const HintStep &step, const Interpreter &in);
@@ -82,7 +87,8 @@ public:
 	void update(const HintBook &book, const Interpreter &in);
 	// The level being played, if it has hints (null otherwise).
 	const HintLevel *level() const { return _shown; }
-	// The step to hint: the one after the last step done in this run.
+	// The step to hint: the one after the last step done in this run (or a
+	// step it needs that isn't done).
 	size_t current(const Interpreter &in) const;
 
 private:

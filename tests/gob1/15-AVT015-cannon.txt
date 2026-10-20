@@ -12,11 +12,12 @@
 # out onto the beam. A ball fired at the man, a carrot fired upwards, and
 # the fighter or wizard touching the oval all cost energy.
 room AVT015
-hint aim-up
+hint ball
 goblin 2
 walk 150 147    # the wizard climbs down out of the way
 goblin 1
 act 270 141     # the fighter knocks a ball off the pile
+hint aim-up
 act 198 75      # ...and aims the cannon upwards
 hint matches
 goblin 0
