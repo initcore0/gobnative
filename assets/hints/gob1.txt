@@ -998,8 +998,8 @@ step bag
   goblin 2
   action act
   at 108 128
-  nudge There's a bag in front of the dragon. Don't stay near the dragon for long.
-  pointer The wizard casts on the bag from the middle ledge, then hurries away.
+  nudge There's a red bag on the cave floor in front of the dragon. Standing near the dragon's head for long costs energy.
+  pointer The wizard casts on the bag from the middle ledge, then walks away at once.
   solve The wizard goes down to the middle ledge, casts on the red bag on the cave floor left of the dragon, and walks away at once: the bag jumps up onto the rock shelf nearer the ladder.
 step sow
   done var 492 1 3
@@ -1007,9 +1007,9 @@ step sow
   goblin 0
   action use
   at 78 33
-  nudge The bag holds seeds, and seeds make things grow. Don't stay near the dragon.
-  pointer The picker grabs the bag of seeds, steps away from the dragon at once, and sows the seeds on the top ledge.
-  solve The picker waits at the foot of the ladder, picks up the bag of seeds near the dragon and steps away at once (he drops it; pick it up again). Up on the top ledge he sows the seeds: a foot starts popping out of the ground in the top left corner, for a moment at a time.
+  nudge The bag holds seeds, and seeds make things grow. Grab it without lingering near the dragon.
+  pointer The picker takes the bag of seeds from the rock shelf by the dragon, walks away at once, and sows the seeds on the top ledge near the pile of logs.
+  solve The picker goes to the foot of the ladder at the bottom left, takes the bag of seeds from the rock shelf in front of the dragon and walks away at once. Up on the top ledge, near the pile of logs, he sows the seeds: a foot starts popping out of the ground in the top left corner, for a moment at a time.
 step foot
   done var 493 1
   needs deodorant
@@ -1018,7 +1018,7 @@ step foot
   at 30 33
   nudge The foot in the top left corner smells terrible, and it only pops out for a moment.
   pointer With the deodorant in hand, the picker sprays the foot while it is out of the ground in the top left corner.
-  solve The picker swaps the bag for the deodorant on the top ledge and waits near the top left corner. The moment the foot pops out of the ground, he sprays it: it comes loose.
+  solve The picker swaps the bag for the deodorant (the small white can on the top ledge) and waits near the top left corner. The moment the foot pops out of the ground, he sprays it: it comes loose and lies there.
 step roast
   done var 503 1
   done var 501 1
@@ -1026,22 +1026,22 @@ step roast
   action pick
   at 95 117
   nudge The dragon's breath could cook something.
-  pointer The picker puts the foot in front of the dragon and steps away.
-  solve The picker takes the foot, goes to the foot of the ladder, puts it in front of the dragon and steps away at once. Wait for the dragon to roast it.
+  pointer The picker puts the foot on the rock shelf in front of the dragon and walks away.
+  solve The picker takes the foot, goes down to the foot of the ladder, puts the foot on the rock shelf in front of the dragon (where the bag was) and walks away at once. Wait for the dragon's breath to roast it.
 step table
   done var 501 1
   goblin 0
   action use
   at 138 81
-  nudge The table is hungry.
-  pointer The picker gives it the roast.
-  solve The picker takes the roast (stepping away at once), picks it up again and gives it to the table: it's safe to cross now.
+  nudge Something in the table on the middle ledge stops goblins crossing. It might like a meal.
+  pointer The picker gives the roast to the table.
+  solve The picker takes the roast from the rock shelf (walking away at once), climbs to the middle ledge and gives it to the wooden table: it's safe to cross now.
 step dagger
   done pocket 6
   goblin 0
   action pick
   at 306 63
-  nudge There's something at the far end.
+  nudge There's a dagger at the far right end of the middle ledge, past the table.
   pointer The picker can cross now.
   solve The picker crosses and picks up the dagger stuck point-down in the ground at the far right end of the middle ledge.
 step breathe
@@ -1050,16 +1050,16 @@ step breathe
   action pick
   at 95 117
   nudge A plain dagger won't do. Fire could temper it.
-  pointer Let the dragon breathe on it.
-  solve The picker puts the dagger in front of the dragon and steps away at once. Wait for the dragon to breathe on it.
+  pointer Put the dagger on the rock shelf in front of the dragon and let the dragon breathe on it.
+  solve The picker goes down to the foot of the ladder, puts the dagger on the rock shelf in front of the dragon and walks away at once. Wait for the dragon to breathe fire on it: it glows.
 step take
   done exit
   goblin 0
   action pick
   at 95 117
   nudge Get the dagger back.
-  pointer The picker takes it and steps away.
-  solve The picker takes the dagger, steps away at once, and picks it up again: the exit sign shows.
+  pointer The picker takes the glowing dagger from the rock shelf and walks away.
+  solve The picker takes the glowing dagger from the rock shelf and walks away at once: the exit sign shows.
 
 level AVT018 The statue's hands
 step place
