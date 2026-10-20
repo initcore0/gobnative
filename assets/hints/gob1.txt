@@ -1303,8 +1303,8 @@ step wizard-down
 level AVT022 The bird's skeleton
 trap fighter-cut-off
   when var 332 2, gob 1 x 0 13
-  text This is a trap in the game itself, not something you did wrong: the creature holding the wizard landed at the far right end of the bird's back before the fighter got there, and now he can never get past it to hit it. The level can't be finished from here.
-  text Start it again from the Levels tab, and this time walk the fighter to the far right end of the bird's back before the wizard casts.
+  text This is a trap in the game itself, not something you did wrong: the creature holding the wizard landed at the far right end of the bird's wing before the fighter got there, and now he can never get past it to hit it. The level can't be finished from here.
+  text Start it again from the Levels tab, and this time walk the fighter to the far right end of the bird's wing before the wizard casts.
 step ladder
   done obj 7 state 3
   goblin 2
@@ -1326,17 +1326,17 @@ step free-picker
   goblin 2
   action act
   at 42 21
-  nudge Get the picker back, but put the fighter in place first: he has to be waiting at the far right end of the bird's back.
-  pointer The fighter climbs the ladder and walks right to the far end of the bird's back; only then does the wizard cast at the creature holding the picker.
-  solve The fighter climbs the bone ladder and walks along the bird's back to its far right end. Then the wizard casts at the grey creature holding the picker on the bird's skull: the picker is free, but the creature grabs the wizard and lands next to the fighter. If the fighter isn't at the far right end by then, he can't get to the creature any more: start the level again (Levels tab).
+  nudge Get the picker back, but put the fighter in place first: he has to be waiting at the far right end of the bird's wing.
+  pointer The fighter climbs the ladder and walks right to the far end of the bird's wing; only then does the wizard cast at the creature holding the picker.
+  solve The fighter climbs the bone ladder and walks out along the bird's wing to its far right end. Then the wizard casts at the grey creature holding the picker on the bird's skull: the picker is free, but the creature grabs the wizard and lands next to the fighter. If the fighter isn't at the far right end by then, he can't get to the creature any more: start the level again (Levels tab).
 step free-wizard
   done var 332 3
   goblin 1
   action act
   at 222 51
   nudge Now get the wizard back.
-  pointer The fighter, waiting at the far right end of the bird's back, hits the creature next to him.
-  solve The fighter hits the creature beside him at the far right end of the bird's back: the wizard is free, but the fighter ends up wrapped and hanging on a thread at the top right, below a grey spider-like creature. This only works if the fighter was already at that end when the creature landed; if he can't reach it, start the level again (Levels tab).
+  pointer The fighter, waiting at the far right end of the bird's wing, hits the creature next to him.
+  solve The fighter hits the creature beside him at the far right end of the bird's wing: the wizard is free, but the fighter ends up wrapped and hanging on a thread at the top right, below a grey spider-like creature. This only works if the fighter was already at that end when the creature landed; if he can't reach it, start the level again (Levels tab).
 step bag
   done obj 9 state 5
   done obj 9 state 24
@@ -1353,7 +1353,7 @@ step capture
   at 294 21
   nudge Bring the evil wizard down into the trap.
   pointer The picker waits beside the bag; the wizard climbs up and casts at the evil wizard's head.
-  solve The picker waits beside the bag. The wizard climbs the ladder onto the bird's back and casts at the head of the grey spider-like creature on the long bone at the top right: it falls into the bag.
+  solve The picker waits beside the bag. The wizard climbs the ladder onto the bird's wing and casts at the head of the grey spider-like creature on the long bone at the top right: it falls into the bag.
 step grab
   done var 371 1
   goblin 0

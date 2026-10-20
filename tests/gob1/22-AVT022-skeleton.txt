@@ -4,13 +4,13 @@
 # The evil wizard has to be caught in the bag. Each hit drives him to
 # another place, and each time he grabs one goblin, whom the next hit
 # frees: the picker's catapult shot (he flies to the top left with the
-# picker), the wizard's spell there (he moves above the bird's back with
+# picker), the wizard's spell there (he moves above the bird's wing with
 # the wizard), the fighter's blow there (he moves to the top right and
 # hangs the fighter below him), a catapult shot at the hanging fighter,
 # and a last spell at his head while the bag lies below him: he falls
 # into it. The picker must take the full bag at once (he gets out after a
 # few seconds) and use it: the ending follows. Hitting him at other
-# places or times costs energy. The fighter waits on the bird's back
+# places or times costs energy. The fighter waits on the bird's wing
 # beforehand, as the wizard's spell closes the way there.
 room AVT022
 hint ladder
@@ -22,7 +22,7 @@ use 42 123      # the picker shoots the evil wizard, who carries him off to the 
 hint free-picker
 goblin 1
 walk 126 135    # the fighter climbs the ladder...
-walk 210 39     # ...to the far right end of the bird's back (once the creature lands there, he can't get past it)
+walk 210 39     # ...to the far right end of the bird's wing (once the creature lands there, he can't get past it)
 goblin 2
 act 42 21       # the wizard's spell: the picker is free, the evil wizard takes the wizard
 hint free-wizard
@@ -39,7 +39,7 @@ hint capture
 walk 246 141    # the picker waits beside the bag
 goblin 2
 walk 126 135    # the wizard climbs the ladder...
-walk 210 39     # ...up onto the bird's back...
+walk 210 39     # ...up onto the bird's wing...
 act 294 21      # ...and casts a spell at the evil wizard's head: he falls into the bag
 hint grab
 goblin 0

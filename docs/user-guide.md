@@ -503,7 +503,7 @@ and steps solved in another order.
 
 Some situations in the original game can't be won from (a game trap, not
 a mistake of yours): in the last level, if the fighter isn't at the far
-right end of the bird's back when the wizard frees the picker, he can
+right end of the bird's wing when the wizard frees the picker, he can
 never reach the creature that grabs the wizard. With hints on, such a trap
 shows a red "Game trap" card by itself, saying what happened and to start
 the level again from the Levels tab.
