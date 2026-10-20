@@ -22,7 +22,7 @@ use 42 123      # the picker shoots the evil wizard, who carries him off to the 
 hint free-picker
 goblin 1
 walk 126 135    # the fighter climbs the ladder...
-walk 210 39     # ...and walks up onto the bird's back
+walk 210 39     # ...to the far right end of the bird's back (once the creature lands there, he can't get past it)
 goblin 2
 act 42 21       # the wizard's spell: the picker is free, the evil wizard takes the wizard
 hint free-wizard
