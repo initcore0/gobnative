@@ -80,6 +80,12 @@ remaster scripts below:
   - **quick save/load** in all three games (Gobliiins originally has none);
   - **1.2–2× speed** and turbo;
   - **skippable** intros and in-between scenes.
+- **Hints for Gobliiins**, off unless you ask for them: press H (the yellow
+  key on a TV, the Hint button on a touchscreen) for a nudge, again for who
+  does what where (the spot glows), again for the solution. The hints follow
+  the state of the level, so they keep up however you play, and they warn
+  you when the original game has trapped you in a level you can no longer
+  win. A "show clickable spots" glow works in all three games.
 - **A game library** with one tile per game. Click a missing game, pick its
   GOG installer, and it's unpacked and installed (no external tools; files
   are checked against GOG's checksums).
@@ -93,15 +99,16 @@ remaster scripts below:
 
 | | macOS | Windows | Web (WebAssembly) | LG TV (webOS) |
 |---|---|---|---|---|
-| Gobliiins | ✅ | ✅ built and tested in CI | ✅ | ✅ on an LG C1 |
+| Gobliiins | ✅ played through by hand | ✅ built and tested in CI | ✅ | ✅ on an LG C1 |
 | Gobliins 2 | ✅ played through by hand | ✅ built and tested in CI | ✅ | ✅ on an LG C1 |
 | Goblins Quest 3 (speech, video) | ✅ | ✅ built and tested in CI | ✅ | ✅ on an LG C1 |
 
 **How it's tested:**
 - All three games are played from the intro to the ending by automated
   click-script walkthroughs on every change.
-- Gobliins 2 has also been played through by a human. Gobliiins and Goblins
-  Quest 3 haven't been yet, so bug reports are very welcome.
+- Gobliiins and Gobliins 2 have also been played through by a human (both
+  on macOS, Gobliiins with the hints). Goblins Quest 3 hasn't been yet, so
+  bug reports are very welcome.
 - The Windows build is compiled and unit-tested on Windows in CI, but hasn't
   had much hands-on desktop testing yet.
 - The web build has been tested in Chromium.
