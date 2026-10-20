@@ -1007,18 +1007,18 @@ step sow
   goblin 0
   action use
   at 78 33
-  nudge The bag holds seeds. Grab it quickly and step away.
-  pointer The picker takes the bag from the foot of the ladder and steps away at once, then sows the seeds on the top ledge.
-  solve The picker waits at the foot of the ladder, picks up the bag in front of the dragon and steps away at once (he drops it; pick it up again). On the top ledge he sows the seeds: a foot grows out of the ground.
+  nudge The bag holds seeds, and seeds make things grow. Don't stay near the dragon.
+  pointer The picker grabs the bag of seeds, steps away from the dragon at once, and sows the seeds on the top ledge.
+  solve The picker waits at the foot of the ladder, picks up the bag of seeds near the dragon and steps away at once (he drops it; pick it up again). Up on the top ledge he sows the seeds: a foot starts popping out of the ground in the top left corner, for a moment at a time.
 step foot
   done var 493 1
   needs deodorant
   goblin 0
   action use
   at 30 33
-  nudge That foot smells terrible, and it's stuck.
-  pointer The picker sprays it with the deodorant.
-  solve The picker swaps the bag for the deodorant and sprays the foot: it comes loose.
+  nudge The foot in the top left corner smells terrible, and it only pops out for a moment.
+  pointer With the deodorant in hand, the picker sprays the foot while it is out of the ground in the top left corner.
+  solve The picker swaps the bag for the deodorant on the top ledge and waits near the top left corner. The moment the foot pops out of the ground, he sprays it: it comes loose.
 step roast
   done var 503 1
   done var 501 1

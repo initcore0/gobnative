@@ -58,11 +58,11 @@ pick 78 141          # he takes it again
 walk 78 33           # up on the top ledge
 untilvar 60 64       # (his boredom animation)
 idle
-use 78 33            # he sows the seeds: a foot grows out of the ground
+use 78 33            # he sows the seeds: a foot pops out in the top left corner now and then
 untilvar 492 3
 hint foot
 pick 126 33          # he swaps the bag for the deodorant
-use 30 33            # and sprays the foot: it comes loose
+use 30 33            # and sprays the foot while it is out: it comes loose
 hint roast
 pick 30 33           # he takes the foot
 walk 42 147          # down to the foot of the ladder
